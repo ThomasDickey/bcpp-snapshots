@@ -1,12 +1,20 @@
-MANIFEST for bcpp, version t2002-05-18
+MANIFEST for bcpp, version t2002-11-23
 --------------------------------------------------------------------------------
 MANIFEST                        this file
 CHANGES                         change-log for BCPP
 README                          top-level README for bcpp
+VERSION                         version of this package
+aclocal.m4                      autoconf macros for BCPP
 bcpp.cfg                        default configuration for bcpp
 bcppall.bat                     run bcpp for a whole directory
+config_h.in                     template for config.h
+configure                       configure script for BCPP
+configure.in                    configure-script template for BCPP
 indent.bat                      script for format all C/C++/Java(Script) files
 indent.cfg                      alternate configuration (larger queue)
+install.sh                      install-script
+makefile.in                     top-level makefile templace for BCPP
+mkdirs.sh                       mkinstalldirs
 code                            subdirectory
 code/.vilerc                    vile settings
 code/anyobj.cpp                 the base class for all objects...
@@ -26,8 +34,9 @@ code/debug.cpp                  debug/trace functions for BCPP
 code/execsql.cpp                module to indent embedded SQL statements
 code/hanging.cpp                compute hanging-indent of multiline statements
 code/html.cpp                   test for HTML vs JavaScript
-code/makefile                   makefile for UNIX (g++)
 code/makefile.blc               makefile for Borland C
+code/makefile.in                makefile template for BCPP program
+code/makefile.unx               UNIX makefile (g++)
 code/makefile.wnt               makefile for M$ Visual C++
 code/run-test                   test-script
 code/stacklis.cpp               container class that stores items in a linked list
@@ -36,12 +45,9 @@ code/strings.cpp                simple string-utilities
 code/tabs.cpp                   tab expansion/conversion for BCPP
 code/verbose.cpp                all output to stdout or stderr
 txtdocs                         subdirectory
+txtdocs/bcpp.1                  manual, in UNIX manpage format
 txtdocs/hirachy.txt             text-version of class-hierarchy
 txtdocs/manual.txt              text-version of manual
-unix                            subdirectory
-unix/makefile                   original UNIX makefile
-unix/util                       subdirectory
-unix/util/convert.cc            msdos/unix crlf/lf converter
 wpdocs                          subdirectory
 wpdocs/hirachy.doc              document, in WP51 format
 wpdocs/manual.doc               document, in WP51 format

@@ -17,7 +17,7 @@
  * CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN        *
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.                   *
  ******************************************************************************/
-// $Id: bcpp.h,v 1.34 2002/05/18 17:46:09 tom Exp $
+// $Id: bcpp.h,v 1.35 2002/11/23 17:41:42 tom Exp $
 
 #ifndef _BCPP_HEADER
 #define _BCPP_HEADER
@@ -33,6 +33,10 @@
 // Common/miscellaneous definitions for BCPP
 
 #define TABLESIZE(n) (sizeof(n)/sizeof(n[0]))
+
+#ifndef VERSION
+#define VERSION ""
+#endif
 
 #ifdef DEBUG
 #define TRACE(p) trace p;

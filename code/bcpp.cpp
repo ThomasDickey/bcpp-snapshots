@@ -1,6 +1,6 @@
 // C(++) Beautifier V1.61 Unix/MS-DOS update !
 // -----------------------------------------
-// $Id: bcpp.cpp,v 1.87 2002/05/18 17:53:27 tom Exp $
+// $Id: bcpp.cpp,v 1.88 2002/11/23 12:36:18 tom Exp $
 //
 // Program was written by Steven De Toni 1994 (CBC, ACBC).
 // Modified/revised by Thomas E. Dickey 1996-1999,2002.
@@ -1455,6 +1455,7 @@ int ConstructLine (
 
 }
 
+#if 0
 // purge an Indent-stack
 static void freeIndentStack(StackList* pImode)
 {
@@ -1475,6 +1476,7 @@ static void copyIndentStack(StackList* src, StackList* dst)
         dst -> push(temp);
     }
 }
+#endif
 
 // no extra indent immediately after any brace
 void resetSingleIndent(StackList* pIMode)

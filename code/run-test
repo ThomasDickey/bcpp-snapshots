@@ -1,5 +1,5 @@
 #!/bin/sh
-# $Id: run-test,v 1.3 1999/01/05 17:01:28 tom Exp $
+# $Id: run-test,v 1.4 2002/11/23 12:59:57 tom Exp $
 if (make) ; then
 	if test $# != 0 ; then
 		rm -rf results
@@ -14,7 +14,7 @@ if (make) ; then
 		done
 		PATH=.:$PATH cb++ results/*
 		rm -f results/*.orig
-		diff -r results output
+		diff -r output results 
 	else
 		eval $0 input/*
 	fi
