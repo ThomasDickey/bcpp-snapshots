@@ -25,11 +25,11 @@ StackList::StackList (void)
     spaceAvailable = 0; // space is available
 }
 
-// Initalise vaiables, and place item passed in a new list
+// Initalise variables, and place item passed in a new list
 //     
 // Parameters:
 //     pItem    : Pointer to the object that is will to be stored.
-//                Item must be of desendant ANYOBJECT.
+//                Item must be of descendant ANYOBJECT.
 //
 StackList::StackList (ANYOBJECT* pItem)
 {
@@ -44,7 +44,7 @@ StackList::StackList (ANYOBJECT* pItem)
 //
 // Parameters:
 //     pItem    : Pointer to the object that is will to be stored.
-//                Item must be of desendant ANYOBJECT.
+//                Item must be of descendant ANYOBJECT.
 //
 // Return Values:
 //     int      : Returns a error code value to indicate whether operation
@@ -158,7 +158,7 @@ int  StackList::status (void)
 
 // ############################### Destructor ###############################
 // Method will remove all list items from memory if they still exist,
-// no garabage collection provided, or used.
+// no garbage collection provided, or used.
 //
 StackList::~StackList  (void)
 {

@@ -34,7 +34,8 @@ void PrintProgramHelp (char* argv[])
     printf ("\n C(++) Beautifier     V1.8\n");
     printf ("---------------------------\n");
     printf ("Program Was Written By Steven De Toni, December 1995\n");
-    printf ("All Parts Of This Program Are Public Domain.\n\n");
+    printf ("Modified/revised by Thomas E. Dickey <dickey@clark.net> 1996\n");
+    printf ("All Parts Of This Program Are Freely Distributable.\n\n");
 
     printf ("Usage : %s [Parameters] [Input File Name] [Output File Name] \n\n", argv[0]);
     printf ("                    Available Command Line Parameters\n");
@@ -62,20 +63,20 @@ void PrintProgramHelp (char* argv[])
         printf ("-h    or   -? : -h   or  -?  : This Help\n");
         printf ("-i   <num>    : -i   4       : Indent Space Length\n");
         printf ("-lg           : -lg          : Leave Graphic Chars\n");
-        printf ("-na           : -na          : Leave Non-Ascii Chars As Normal\n");
+        printf ("-na           : -na          : Leave Non-ASCII Chars As Normal\n");
         printf ("-nb           : -nb          : Don't Backup Input File\n");
         printf ("-nc  <num>    : -nc  0       : Comments With No Code\n");
         printf ("-nlcnc        : -nlcnc       : Turn Off Leave Comments With NoCode\n");
         printf ("-no           : -no          : Turn Off Program Output (Unless Errors Occur)\n");
-        printf ("-nq           : -nq          : Turn Off Non-Ascii Chars In Quotes To Octal\n");
+        printf ("-nq           : -nq          : Turn Off Non-ASCII Chars In Quotes To Octal\n");
         printf ("-qb  <num>    : -qb  10      : Define Internal Queue Buffer\n");
         printf ("-s            : -s           : Use Spaces In Indenting\n");
         printf ("-t            : -t           : Use Tabs In Indenting\n");
-        printf ("-ya           : -ya          : Remove Non-Ascii Chars\n");
+        printf ("-ya           : -ya          : Remove Non-ASCII Chars\n");
         printf ("-yb           : -yb          : Backup Input File With .bac Extension\n");
         printf ("-ylcnc        : -ylcnc       : Turn On Leave Comments With NoCode\n");
         printf ("-yo           : -yo          : Turn On Program Output\n");
-        printf ("-yq           : -yq          : Turn On Non-Ascii Chars In Quotes To Octal\n");
+        printf ("-yq           : -yq          : Turn On Non-ASCII Chars In Quotes To Octal\n");
         printf ("<string>      :      in.cpp  : Input File Name\n");
         printf ("<string>      :      out.cpp : Output File Name\n");
     }
@@ -155,7 +156,7 @@ int ProcessCommandLine (int argc, char* argv[], Config& settings,
                 continue;
             }
 
-            // Test for "Leave Non-Ascii Chars As Normal"
+            // Test for "Leave Non-ASCII Chars As Normal"
             if (strcmp ("NA", cmdRead) == 0)
             {
                 settings.deleteHighChars = 0;
@@ -176,7 +177,7 @@ int ProcessCommandLine (int argc, char* argv[], Config& settings,
                 continue;
             }
             
-            // Test for "Dont Convert Non-Ascii Chars In Quotes To Octal"
+            // Test for "Don't Convert Non-ASCII Chars In Quotes To Octal"
             if (strcmp ("NQ", cmdRead) == 0)
             {
                 settings.quoteChars = False;
@@ -271,7 +272,7 @@ int ProcessCommandLine (int argc, char* argv[], Config& settings,
                 continue;
             }
 
-            // Test for "Remove Non-Ascii Chars"
+            // Test for "Remove Non-ASCII Chars"
             if (strcmp ("YA", cmdRead) == 0)
             {
                 settings.deleteHighChars = 1;
@@ -299,7 +300,7 @@ int ProcessCommandLine (int argc, char* argv[], Config& settings,
                 continue;
             }
 
-            // Test for "Convert Non-Ascii Chars In Quotes To Octal"
+            // Test for "Convert Non-ASCII Chars In Quotes To Octal"
             if (strcmp ("YQ", cmdRead) == 0)
             {
                 settings.quoteChars = True;
@@ -315,7 +316,7 @@ int ProcessCommandLine (int argc, char* argv[], Config& settings,
                 return -1;
             }
 
-            fprintf (stderr, "Unkown Command Directive %s \n", cmdRead);
+            fprintf (stderr, "Unknown Command Directive %s \n", cmdRead);
             PrintProgramHelp (argv);
             return -1;
         }

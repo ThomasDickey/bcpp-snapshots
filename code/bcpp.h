@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 1996 by Thomas E. Dickey <dickey@clark.net>                      *
+ * Copyright 1996,1997 by Thomas E. Dickey <dickey@clark.net>                 *
  * All Rights Reserved.                                                       *
  *                                                                            *
  * Permission to use, copy, modify, and distribute this software and its      *
@@ -17,7 +17,7 @@
  * CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN        *
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.                   *
  ******************************************************************************/
-// $Id: bcpp.h,v 1.21 1996/12/17 23:32:32 tom Exp $
+// $Id: bcpp.h,v 1.24 1997/01/08 01:44:57 tom Exp $
 
 #ifndef _BCPP_HEADER
 #define _BCPP_HEADER
@@ -34,6 +34,10 @@
 #define TRACE(p) fprintf p;
 #else
 #define TRACE(p) /*nothing*/
+#endif
+
+#ifndef __GNUC__
+#define bool int        // FIXME
 #endif
 
 //-----------------------------------------------------------------------------
@@ -262,7 +266,7 @@ class IndentStruct : public ANYOBJECT
 //-----------------------------------------------------------------------------
 // debug.cpp
 #ifdef DEBUG
-extern char *traceDataType(DataTypes theType);
+extern const char *traceDataType(DataTypes theType);
 extern void traceInput(int line, InputStruct *pIn);
 extern void traceOutput(int line, OutputStruct *pOut);
 #define TRACE_INPUT(pOut)  traceInput(__LINE__, pOut);

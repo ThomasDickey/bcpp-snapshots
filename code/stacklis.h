@@ -31,11 +31,11 @@ class StackList : public ANYOBJECT
                //
                           StackList       (void);
 
-               // Initalise vaiables, and place item passed in a new list
+               // Initialise variables, and place item passed in a new list
                //     
                // Parameters:
                //     pItem    : Pointer to the object that is will to be stored.
-               //                Item must be of desendant ANYOBJECT.
+               //                Item must be of descendant ANYOBJECT.
                //
                           StackList       (ANYOBJECT* pItem);
                           
@@ -44,7 +44,7 @@ class StackList : public ANYOBJECT
                //
                // Parameters:
                //     pItem    : Pointer to the object that is will to be stored.
-               //                Item must be of desendant ANYOBJECT.
+               //                Item must be of descendant ANYOBJECT.
                //
                // Return Values:
                //     int      : Returns a error code value to indicate whether operation
@@ -99,7 +99,7 @@ class StackList : public ANYOBJECT
 
             //#### Destructor 
                // Method will remove all list items from memory if they still exist,
-               // no garabage collection provided, or used.
+               // no garbage collection provided, or used.
                //
                ~StackList                 (void);
 };
