@@ -395,6 +395,7 @@ int SetConfig (FILE* pConfigFile, Config& userSettings)
                 break;
 
              default:
+                warning("Text:%s\n", pLineOfConfig);
                 ErrorMessage (lineCount, 4, configError);
                 break;
         }// switch
