@@ -1,6 +1,6 @@
 // C(++) Beautifier V1.61 Unix/MS-DOS update !
 // -----------------------------------------
-// $Id: bcpp.cpp,v 1.99 2003/04/23 23:54:34 tom Exp $
+// $Id: bcpp.cpp,v 1.101 2003/11/04 02:10:47 tom Exp $
 //
 // Program was written by Steven De Toni 1994 (CBC, ACBC).
 // Modified/revised by Thomas E. Dickey 1996-2002,2003.
@@ -250,8 +250,13 @@ static Boolean ExtractedCCmtFragment(char *pLineData, InputStruct* pItem)
 
 inline void ShiftLeft(char *s, int len)
 {
-    if (len > 0)
-        strcpy (s, s + len);
+    if (len > 0) {
+        char *t = s + len;
+        while ((*s = *t) != '\0') {
+            ++s;
+            ++t;
+        }
+    }
 }
 
 int LookupKeyword(const char *tst)
@@ -1495,15 +1500,18 @@ int ConstructLine (
 
         } // switch
 
-        if (pendingComment != NULL)
+        if (pOut -> pCode == 0
+         && pOut -> pBrace == 0)
         {
+            delete[] pTestType -> pState;
+        }
+        else if (pendingComment != NULL)
+        {
+            TRACE(("@%d, Use Pending Comment = %s:%d\n", __LINE__, pendingComment, pOut->thisToken))
             pOut -> pComment = pendingComment;
             pOut -> filler = (userS.posOfCommentsWC - (tokenIndent + strlen (pTestType -> pData)));
             pendingComment = NULL;
         }
-        if (pOut -> pCode == 0
-         && pOut -> pBrace == 0)
-            delete[] pTestType -> pState;
 
         hang_state.IndentHanging(pOut);
 
@@ -3177,11 +3185,10 @@ int LoadnRun (int argc, char* argv[])
     if (pOutputFile != NULL)
         fclose (pOutputFile);
 
-    if (renamed)
+    if (renamed) {
         RestoreIfUnchanged(pInFile, pOutFile);
-
-    if (pInFile != NULL)
         delete[] pInFile;
+    }
 
     if (settings.output != False)
         verbose ("Done !\n");
