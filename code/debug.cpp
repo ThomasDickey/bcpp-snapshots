@@ -1,5 +1,5 @@
 //******************************************************************************
-// Copyright 1996 by Thomas E. Dickey <dickey@clark.net>                       *
+// Copyright 1996,1997 by Thomas E. Dickey <dickey@clark.net>                  *
 // All Rights Reserved.                                                        *
 //                                                                             *
 // Permission to use, copy, modify, and distribute this software and its       *
@@ -17,7 +17,7 @@
 // OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR   *
 // PERFORMANCE OF THIS SOFTWARE.                                               *
 //******************************************************************************
-// $Id: debug.cpp,v 1.7 1996/12/10 01:29:26 tom Exp $
+// $Id: debug.cpp,v 1.9 1997/01/08 01:45:21 tom Exp $
 // Debug/trace functions for BCPP
 
 #include <stdlib.h>
@@ -26,9 +26,9 @@
 #include "bcpp.h"
 
 #if defined(DEBUG) || defined(DEBUG2)
-char *traceDataType(DataTypes theType)
+const char *traceDataType(DataTypes theType)
 {
-    char *it;
+    const char *it;
     switch (theType)
     {
         case CCom:   it = "CCom";   break;

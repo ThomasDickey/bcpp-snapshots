@@ -298,7 +298,7 @@ void ConfigAssignment (int& errorCount, int& configError, char* pPosInLine, Bool
 // userSettings : Config structure that will contain the user settings.
 //
 // Return Values:
-// int          : Returns the number of errors encounted when reading the
+// int          : Returns the number of errors encountered when reading the
 //                configuration file.
 // userSettings : This variable is altered to the user settings read from the
 //                config file.

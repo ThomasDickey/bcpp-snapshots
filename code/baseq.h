@@ -40,14 +40,14 @@ class QueueList
                         QueueList       (void);
                         
                // Parameters:
-               //     pItem    : Pointer to a object to be stored, must be decendant of
+               //     pItem    : Pointer to a object to be stored, must be descendant of
                //                base class ANYOBJECT.
                         QueueList       (ANYOBJECT* pItem);
                         
                // Place programmers object into list
                //
                // Parameters:
-               //     pItem    : Pointer to a object to be stored, must be decendant of
+               //     pItem    : Pointer to a object to be stored, must be descendant of
                //                base class ANYOBJECT.
                //
                // Return Values:
@@ -60,7 +60,7 @@ class QueueList
                int      putLast       (ANYOBJECT* pItem); 
 
                // Take first item placed in Queue, out and return it. 
-               // Type casting is required to return object back to it's orginial
+               // Type casting is required to return object back to it's original
                // state.
                //
                // Return Values:
@@ -100,7 +100,7 @@ class QueueList
                ANYOBJECT*   peek (int numFromNext);
 
                // Method will remove all list items from memory if they still exist,
-               // no garabage collection provided, or used.
+               // no garbage collection provided, or used.
                //
                         ~QueueList      (void);
 };

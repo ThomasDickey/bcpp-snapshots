@@ -4,7 +4,7 @@
 // Code written by Steven De Toni ACBC 11
 
 // These class methods used to implement a object that holds other objects
-// that are decendant of ANYOBJECT (i.e universal container).
+// that are descendant of ANYOBJECT (i.e universal container).
 
 #include "baseq.h"
 #include <stdio.h>      // NULL CONSTANT
@@ -52,7 +52,7 @@ QueueList::QueueList       (void)
 }
 
 // Parameters:
-//     pItem    : Pointer to a object to be stored, must be decendant of
+//     pItem    : Pointer to a object to be stored, must be descendant of
 //                base class ANYOBJECT.
 QueueList::QueueList       (ANYOBJECT* pItem)
 {
@@ -67,7 +67,7 @@ QueueList::QueueList       (ANYOBJECT* pItem)
 // Place programmers object into list
 //
 // Parameters:
-//     pItem    : Pointer to a object to be stored, must be decendant of
+//     pItem    : Pointer to a object to be stored, must be descendant of
 //                base class ANYOBJECT.
 //
 // Return Values:
@@ -92,7 +92,7 @@ int       QueueList::putLast   (ANYOBJECT* pItem)
 
 
 // Take first item placed in Queue, out and return it. 
-// Type casting is required to return object back to it's orginial
+// Type casting is required to return object back to it's original
 // state.
 //
 // Return Values:
@@ -197,7 +197,7 @@ ANYOBJECT*   QueueList::peek (int numFromNext)
 
 // ############################### Destructor ###############################
 // Method will remove all list items from memory if they still exist,
-// no garabage collection provided, or used.
+// no garbage collection provided, or used.
 //
 QueueList::~QueueList      (void)
 {

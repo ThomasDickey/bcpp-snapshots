@@ -1,4 +1,4 @@
-// C(++) Beautifer V1.61 Unix/MS-DOS update !
+// C(++) Beautifier V1.61 Unix/MS-DOS update !
 // -----------------------------------------
 //
 // Program was written by Steven De Toni 1994 (CBC, ACBC).
@@ -32,7 +32,7 @@
 //
 // Program Update : 14/11/94 V1.5
 //
-// Removed a couple more bugs, optimised code (not that you notice it),
+// Removed a couple more bugs, optimized code (not that you notice it),
 // added the following features:
 //     - Able to decode lines fully (uses recursion)
 //     - Able to handle unlimited depth handling for single indent code.
@@ -80,7 +80,7 @@
 //        if (strcmp (pAString, "A String") == 0) // test for "A String"
 //                                                ^
 //                                                |
-//  Not recognized as a comment becuase of the quotes chars!
+//  Not recognized as a comment because of the quotes chars!
 //
 //      - struct a { int b, c, d; } as;
 //        The above now gets decoded properly.
@@ -94,7 +94,7 @@
 //      - Able to set indentation of comments with no code the same as normal code,
 //        this results in the comments lining up with the code.
 //
-//      This option was brought to you by a Candian user Justin Slootsky.
+//      This option was brought to you by a Canadian user Justin Slootsky.
 //
 // ###################################################################################
 //
@@ -134,13 +134,13 @@
 //
 // Fixed removing of spaces in c style multiline comments
 // Remove bug with c style comment that has code before it (uses recursion as a fix)
-// Added location of program to use bcpp.cfg configuration without specifing
+// Added location of program to use bcpp.cfg configuration without specifying
 // it with options (i.e. uses PATH variable to locate).
 // ###################################################################################
 //
 // Program Update : 27/11/95 V1.75 <Single if, while, do, statements fixed>
 //
-// Fixed the indentin of single statements so they dont become corrupt, and
+// Fixed the indenting of single statements so they don't become corrupt, and
 // line up with previous code.
 // Also some simple logic errors where found by users and fixed.
 //
@@ -187,12 +187,17 @@ int   totalTokens;            // token count, for debugging
 
 // ----------------------------------------------------------------------------
 
+inline const char *endOf(const char *s)
+{
+   return (s + strlen(s));
+}
+
 inline char *endOf(char *s)
 {
    return (s + strlen(s));
 }
 
-inline char lastChar(char *s)
+inline const char lastChar(const char *s)
 {
    return ((s != NULL) && (*s != NULLC)) ? *(endOf(s)-1) : (char)NULLC;
 }
@@ -403,7 +408,7 @@ InputStruct* ExtractCCmt (int&     offset,
 
 // ----------------------------------------------------------------------------
 // This Function is used to de-allocate memory in a InputStructure.
-// A destructor wasn't used becuase other objects may also own the
+// A destructor wasn't used because other objects may also own the
 // same memory.
 //
 // Parameters:
@@ -652,9 +657,9 @@ int DecodeLine (int offset, char* pLineData, char *pLineState, QueueList* pInput
         // test to see if there are multiple open/ close braces in enum
         // selective range
         // i.e. { if ( a == b ) { b = c } else { d = e } }
-        int OBrace = FindPunctuation(pLineData+SChar+1, pLineState+SChar+1, L_CURL);
+        int OBrace2 = FindPunctuation(pLineData+SChar+1, pLineState+SChar+1, L_CURL);
 
-        if ( (OBrace < 0) || ((OBrace > EChar) && (OBrace >= 0)) )
+        if ( (OBrace2 < 0) || ((OBrace2 > EChar) && (OBrace2 >= 0)) )
            testEnumType = True;
     }
 
@@ -741,7 +746,7 @@ int DecodeLine (int offset, char* pLineData, char *pLineState, QueueList* pInput
         pLineData[toSave]  = saveCode; ShiftLeft (pLineData,  toSave);
         pLineState[toSave] = saveFlag; ShiftLeft (pLineState, toSave);
 
-        // extract open/closing brace from code, and place brace as seperate
+        // extract open/closing brace from code, and place brace as separate
         // line from code. And create new structure for code
         InputStruct* pTemp = 0;
         int          extractMode;
@@ -939,7 +944,7 @@ static bool inputIsCode(InputStruct *pItem)
 int typeOfPreP(InputStruct *pItem)
 {
     static const struct {
-        char *keyword;
+        const char *keyword;
         int code;
     } table[] = {
         { "define",    4 },
@@ -1367,7 +1372,7 @@ inline bool OutputContainsCode(OutputStruct *pOut)
 
 // ----------------------------------------------------------------------------
 // Function is used to indent single indented code such is found in if, while,
-// else statements. Also handles case like statements within switchs'.
+// else statements. Also handles case like statements within switches'.
 //
 // Parameters:
 // pLines     : Pointer to the output queue.
@@ -1437,7 +1442,7 @@ QueueList* IndentNonBraceCode (QueueList* pLines, StackList* pIMode, const Confi
 
                 pAlterLine -> indentSpace += (userS.tabSpaceSize * (pIMode -> status()));
 
-                // test if not another case, or default, if so, dont indent !
+                // test if not another case, or default, if so, don't indent !
                 pTest = LookupKeyword(pAlterLine -> pCode);
                 if (pTest >= 0 && pIndentWords[pTest].code != multiLine)
                     pTest = -1;
@@ -1542,7 +1547,7 @@ QueueList* IndentNonBraceCode (QueueList* pLines, StackList* pIMode, const Confi
         }// if comments exist on same line as code
 
         // Remove single line indentation from memory, if current line
-        // does contain a if, else, while ... type keyowrd
+        // does contain a if, else, while ... type keyword
         if (pIndentItem == NULL)
             ;
         else
@@ -1640,7 +1645,7 @@ QueueList* IndentNonBraces (StackList* pIMode, QueueList* pLines, const Config& 
     }
 
     // determine if current line has a single line keyword ! (if, else, while, for, do)
-    char*   pTestCode = pOut -> pCode;
+    const char*   pTestCode = pOut -> pCode;
     if (pTestCode != NULL)
     {
         int     findWord = LookupKeyword(pTestCode);
@@ -1666,7 +1671,7 @@ QueueList* IndentNonBraces (StackList* pIMode, QueueList* pLines, const Config& 
             pTestCode = ((OutputStruct*) pLines -> peek (minLimit)) -> pBrace;
 
             if ((pTestCode != NULL) && (pTestCode[0] == L_CURL))
-                pTestCode = NULL;    // Dont process line as a single indentation !
+                pTestCode = NULL;    // Don't process line as a single indentation !
             else
                 pTestCode = "E";     // make sure pointer is not null !
         }
@@ -1913,9 +1918,9 @@ QueueList* ReformatBraces (QueueList* pLines, const Config& userS)
               pCodeLine = (OutputStruct*) pLines -> takeNext();
         }
 
-        delete pCodeLine; // remove brace lines (indisguise)
+        delete pCodeLine; // remove brace lines (in disguise)
 
-        // code whats left in pLines queue to pNewLines !
+        // code what's left in pLines queue to pNewLines !
         while ((pLines -> status ()) > 0 )
               pNewLines -> putLast (pLines -> takeNext ());;
 
@@ -1938,15 +1943,15 @@ QueueList* ReformatBraces (QueueList* pLines, const Config& userS)
 // Function reformats the spacing between functions, structures, unions, classes.
 //
 // Parameters:
-// pOutFile : Pointer to the ouput FILE structure.
-// pLines   : Pointer to the OuputStructure queue object.
+// pOutFile : Pointer to the output FILE structure.
+// pLines   : Pointer to the OutputStructure queue object.
 // userS    : Users configuration settings.
 // FuncVar  : Defines what type of mode the function is operating in.
 //
 // Return Values:
-// QueueList*   : Pointer to the OuputStructure (sometimes altered)
+// QueueList*   : Pointer to the OutputStructure (sometimes altered)
 // FuncVar      : Defines what mode function is currently in
-//                0 = dont delete blank lines
+//                0 = don't delete blank lines
 //                1 = output blank lines
 //                2 = delete blank OutputStructures in queue until code is reached.
 //
@@ -2387,7 +2392,7 @@ int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
 }
 
 // Function creates a backup of pInFile, by opening a
-// new file with a ".bac" extenstion and copying the original
+// new file with a ".bac" extension and copying the original
 // data into it.
 //
 int BackupFile (char*& pInFile, char*& pOutFile)
@@ -2444,18 +2449,18 @@ int BackupFile (char*& pInFile, char*& pOutFile)
 
 // ----------------------------------------------------------------------------
 // locates programs configuration file via the PATH command.
-// Should work for MS-DOS, and Unix enviroments. Amiga dos
+// Should work for MS-DOS, and Unix environments. Amiga dos
 // may fail because PATH is not the name of their path variable.
 // pCfgName = Name of configuration file
-// pCfgFile = reference to FILE struture pointer.
-void FindConfigFile (char* pCfgName, FILE*& pCfgFile)
+// pCfgFile = reference to FILE structure pointer.
+void FindConfigFile (const char* pCfgName, FILE*& pCfgFile)
 {
-    char* sepCharList = ";,:"; // dos, amigaDos, unix
+    const char* sepCharList = ";,:"; // dos, amigaDos, unix
     char* pSPath      = getenv ("PATH");
     char* pEPath      = NULL;
     char* pNameMem    = NULL;
     char  sepChar     = NULLC;
-    char* pathSepChar;
+    const char* pathSepChar;
     char  backUp;
     int   count       = 0;
 
@@ -2470,7 +2475,7 @@ void FindConfigFile (char* pCfgName, FILE*& pCfgFile)
     if ((pNameMem = new char[strlen (pSPath) + strlen (pCfgName)+2]) == NULL)
        return;
 
-    // best guess in seperating parameters !
+    // best guess in separating parameters !
     while (sepCharList[count] != NULLC)
     {
         pEPath   = endOf(pSPath);
@@ -2523,7 +2528,7 @@ void FindConfigFile (char* pCfgName, FILE*& pCfgFile)
 // were any errors, and starts processing of the files.
 //
 // Parameters:
-// argc       : comand line parameter count
+// argc       : command line parameter count
 // argv[]     : array of pointers to command line parameters
 //
 // Return Values:
@@ -2630,7 +2635,7 @@ int LoadnRun (int argc, char* argv[])
     if (pOutFile == NULL)
     {
         pOutputFile     = stdout;
-        settings.output = False; // if using standed out, don't currupt output
+        settings.output = False; // if using standard out, don't corrupt output
     }
     else
         pOutputFile = fopen(pOutFile, "wb");
@@ -2678,7 +2683,7 @@ int LoadnRun (int argc, char* argv[])
                     errorNum++;
         }
 
-        printf ("Non-Ascii Chars In Quotes To Octal : %s\n", choices[settings.quoteChars+1]);
+        printf ("Non-ASCII Chars In Quotes To Octal : %s\n", choices[settings.quoteChars+1]);
         printf ("Open Braces On New Line            : %s\n", choices[settings.braceLoc+1]);
         printf ("Program Output                     : %s\n", choices[settings.output+1]);
         printf ("Internal Queue Buffer Size         : %d\n", settings.queueBuffer);

@@ -4,7 +4,7 @@
 // Program code written by Steven De Toni ACBC 11
 
 // This header contains a base class definition with a virtual destructor
-// so that exsiting objects that inherit from it use their proper destructor
+// so that existing objects that inherit from it use their proper destructor
 // no matter what type they are when being deleted.
 
 // ###############################################################################

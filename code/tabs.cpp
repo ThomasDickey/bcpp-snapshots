@@ -1,5 +1,5 @@
 //******************************************************************************
-// Copyright 1996 by Thomas E. Dickey <dickey@clark.net>                       *
+// Copyright 1996,1997 by Thomas E. Dickey <dickey@clark.net>                  *
 // All Rights Reserved.                                                        *
 //                                                                             *
 // Permission to use, copy, modify, and distribute this software and its       *
@@ -17,7 +17,7 @@
 // OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR   *
 // PERFORMANCE OF THIS SOFTWARE.                                               *
 //******************************************************************************
-// $Id: tabs.cpp,v 1.17 1996/12/06 02:48:38 tom Exp $
+// $Id: tabs.cpp,v 1.18 1997/01/07 23:55:22 tom Exp $
 // Tab conversion & first-pass scanning
 
 #include <ctype.h>
@@ -431,7 +431,10 @@ void ExpandTabs (char* &pString,
         curState = Normal;    // recover from syntax error
 
     if (last < strlen(pString))
+    {
         pString[last] = NULLC;      // trim trailing blanks
+        lineState[last] = NullC;
+    }
 
     TRACE((stderr, " Expanded  (%s)\n", pString))
     TRACE((stderr, " lineState (%s)\n", lineState))

@@ -1,5 +1,5 @@
 //******************************************************************************
-// Copyright 1996 by Thomas E. Dickey <dickey@clark.net>                       *
+// Copyright 1996,1997 by Thomas E. Dickey <dickey@clark.net>                  *
 // All Rights Reserved.                                                        *
 //                                                                             *
 // Permission to use, copy, modify, and distribute this software and its       *
@@ -17,7 +17,7 @@
 // OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR   *
 // PERFORMANCE OF THIS SOFTWARE.                                               *
 //******************************************************************************
-// $Id: execsql.cpp,v 1.7 1996/12/18 00:50:31 tom Exp $
+// $Id: execsql.cpp,v 1.9 1997/01/08 01:45:31 tom Exp $
 // EXEC SQL parsing & indention
 
 #include <ctype.h>
@@ -209,7 +209,7 @@ SqlStruct::IndentSQL(OutputStruct *pOut)
 {
     // (Yes, lex/yacc would be more powerful ;-)
     const struct {
-        char *name;
+        const char *name;
         int code;
     } state_keys[] = {
         { "EXEC",      '+' },
@@ -222,7 +222,7 @@ SqlStruct::IndentSQL(OutputStruct *pOut)
         { "SECTION",   's' },
     };
     const struct {
-        char *text;
+        const char *text;
         int code;
     } state_strings[] = {
         { "+Sbds",  1 },        // begin declaration

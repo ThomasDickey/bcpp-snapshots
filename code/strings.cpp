@@ -1,5 +1,5 @@
 //******************************************************************************
-// Copyright 1996 by Thomas E. Dickey <dickey@clark.net>                       *
+// Copyright 1996,1997 by Thomas E. Dickey <dickey@clark.net>                  *
 // All Rights Reserved.                                                        *
 //                                                                             *
 // Permission to use, copy, modify, and distribute this software and its       *
@@ -17,7 +17,7 @@
 // OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR   *
 // PERFORMANCE OF THIS SOFTWARE.                                               *
 //******************************************************************************
-// $Id: strings.cpp,v 1.5 1996/11/08 01:30:11 tom Exp $
+// $Id: strings.cpp,v 1.6 1997/01/08 01:45:41 tom Exp $
 // strings.cpp
 
 #include <stdlib.h>
@@ -37,7 +37,7 @@ bool CompareKeyword(const char *tst, const char *ref)
    int n;
    for (n = 0; ref[n] != NULLC; n++)
       if (tst[n] != ref[n])
-         return false;
+         return False;
    TRACE((stderr, "Match (%s,%s)\n", tst, ref))
    return !isName(tst[n]);
 }
