@@ -3,6 +3,9 @@
  * Author:	T.E.Dickey
  * Created:	04 Dec 1985
  * Modified:
+ *		27 Feb 2001, expand wildcards on WIN32 with _setargv().
+ *			     Handle ^M^J line-endings for MSDOS, etc.
+ *		11 Jan 1999, add check for files w/o trailing newline.
  *		02 Jul 1998, add -w option, to set threshold for too-long
  *			     identifiers.  Implement check for mismatched
  *			     braces.
@@ -70,7 +73,7 @@
 #include "system.h"
 
 #ifndef	NO_IDENT
-static const char Id[] = "$Header: /users/source/archives/c_count.vcs/RCS/c_count.c,v 7.24 1998/07/02 23:44:40 tom Exp $";
+static const char Id[] = "$Header: /users/source/archives/c_count.vcs/RCS/c_count.c,v 7.28 2001/02/27 19:51:59 tom Exp $";
 #endif
 
 #include <stdio.h>
@@ -93,7 +96,7 @@ static const char Id[] = "$Header: /users/source/archives/c_count.vcs/RCS/c_coun
 #if HAVE_GETOPT_H
 #include <getopt.h>
 #else
-# if !DECLARED_GETOPT
+# if !HAVE_GETOPT_HEADER
 extern	int getopt ARGS((int argc, char **argv, char *opts));
 extern	int optind;
 extern	char *optarg;
@@ -107,6 +110,12 @@ extern	char *optarg;
 #ifndef EXIT_SUCCESS		/* normally in <stdlib.h> */
 #define EXIT_SUCCESS 0
 #define EXIT_FAILURE 0
+#endif
+
+#if defined(SYS_MSDOS) || defined(WIN32)
+#define FOPEN_MODE "rb"
+#else
+#define FOPEN_MODE "r"
 #endif
 
 #define	OCTAL	3		/* # of octal digits permissible in escape */
@@ -185,6 +194,8 @@ static	int	verbose	= FALSE,/* TRUE iff we echo file, as processed */
 		cms_history,
 		files_total,
 		limit_name = 32,
+		read_last,
+		wrote_last,
 		newsum;		/* TRUE iff we need a summary */
 
 static	char	*comma	= ",";
@@ -573,6 +584,134 @@ int	Token(
 }
 
 /*
+ * Count things related to the given character (-1 resets us to the beginning).
+ */
+static
+void	countChar (
+	_ARG(int,	ch))
+	_DCL(int,	ch)
+{
+	static	int	is_blank;	/* true til we get nonblank on line */
+	static	int	had_note;
+	static	int	had_code;
+	static	int	cnt_code;
+	static	enum PSTATE bstate;
+
+	if (ch < 0) {
+		bstate    = code;
+		old_block =
+		old_level =
+		old_stmts =
+		old_unquo =
+		old_unlvl =
+		old_2long =
+		old_unasc =
+		old_uncmt = 0;
+		had_note  =
+		had_code  = FALSE;
+		cnt_code  = 0;
+		read_last = EOS;
+		is_blank  = TRUE;
+	} else {
+		if (verbose && (!One.chars_total || read_last == '\n'))
+			Summary(TRUE);
+		newsum = TRUE;
+		if (!isascii(ch) || (!isprint(ch) && !isspace(ch))) {
+			ch = '?';		/* protect/flag this */
+			One.flags_unasc++;
+		}
+
+		/* If requested, show the file.  But avoid showing a
+		 * carriage return unless it is embedded in the line.
+		 */
+		if (verbose) {
+			if (ch != '\r') {
+				if (ch != '\n' && wrote_last == '\r')
+					(void) putchar('\r');
+				(void) putchar(ch);
+			}
+		}
+		wrote_last = ch;
+
+		One.chars_total++;
+
+		if (ch == '#' && is_blank) {
+			bstate = preprocessor;
+			pstate = preprocessor;
+		} else if (ch == '\n') {
+			if (cnt_code) {
+				had_code += (pstate != comment);
+				if (pstate == comment)
+					had_note = TRUE;
+				cnt_code = 0;
+			}
+			One.lines_total++;
+			if (is_blank) {
+				One.lines_blank++;
+			} else {
+				if (pstate == preprocessor
+				 || bstate == preprocessor) {
+					One.lines_prepro++;
+					if (had_note) {
+						One.lines_inline++;
+					}
+				} else if (had_code) {
+					One.lines_code++;
+					if (had_note) {
+						One.lines_inline++;
+					}
+				} else if (had_note || pstate == comment) {
+					One.lines_notes++;
+				}
+				had_code =
+				had_note = FALSE;
+			}
+			is_blank = TRUE;
+			if (pstate == preprocessor && read_last != '\\') {
+				bstate = code;
+				pstate = code;
+			}
+		}
+
+		if (isspace(ch)) {
+			if (cnt_code) {
+				had_code += (pstate == code);
+				cnt_code = 0;
+			}
+			if (literal) {
+				One.chars_code++;
+				LVL_WEIGHT(1);
+			} else {
+				One.chars_blank++;
+			}
+		} else {
+			is_blank = FALSE;
+			switch (pstate) {
+			case comment:
+				if (cnt_code) {
+					had_code += (cnt_code > 2);
+					cnt_code = 0;
+				}
+				had_note = TRUE;
+				if (isalnum(ch))
+					One.chars_notes++;
+				else
+					One.chars_ignore++;
+				break;
+			case preprocessor:
+				One.chars_prepro++;
+				break;
+			default:
+				cnt_code++;
+				One.chars_code++;
+				LVL_WEIGHT(1);
+			}
+		}
+		read_last = ch;
+	}
+}
+
+/*
  * Process a single file:
  */
 static
@@ -583,7 +722,7 @@ void	doFile (
 	register int c;
 	int topblock = FALSE;
 
-#if !SYS_UNIX
+#if !SYS_UNIX && !defined(WIN32)
 	if (has_wildcard(name)) {		/* expand wildcards? */
 		auto	char	expanded[BUFSIZ];
 		auto	int	count	= 0;
@@ -604,11 +743,12 @@ void	doFile (
 	pstate = code;
 	if (!strcmp(name, "-"))
 		File = stdin;
-	else if (!(File = fopen (name, "r")))
+	else if (!(File = fopen (name, FOPEN_MODE)))
 		return;
 
 	newsum = TRUE;
 	cms_history = FALSE;
+	wrote_last = -1;
 	c = inFile ();
 
 	while (c != EOF) {
@@ -673,6 +813,12 @@ void	doFile (
 	}
 	(void)Token(EOS);
 	(void)fclose(File);
+
+	if (wrote_last != '\n') {
+		(void)countChar('\n');	/* fake a newline */
+		One.chars_total--;
+		One.chars_blank--;
+	}
 
 	old_stmts = 0;	/* force # of statements to display */
 
@@ -949,125 +1095,22 @@ int	Comment (
 static
 int	inFile (NO_ARGS)
 {
-	static	int	last_c;
-	static	int	is_blank;	/* true til we get nonblank on line */
-	static	int	had_note;
-	static	int	had_code;
-	static	int	cnt_code;
-	static	enum PSTATE bstate;
-
 register int c = fgetc(File);
 
-	if (One.chars_total == 0) {
-		bstate    = code;
-		old_block =
-		old_level =
-		old_stmts =
-		old_unquo =
-		old_unlvl =
-		old_2long =
-		old_unasc =
-		old_uncmt = 0;
-		had_note  =
-		had_code  = FALSE;
-		cnt_code  = 0;
-		last_c    = EOS;
-		is_blank  = TRUE;
-	}
-
-	if (feof(File) || ferror(File))
+	if (feof(File) || ferror(File)) {
 		c = EOF;
-	else
-		c &= 0xff;		/* protect against sign-extension bug */
-	if (c != EOF) {
-		if (verbose && (!One.chars_total || last_c == '\n'))
-			Summary(TRUE);
-		newsum = TRUE;
-		if (!isascii(c) || (!isprint(c) && !isspace(c))) {
-			c = '?';		/* protect/flag this */
+		if (read_last != '\n')
 			One.flags_unasc++;
-		}
-
-		if (verbose) {
-			(void) putchar(c);
-		}
-
-		One.chars_total++;
-
-		if (c == '#' && is_blank) {
-			bstate = preprocessor;
-			pstate = preprocessor;
-		} else if (c == '\n') {
-			if (cnt_code) {
-				had_code += (pstate != comment);
-				if (pstate == comment)
-					had_note = TRUE;
-				cnt_code = 0;
-			}
-			One.lines_total++;
-			if (is_blank) {
-				One.lines_blank++;
-			} else {
-				if (pstate == preprocessor
-				 || bstate == preprocessor) {
-					One.lines_prepro++;
-					if (had_note) {
-						One.lines_inline++;
-					}
-				} else if (had_code) {
-					One.lines_code++;
-					if (had_note) {
-						One.lines_inline++;
-					}
-				} else if (had_note || pstate == comment) {
-					One.lines_notes++;
-				}
-				had_code =
-				had_note = FALSE;
-			}
-			is_blank = TRUE;
-			if (pstate == preprocessor && last_c != '\\') {
-				bstate = code;
-				pstate = code;
-			}
-		}
-
-		if (isspace(c)) {
-			if (cnt_code) {
-				had_code += (pstate == code);
-				cnt_code = 0;
-			}
-			if (literal) {
-				One.chars_code++;
-				LVL_WEIGHT(1);
-			} else {
-				One.chars_blank++;
-			}
-		} else {
-			is_blank = FALSE;
-			switch (pstate) {
-			case comment:
-				if (cnt_code) {
-					had_code += (cnt_code > 2);
-					cnt_code = 0;
-				}
-				had_note = TRUE;
-				if (isalnum(c))
-					One.chars_notes++;
-				else
-					One.chars_ignore++;
-				break;
-			case preprocessor:
-				One.chars_prepro++;
-				break;
-			default:
-				cnt_code++;
-				One.chars_code++;
-				LVL_WEIGHT(1);
-			}
-		}
+	} else {
+		c &= 0xff;		/* protect against sign-extension bug */
 	}
-	last_c = c;
+	if (One.chars_total == 0) {
+		countChar(-1);
+	}
+
+	if (c != EOF) {
+		countChar(c);
+	}
 	return (c);
 }
 
@@ -1117,6 +1160,9 @@ int	main (
 	register int j;
 	auto	char	name[BUFSIZ];
 
+#ifdef WIN32
+	_setargv(&argc, &argv);
+#endif
 	quotvec = typeCalloc(char *, (size_t)argc);
 	while ((j = getopt(argc,argv,"bcdijlo:pq:stvw:")) != EOF) switch(j) {
 	case 'l':	opt_all = FALSE; opt_line = TRUE; break;

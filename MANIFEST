@@ -1,13 +1,14 @@
-MANIFEST for c_count, version v7_6
+MANIFEST for c_count, version v7_7
 --------------------------------------------------------------------------------
 MANIFEST                        this file
 CHANGES                         extracted change-log from c_count.c
 COPYING                         copyright notice for C_COUNT
 README                          brief description of C_COUNT
+aclocal.m4                      autoconf macros
 c_count.1                       manual-page for C_COUNT
 c_count.c                       C_COUNT main program
-c_count.lsm                     Linux Software Map description of 'c_count'
-config_h.in                     template for config.h
+config.hin                      template for config.h
+configure                       Configuration script for UNIX
 configure.in                    autoconf-template for C_COUNT
 descrip.mms                     VMS build-script for C_COUNT
 install.sh                      install-script from X11
@@ -19,6 +20,7 @@ porting                         subdirectory
 porting/README                  description of files in porting directory
 porting/getopt.c                public-domain version of 'getopt()'
 porting/getopt.h                interface of 'getopt()'
+porting/makefile.wnt            makefile for Windows NT
 porting/turboc.mak              makefile for Turbo C/C++
 porting/vmsbuild.com            VMS script for building C_COUNT
 porting/vmsshare.opt            VAX C linker options
