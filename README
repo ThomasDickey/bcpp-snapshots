@@ -1,14 +1,9 @@
-$Id: README,v 7.3 1995/05/21 22:09:11 tom Exp $
+$Id: README,v 5.0 1991/10/22 16:28:52 ste_cm Rel $
+
+CONFLICT
 
 --------------------------------------------------------------------------------
 
--- Author: T.E.Dickey
-
-C_COUNT counts C-language source statements, and summarizes statistics about
-the relative amount of commentary, whitespace, etc.
-
-It provides options to extend its usefulness, accommodating C-preprocessor
-definitions that would confuse a simpler line-counter, and for displaying
-non-graphic characters, etc.
-
-The program runs on a variety of UNIX systems, VMS and MSDOS.
+CONFLICT examines the user-specifiable list of programs, looking for instances
+in the user's path which conflict (i.e., the name appears in more than one
+point in the path).

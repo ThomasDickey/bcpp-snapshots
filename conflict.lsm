@@ -1,0 +1,14 @@
+Begin3
+Title:		conflict
+Version:	6.0
+Entered-date:	18MAR95
+Description:	Scans the user's path for conflicting filenames, showing table.
+		Options for alternate path, suffixes and non-executable files.
+Keywords:	which
+Author: 	dickey@clark.net (Thomas E. Dickey)
+Maintained-by:	dickey@clark.net (Thomas E. Dickey)
+Primary-site:	sunsite.unc.edu /pub/Linux/utils/file
+		30kB conflict-6.0.tgz
+Platforms:	any UNIX (uses GNU configure), DOS, OS/2
+Copying-policy:	BSD-like
+End
