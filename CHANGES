@@ -1,6 +1,7 @@
-$Id: CHANGES,v 6.1 1999/07/28 23:13:04 tom Exp $
+$Id: CHANGES,v 6.2 2002/12/30 00:39:43 tom Exp $
 ------------------------------------------------------------------------------
 
+29 Dec 2002,	indent'd, updated configure script.  Add -V option.
 28 Jul 1999,	port to win32.  drop K&R compatibility.
 
 6.0 posted to comp.sources.misc
