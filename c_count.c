@@ -3,6 +3,9 @@
  * Author:	T.E.Dickey
  * Created:	04 Dec 1985
  * Modified:
+ *		25 Apr 1997, correct missing transition in comment-parsing
+ *			     state that caused incorrect line-count.  Modify
+ *			     display of line/statement #'s to be more readable.
  *		18 Dec 1996, allow '$' in tokens.  Correct handling of C++
  *			     comments (were always treated as inline because
  *			     of incorrect state processing in inFile()).
@@ -61,7 +64,7 @@
 #include "system.h"
 
 #ifndef	NO_IDENT
-static const char Id[] = "$Header: /users/source/archives/c_count.vcs/RCS/c_count.c,v 7.13 1996/12/19 01:17:10 tom Exp $";
+static const char Id[] = "$Header: /users/source/archives/c_count.vcs/RCS/c_count.c,v 7.15 1997/04/26 15:21:35 tom Exp $";
 #endif
 
 #include <stdio.h>
@@ -135,13 +138,15 @@ typedef	struct	{
 			flags_uncmt,
 			flags_unasc;
 		long	stmts_total;
+		long	stmts_latch;
 		long	words_total,	/* # of tokens */
 			words_length;	/* total length of tokens */
 	} STATS;
 
 static	STATS	All, One;	/* total, per-file stats */
 
-static	long	old_unquo,
+static	long	old_stmts,
+		old_unquo,
 		old_unasc,
 		old_uncmt;
 
@@ -341,10 +346,12 @@ void	show_totals(
 static
 void	summarize(
 	_ARG(STATS *,	p),
-	_ARG(int,	mark)
+	_ARG(int,	mark),
+	_ARG(int,	name)
 		)
 	_DCL(STATS *,	p)
 	_DCL(int,	mark)
+	_DCL(int,	name)
 {
 	newsum = FALSE;
 	if (spreadsheet) {
@@ -352,9 +359,14 @@ void	summarize(
 			p->lines_total,	comma,
 			p->stmts_total,	comma);
 	} else {
-		PRINTF ("%6ld %5ld%c%c%c%c",
-			p->lines_total,
-			p->stmts_total,
+		PRINTF ("%6ld ",
+			p->lines_total + (mark && !name));
+		if ((p->stmts_total != old_stmts) || !mark) {
+			PRINTF ("%5ld", p->stmts_total);
+		} else {
+			PRINTF ("%5s", " ");
+		}
+		PRINTF ("%c%c%c%c",
 			(p->flags_unasc != old_unasc ? '?' : ' '),
 			(p->flags_unquo != old_unquo ? '"' : ' '),
 			(p->flags_uncmt != old_uncmt ? '*' : ' '),
@@ -363,6 +375,7 @@ void	summarize(
 	old_unasc = p->flags_unasc;
 	old_uncmt = p->flags_uncmt;
 	old_unquo = p->flags_unquo;
+	old_stmts = p->stmts_total;
 }
 
 static
@@ -371,7 +384,7 @@ void	Summary(
 	_DCL(int,	mark)
 {
 	if (newsum)
-		summarize(&One,mark);
+		summarize(&One,mark,FALSE);
 }
 
 #define	ADD(m)	All.m += One.m; One.m = 0
@@ -528,10 +541,12 @@ void	doFile (
 	(void)Token(EOS);
 	(void)fclose(File);
 
+	old_stmts = -1;	/* force # of statements to display */
+
 	if (per_file && spreadsheet) {
 		show_totals(&One);
 	} else if (!per_file)
-		summarize(&One,TRUE);
+		summarize(&One,TRUE,TRUE);
 	PRINTF("%s\n", name);
 	if (per_file && !spreadsheet) {
 		show_totals(&One);
@@ -834,7 +849,7 @@ register int c = fgetc(File);
 		}
 
 		if (verbose) {
-			c = putchar(c);
+			(void) putchar(c);
 		}
 
 		One.chars_total++;
@@ -864,7 +879,7 @@ register int c = fgetc(File);
 					if (had_note) {
 						One.lines_inline++;
 					}
-				} else if (had_note) {
+				} else if (had_note || pstate == comment) {
 					One.lines_notes++;
 				}
 				had_code =
@@ -1031,7 +1046,7 @@ int	main (
 	if (!spreadsheet && files_total) {
 		if (!per_file) {
 			PRINTF ("%s\n", dashes);
-			summarize(&All,FALSE);
+			summarize(&All,FALSE,FALSE);
 			PRINTF("%s\n",
 				jargon ?
 				"physical source statements/logical source statements" :
