@@ -6,11 +6,11 @@
  * this copyright notice, and it must be included in any copy made.           *
  ******************************************************************************/
 #ifndef NO_IDENT
-static char *Id = "$Id: msdos.c,v 6.0 1995/03/13 00:23:48 dickey Rel $";
+static char *Id = "$Id: msdos.c,v 6.1 1999/07/28 23:11:52 tom Exp $";
 #endif
 
 /*
- * MSDOS (and some OS/2) support functions.
+ * MSDOS, WIN32 (and some OS/2) support functions.
  */
 
 #include "conflict.h"
@@ -77,6 +77,21 @@ set_drive (char *name)
 	return TRUE;
 }
 #endif	/* SYS_MSDOS */
+
+#if SYS_WIN32
+#include <dos.h>		/* ...for _getdrive/_setdrive */
+
+int
+set_drive (char *name)
+{
+	if (have_drive(name)) {
+		if (_chdrive(name[0] + 1 - 'A') < 0)
+			return FALSE;
+	}
+	return TRUE;
+}
+#endif	/* SYS_WIN32 */
+
 
 #ifndef HAVE_GETOPT
 int	optind;

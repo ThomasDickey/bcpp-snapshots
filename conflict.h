@@ -1,4 +1,4 @@
-/* $Id: conflict.h,v 6.0 1995/03/18 14:00:34 dickey Rel $
+/* $Id: conflict.h,v 6.2 1999/07/28 23:20:56 tom Exp $
  *
  * Common/configurable definitions and types for 'conflict'.
  */
@@ -48,6 +48,22 @@
 #   define MAXPATHLEN CCHMAXPATH	/* in <os2/bsedos.h> */
 #  endif
 # endif
+# ifdef WIN32
+#  define HAVE_STDLIB_H 1
+#  define HAVE_MALLOC_H 1
+#  define HAVE_DIRECT_H 1
+#  define HAVE_STRING_H 1
+#  define HAVE_GETCWD   1
+#  define HAVE_STRRCHR  1
+#  define HAVE_STRDUP   1
+#  define HAVE_STRING_H 1
+#  define MAXPATHLEN    255
+#  define SYS_WIN32     1
+#  define WIN32_LEAN_AND_MEAN
+#  include <windows.h>
+#  include <io.h>		/* ...to get isatty */
+#  define HAVE_DIRENT_H 1
+# endif
 #endif
 
 /* Some compilers (e.g., Watcom 10.0a) don't treat conditionals properly
@@ -85,8 +101,12 @@
 #define SYS_OS2 0
 #endif
 
+#ifndef SYS_WIN32
+#define SYS_WIN32 0
+#endif
+
 #ifndef SYS_UNIX
-#define SYS_UNIX !(SYS_MSDOS || SYS_OS2)
+#define SYS_UNIX !(SYS_MSDOS || SYS_OS2 || SYS_WIN32)
 #endif
 
 /*
@@ -191,13 +211,7 @@ extern char *optarg;
 #define EXIT_FAILURE 1
 #endif
 
-#if __STDC__ || defined(__TURBOC__)
-#define ARGS(p) p
-#else
-#define ARGS(p) ()
-#endif
-
-#if SYS_MSDOS || SYS_OS2
+#if SYS_MSDOS || SYS_OS2 || SYS_WIN32
 # define PATHNAME_SEP '\\'
 # define PATHLIST_SEP ';'
 #else
@@ -260,26 +274,27 @@ typedef	struct	{
 /*
  * Prototypes for functions defined in this program:
  */
-extern	int	main ARGS((int argc, char *argv[]));
-extern	void	failed ARGS((char *s));
-extern	char	*fleaf ARGS((char *name));
-extern	char	*ftype ARGS((char *name));
-extern	void	blip ARGS((int c));
+extern	int	main (int argc, char *argv[]);
+extern	void	failed (char *s);
+extern	char	*fleaf (char *name);
+extern	char	*ftype (char *name);
+extern	void	blip (int c);
 
 /* MSDOS and OS/2 need a wrapper for 'chdir()' to also switch drives */
-#if SYS_MSDOS || SYS_OS2
-extern	int	have_drive ARGS((char *name));
-extern	int	same_drive ARGS((char *a, char *b));
-extern	int	set_drive ARGS((char *name));
-extern	int	set_directory ARGS((char *name));
+#if SYS_MSDOS || SYS_OS2 || SYS_WIN32
+extern	int	have_drive (char *name);
+extern	int	same_drive (char *a, char *b);
+extern	int	set_drive (char *name);
+extern	int	set_directory (char *name);
 #else
 #define set_directory(path) (chdir(path) >= 0)
 #endif
 
 #define USE_TXTALLOC 1
 #if USE_TXTALLOC
-extern	char	*txtalloc ARGS((char *s));
-extern	void	free_txtalloc ARGS((void));
+extern	char	*txtalloc (char *s);
+extern	void	free_txtalloc (void);
+extern	void	txtfree (char *s);
 
 # define MakeString(a)   txtalloc(a)
 # define SameString(a,b) ((a) == (b))	/* txtalloc vs strcmp... */
@@ -296,12 +311,12 @@ extern	void	free_txtalloc ARGS((void));
  */
 #if !USE_INODE && !HAVE_REALPATH
 # define realpath my_realpath
-char	*my_realpath ARGS((char *given, char *actual));
+char	*my_realpath (char *given, char *actual);
 #endif
 
 #if !HAVE_STRDUP
 # define strdup my_strdup
-char	*my_strdup ARGS((char *s));
+char	*my_strdup (char *s);
 #endif
 
 /*
