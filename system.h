@@ -1,4 +1,4 @@
-/* $Id: system.h,v 7.9 1995/05/20 23:43:24 tom Exp $ */
+/* $Id: system.h,v 7.10 1996/01/13 12:49:05 tom Exp $ */
 
 #ifdef HAVE_CONFIG_H
 
@@ -16,6 +16,10 @@
 
 # if defined(MSDOS) || defined(__MSDOS__)
 #  define SYS_MSDOS 1
+# endif
+
+# if !defined(SYS_VMS) || !defined(SYS_MSDOS)
+#  define SYS_UNIX 1	/* assume we're autoconfiguring */
 # endif
 
 #define ANSI_PROTOS 1
@@ -94,6 +98,6 @@
 	 * scanning loop...
 	 */
 #if !SYS_UNIX
-extern	int	has_wildcard(char *);
-extern	int	expand_wildcard(char *, int);
+extern	int	has_wildcard ARGS((char *));
+extern	int	expand_wildcard ARGS((char *, int));
 #endif

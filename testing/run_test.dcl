@@ -1,10 +1,10 @@
-$! $Id: run_test.dcl,v 7.1 1994/07/18 01:28:14 tom Exp $
+$! $Id: run_test.dcl,v 7.2 1995/05/21 23:19:04 tom Exp $
 $	verify = F$VERIFY(0)
 $	set := set
 $	set symbol/scope=(nolocal,noglobal)
 $	path = F$ENVIRONMENT("procedure")
 $	path = F$EXTRACT(0,F$LOCATE("]",path)+1,path)
-$	prog = "$ ''F$EXTRACT(0,F$LENGTH(path)-1,path)'.-.bin]C_COUNT"
+$	prog = "$ ''F$EXTRACT(0,F$LENGTH(path)-1,path)'.-]C_COUNT"
 $	temp = "sys$scratch:C_COUNT.tmp"
 $	call remove 'temp
 $
