@@ -1,5 +1,5 @@
 //******************************************************************************
-// Copyright 1996,1997,1999 by Thomas E. Dickey <dickey@clark.net>             *
+// Copyright 1996,1997,1999 by Thomas E. Dickey                                *
 // All Rights Reserved.                                                        *
 //                                                                             *
 // Permission to use, copy, modify, and distribute this software and its       *
@@ -17,7 +17,7 @@
 // OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR   *
 // PERFORMANCE OF THIS SOFTWARE.                                               *
 //******************************************************************************
-// $Id: hanging.cpp,v 1.14 1999/08/10 23:04:32 tom Exp $
+// $Id: hanging.cpp,v 1.15 2002/05/18 17:46:41 tom Exp $
 // Compute hanging-indent for most multiline statements.
 
 #include <stdlib.h>

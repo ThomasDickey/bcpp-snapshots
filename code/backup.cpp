@@ -1,5 +1,5 @@
 //******************************************************************************
-// Copyright 1999 by Thomas E. Dickey <dickey@clark.net>                       *
+// Copyright 1999 by Thomas E. Dickey                                          *
 // All Rights Reserved.                                                        *
 //                                                                             *
 // Permission to use, copy, modify, and distribute this software and its       *
@@ -17,7 +17,7 @@
 // OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR   *
 // PERFORMANCE OF THIS SOFTWARE.                                               *
 //******************************************************************************
-// $Id: backup.cpp,v 1.7 1999/08/10 23:12:21 tom Exp $
+// $Id: backup.cpp,v 1.8 2002/05/18 17:46:05 tom Exp $
 
 #include "bcpp.h"
 

@@ -539,7 +539,7 @@ All else fails, send me snail mail at:
 
 Thomas Dickey can be reached at
 
-          dickey@clark.net
+          dickey@invisible-island.net
 
 Special thanks goes out to Glyn Webster for proof reading my
 manual, and testing my program.

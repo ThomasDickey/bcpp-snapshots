@@ -47,6 +47,8 @@ struct Config
   Boolean backUp         ;  // backup the original file, have output file become input file name !
   Boolean indentPreP     ;  // indent preprocessor controls to match code
   Boolean indent_sql     ;  // indent embedded SQL statements
+  Boolean braceIndent    ;  // True = indent trailing brace, False = don't
+  Boolean braceIndent2   ;  // True = indent both braces, False = don't
 };
 
 

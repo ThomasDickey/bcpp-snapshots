@@ -1,9 +1,12 @@
 // C(++) Beautifier V1.61 Unix/MS-DOS update !
 // -----------------------------------------
+// $Id: bcpp.cpp,v 1.87 2002/05/18 17:53:27 tom Exp $
 //
 // Program was written by Steven De Toni 1994 (CBC, ACBC).
-// Modified/revised by Thomas E. Dickey <dickey@clark.net> 1996, 1999.
+// Modified/revised by Thomas E. Dickey 1996-1999,2002.
 //
+// Steven's original notes follow:
+// ----------------------------------------------------------------------------
 // This program attempts to alter C, C++ code so that it fits to a
 // format that the user wants.
 // This program is the result of a project that needed to be written
@@ -340,7 +343,9 @@ static bool isContinuation(size_t &len, char *pData, char *pState)
 {
     len = strlen(pState);
     if (len != 0
-     && pData[--len] == ESCAPE)
+     && pData[--len] == ESCAPE
+     && pState[len] != Comment
+     && pState[len] != Ignore)
         return True;
     return False;
 }
@@ -1260,10 +1265,21 @@ int ConstructLine (
                     if (!inputIsCode(pNextItem))
                         return -2;      // ##### incorrect dataType expected!
 
-                    // if pData length overwrites comments then place comments on newline
+                    // if pData length overwrites comments then place comments on new line
                     if ( (indentStack + (int)strlen (pNextItem -> pData)) > (userS.posOfCommentsWC) )
                     {
-                        pOut -> filler = userS.posOfCommentsWC;
+                        /*
+                         * Check if this is a comment or fragment which we will
+                         * delay after the code on the current line.  If so,
+                         * indent it to align with code.
+                         */
+                        if ((pTestType->dataType == CCom
+                          && !strncmp(pTestType->pData, ccom_begin, 2))
+                         || (pTestType->dataType == CppCom)) {
+                            pOut -> filler = userS.posOfCommentsWC;
+                        } else {
+                            pOut -> filler = indentStack + 1;
+                        }
                         pOut -> pComment = pTestType -> pData;
                         TRACE(("@%d, Split Comment = %s:%d\n", __LINE__, pOut->pComment, pOut->thisToken))
                     }
@@ -1332,7 +1348,7 @@ int ConstructLine (
                 pendingElse = False;
 
                 // indent back before adding brace, some error checking
-                if (pTestType -> dataType == CBrace)
+                if ((pTestType -> dataType == CBrace) && !userS.braceIndent)
                 {
                     indentStack -= userS.tabSpaceSize;
                     if (indentStack < 0)
@@ -1349,6 +1365,14 @@ int ConstructLine (
                 if (pTestType -> dataType == OBrace)
                     indentStack += userS.tabSpaceSize;
 
+                // indent back before adding brace, some error checking
+                if ((pTestType -> dataType == CBrace) &&  userS.braceIndent)
+                {
+                    indentStack -= userS.tabSpaceSize;
+                    if (indentStack < 0)
+                        indentStack = 0;
+                    tokenIndent = indentStack;
+                }
                 break;
             }
 
@@ -2353,6 +2377,16 @@ QueueList* OutputToOutFile (FILE* pOutFile, QueueList* pLines, StackList* pIMode
             if (pOut -> filler < 0)
                 pOut -> filler = 0;
 
+            // 2-9-2 BTM - re-adjust location of braces & any comments that might follow them
+            if ( pOut -> pBrace && userS.braceIndent2)
+            {
+                leading += userS.tabSpaceSize;
+                if ( pOut->filler > userS.tabSpaceSize )
+                {
+                    pOut->filler -= userS.tabSpaceSize;
+                }
+            }
+
             pIndentation = TabSpacing (fillMode,  0, leading, userS.tabSpaceSize);
             pFiller      = TabSpacing (fillMode, mark, pOut -> filler, userS.tabSpaceSize);
 
@@ -2810,7 +2844,22 @@ int LoadnRun (int argc, char* argv[])
     int   errorNum         = 0;
     int   errorCode        = 0;
 
-    Config settings        = {2, 4, False, 50, 0, False, False, 3, True, True, 10, False};
+    Config settings        = {2,      // numOfLineFunc
+                              4,      // tabSpaceSize
+                              False,  // useTabs
+                              50,     // posOfCommentsWC
+                              0,      // posOfCommentsNC
+                              False,  // leaveCommentsNC
+                              False,  // quoteChars
+                              3,      // deleteHighChars
+                              True,   // braceLoc
+                              True,   // output
+                              10,     // queueBuffer
+                              False,  // backUp
+                              False,  // indentPreP
+                              False,  // indent_sql
+                              False,  // braceIndent
+                              False}; // braceIndent2
 
 /* ************************************************************************************
     // set defaults

@@ -1,6 +1,7 @@
-MANIFEST for bcpp, version t1999-08-10
+MANIFEST for bcpp, version t2002-05-18
 --------------------------------------------------------------------------------
 MANIFEST                        this file
+CHANGES                         change-log for BCPP
 README                          top-level README for bcpp
 bcpp.cfg                        default configuration for bcpp
 bcppall.bat                     run bcpp for a whole directory
@@ -26,6 +27,7 @@ code/execsql.cpp                module to indent embedded SQL statements
 code/hanging.cpp                compute hanging-indent of multiline statements
 code/html.cpp                   test for HTML vs JavaScript
 code/makefile                   makefile for UNIX (g++)
+code/makefile.blc               makefile for Borland C
 code/makefile.wnt               makefile for M$ Visual C++
 code/run-test                   test-script
 code/stacklis.cpp               container class that stores items in a linked list
