@@ -1,6 +1,6 @@
 // C(++) Beautifier V1.61 Unix/MS-DOS update !
 // -----------------------------------------
-// $Id: bcpp.cpp,v 1.88 2002/11/23 12:36:18 tom Exp $
+// $Id: bcpp.cpp,v 1.91 2002/11/24 18:30:06 tom Exp $
 //
 // Program was written by Steven De Toni 1994 (CBC, ACBC).
 // Modified/revised by Thomas E. Dickey 1996-1999,2002.
@@ -165,6 +165,7 @@
 
 // ----------------------------------------------------------------------------
 
+const char *cppc_begin = "//";
 const char *ccom_begin = "/*";
 const char *ccom_end = "*/";
 
@@ -337,6 +338,32 @@ inline void TerminateLine(char *pData, char *pState, size_t n)
 {
     pData[n] = NULLC;
     pState[n] = NullC;
+}
+
+/*
+ * Check if the indicated comment is the last item on the line.  If it is not,
+ * it is not safe to move to the end of the line, or to a different line, since
+ * we are not sure of the context.
+ */
+static bool isFinalComment(int first, int last, char *pData, char *pState)
+{
+    if (pState[first] == Ignore)
+    {
+        return True;
+    }
+    last += 2;              // count the "*/"
+    int limit = strlen(pState);
+    if (last >= limit)
+    {
+        return True;
+    }
+    while (last < limit) {
+        if (pData[last] != ESCAPE
+         && pData[last] != SPACE)
+            return False;
+        ++last;
+    }
+    return True;
 }
 
 static bool isContinuation(size_t &len, char *pData, char *pState)
@@ -702,6 +729,14 @@ static int DecodeLine (bool afterSlash, int offset, char* pLineData, char *pLine
                 return -1;
             }
 
+            TRACE_INPUT(pItem)
+            pInputQueue->putLast (pItem);
+
+            return 0; // no need to continue processing
+        }
+        else if (!isFinalComment(SChar, EChar, pLineData, pLineState))
+        {
+            InputStruct* pItem = ExtractCode(offset, pLineData, pLineState);
             TRACE_INPUT(pItem)
             pInputQueue->putLast (pItem);
 
@@ -2284,6 +2319,21 @@ static int beginningPrePro (QueueList *pInputQueue, int Current)
     return result;
 }
 
+// We may convert leading whitespace in a comment back to tabs
+static Boolean adjustLeadingSpaces(int fillMode, char *&notes, int &leading)
+{
+    if (fillMode & 1 && notes != NULL && *notes == SPACE)
+    {
+        while (*notes == SPACE)
+        {
+            notes++;
+            leading++;
+        }
+        return True;
+    }
+    return False;
+}
+
 // ----------------------------------------------------------------------------
 // Function is used to expand OutputStructures contained within a queue to the
 // users output file. Function also reformats braces, function spacing,
@@ -2352,91 +2402,108 @@ QueueList* OutputToOutFile (FILE* pOutFile, QueueList* pLines, StackList* pIMode
             int leading  = pOut -> indentSpace + (pOut -> indentHangs * userS.tabSpaceSize); // FIXME: indentHangs should use separate param
             char *notes  = pOut -> pComment;
 
-            // convert leading whitespace in a comment back to tabs
-            if (fillMode & 1 && notes != NULL && *notes == SPACE)
-            {
-                while (*notes == SPACE)
-                {
-                    notes++;
-                    leading++;
-                }
-            }
-            else
-            if ((in_code == 0)
-              && !emptyString(pOut -> pComment))
-            {
-                if (pOut -> filler > leading)
-                    leading = 0;
-            }
+            if (emptyString(notes))
+                notes = NULL;
 
-            // compute the end-column of the code before filler, to use in
-            // adjusting tab conversion.
-            mark = leading + in_code;
-
-            if (notes != 0)
-            if (pOut -> filler > userS.posOfCommentsWC - mark)
-                pOut -> filler = userS.posOfCommentsWC - mark;
-            if (pOut -> filler < 0)
-                pOut -> filler = 0;
-
-            // 2-9-2 BTM - re-adjust location of braces & any comments that might follow them
-            if ( pOut -> pBrace && userS.braceIndent2)
-            {
-                leading += userS.tabSpaceSize;
-                if ( pOut->filler > userS.tabSpaceSize )
-                {
-                    pOut->filler -= userS.tabSpaceSize;
-                }
-            }
-
-            pIndentation = TabSpacing (fillMode,  0, leading, userS.tabSpaceSize);
-            pFiller      = TabSpacing (fillMode, mark, pOut -> filler, userS.tabSpaceSize);
-
-            if (pendingBlank != 0)
-            {
-                if (PreProcessorEndif(pOut))
-                {
-                    pendingBlank = 0;
-                    FuncVar = 0;
-                }
-                else
-                {
-                    while (pendingBlank > 0)
-                    {
-                        fputc (LF, pOutFile); // output line feed!
-                        pendingBlank--;
-                    }
-                }
-            }
-
-            // Output data
-            if (pIndentation != NULL)
-            {
+            // Check for a trailing C-comment fragment.  That must go before
+            // any code!
+            if (notes != NULL
+             && (!emptyString(pOut -> pCode)
+              || !emptyString(pOut -> pBrace))
+             && strncmp(notes, ccom_begin, 2)
+             && strncmp(notes, cppc_begin, 2))
+             {
+                adjustLeadingSpaces(fillMode, notes, leading);
+                pIndentation = TabSpacing (fillMode,  0, leading, userS.tabSpaceSize);
                 fprintf (pOutFile, "%s", pIndentation);
                 delete pIndentation;
+
+                fprintf (pOutFile, "%s\n", notes);
+                notes = NULL;
             }
 
-            if (pOut -> pCode != NULL)
-                fprintf (pOutFile, "%s", pOut -> pCode);
-
-            if (pOut -> pBrace != NULL)
-                fprintf (pOutFile, "%s", pOut -> pBrace);
-
-            if (pFiller != NULL)
+            // Just in case we only had a comment fragment, check again...
+            if (!emptyString(pOut -> pCode)
+             || !emptyString(pOut -> pBrace)
+             || !emptyString(notes))
             {
-                fprintf (pOutFile, "%s", pFiller);
-                delete pFiller;
-            }
+                if (!adjustLeadingSpaces(fillMode, notes, leading)
+                  && (in_code == 0)
+                  && !emptyString(notes))
+                {
+                    if (pOut -> filler > leading)
+                        leading = 0;
+                }
 
-            if (notes != NULL)
-            {
-                size_t len = strlen(notes);
-                fprintf (pOutFile, "%s", notes);
-                if (len > 0 && notes[len-1] == ESCAPE)
-                    fprintf (pOutFile, " ");
-            }
+                // compute the end-column of the code before filler, to use in
+                // adjusting tab conversion.
+                mark = leading + in_code;
 
-            fputc (LF, pOutFile); // output line feed!
+                if (notes != 0)
+                if (pOut -> filler > userS.posOfCommentsWC - mark)
+                    pOut -> filler = userS.posOfCommentsWC - mark;
+                if (pOut -> filler < 0)
+                    pOut -> filler = 0;
+
+                // 2-9-2 BTM - re-adjust location of braces & any comments that might follow them
+                if ( pOut -> pBrace && userS.braceIndent2)
+                {
+                    leading += userS.tabSpaceSize;
+                    if ( pOut->filler > userS.tabSpaceSize )
+                    {
+                        pOut->filler -= userS.tabSpaceSize;
+                    }
+                }
+
+                pIndentation = TabSpacing (fillMode,  0, leading, userS.tabSpaceSize);
+                pFiller      = TabSpacing (fillMode, mark, pOut -> filler, userS.tabSpaceSize);
+
+                if (pendingBlank != 0)
+                {
+                    if (PreProcessorEndif(pOut))
+                    {
+                        pendingBlank = 0;
+                        FuncVar = 0;
+                    }
+                    else
+                    {
+                        while (pendingBlank > 0)
+                        {
+                            fputc (LF, pOutFile); // output line feed!
+                            pendingBlank--;
+                        }
+                    }
+                }
+
+                // Output data
+                if (pIndentation != NULL)
+                {
+                    fprintf (pOutFile, "%s", pIndentation);
+                    delete pIndentation;
+                }
+
+                if (pOut -> pCode != NULL)
+                    fprintf (pOutFile, "%s", pOut -> pCode);
+
+                if (pOut -> pBrace != NULL)
+                    fprintf (pOutFile, "%s", pOut -> pBrace);
+
+                if (pFiller != NULL)
+                {
+                    fprintf (pOutFile, "%s", pFiller);
+                    delete pFiller;
+                }
+
+                if (notes != NULL)
+                {
+                    size_t len = strlen(notes);
+                    fprintf (pOutFile, "%s", notes);
+                    if (len > 0 && notes[len-1] == ESCAPE)
+                        fprintf (pOutFile, " ");
+                }
+
+                fputc (LF, pOutFile); // output line feed!
+            }
         }
         else
             pendingBlank = 1;

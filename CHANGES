@@ -1,5 +1,18 @@
--- $Id: CHANGES,v 1.21 2002/11/23 12:49:04 tom Exp $
+-- $Id: CHANGES,v 1.23 2002/11/24 22:31:41 tom Exp $
 -- Thomas E. Dickey <dickey@invisible-island.net>
+
+2002/11/24
+	+ check in OutputToOutFile() for a trailing C-comment fragment which
+	  happened to precede code on the same line, e.g.,
+		*/ a = b;
+	  and split the line to avoid constructing
+		a = b; */
+	  (reports by Andreas Werner and Yanir Lubetkin
+	  <yanir.lubetkin@emblaze.com>
+	+ add isFinalComment() check to ensure that embedded comments are
+	  not moved, e.g.,
+		void myFunct(int /*number*/, float* /*data*/);
+	  (report by Andreas Werner).
 
 2002/11/23
 	+ add a simple configure script.
