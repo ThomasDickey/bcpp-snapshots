@@ -304,6 +304,44 @@ inline void TerminateLine(char *pData, char *pState, size_t n)
     pState[n] = NullC;
 }
 
+static bool isContinuation(size_t &len, char *pData, char *pState)
+{
+    len = strlen(pState);
+    if (len != 0
+     && pData[--len] == ESCAPE
+     && pState[len] == Normal)
+        return True;
+    return False;
+}
+
+static bool isContinuation(InputStruct *pItem)
+{
+    size_t len;
+    return isContinuation(len, pItem->pData, pItem->pState);
+}
+
+static void TrimContinuation(char *pData, char *pState)
+{
+    size_t len;
+    if (isContinuation(len, pData, pState))
+    {
+        while (len > 1
+         && isspace(pState[len-1])
+         && isspace(pState[len-2]))
+        {
+            len--;
+            pData[len-1] = SPACE;
+            pData[len]  = ESCAPE; pData[len+1]  = NULLC;
+            pState[len] = Normal; pState[len+1] = NullC;
+        }
+        if (len > 0
+         && isspace(pState[len-1]))
+        {
+            pData[len-1] = SPACE;
+        }
+    }
+}
+
 // ----------------------------------------------------------------------------
 // This function is used within function DecodeLine(), it creates a new
 // InputStructure and stores what is contained in pLineData string in
@@ -336,7 +374,12 @@ InputStruct* ExtractCode (int      offset,
         {
             // strip spacing in new string before storing
             if (removeSpace != False)
+            {
                 offset += StripSpacingLeftRight (pNewCode, pNewState);
+                if (dataType == Code
+                 || dataType == PreP)
+                    TrimContinuation(pNewCode, pNewState);
+            }
             if ((pItem = new InputStruct(dataType, offset)) != 0)
             {
                 pItem -> pData    = pNewCode;
@@ -490,6 +533,38 @@ static int FindPunctuation(char *pLineData, char *pLineState, char punct)
         }
     }
     return it;
+}
+
+// ----------------------------------------------------------------------------
+// When splitting a line (e.g., to move an open brace), check to see if the
+// right fragment has a backslash escaping the newline.  If so, append one to
+// the left fragment.
+//
+// pItem      : pointer to structure that we may append continuation to.
+// pLineData  : Pointer to a line of a users input file (string).
+// pLineState : Pointer to a state of a users input line (string).
+//
+static void splitContinuation(InputStruct *pItem, char *pLineData, char *pLineState)
+{
+    size_t len;
+
+    if (isContinuation(len, pLineData, pLineState)
+     && !isContinuation(len, pItem->pData, pItem->pState))
+    {
+        char *s = new char[len + 3];
+        strcpy(s, pItem->pData);
+        strcat(s, " \\");
+        delete pItem->pData;
+        pItem->pData = s;
+
+        s = new char[len + 3];
+        strcpy(s, pItem->pState);
+        s[++len] = Blank;
+        s[++len] = Normal;
+        s[++len] = NullC;
+        delete pItem->pState;
+        pItem->pState = s;
+    }
 }
 
 // ----------------------------------------------------------------------------
@@ -688,12 +763,16 @@ int DecodeLine (int offset, char* pLineData, char *pLineState, QueueList* pInput
         if (pTemp == NULL)
             return DecodeLineCleanUp (pInputQueue);
 
+        pLineData[EChar]   = saveData;
+        pLineState[EChar]  = saveState;
+        splitContinuation(pTemp, pLineData, pLineState);
+
         TRACE_INPUT(pTemp)
         pInputQueue->putLast (pTemp);
 
         offset += EChar;
-        pLineData[EChar]   = saveData;  ShiftLeft (pLineData,  EChar);
-        pLineState[EChar]  = saveState; ShiftLeft (pLineState, EChar);
+        ShiftLeft (pLineData,  EChar);
+        ShiftLeft (pLineState, EChar);
 
         // restart decoding line !
         return DecodeLine (offset, pLineData, pLineState, pInputQueue);
@@ -736,6 +815,10 @@ int DecodeLine (int offset, char* pLineData, char *pLineState, QueueList* pInput
            if (pLeadCode == NULL)
                 return DecodeLineCleanUp (pInputQueue);
 
+           pLineData[toSave]  = saveCode;
+           pLineState[toSave] = saveFlag;
+           splitContinuation(pLeadCode, pLineData+toSave+1, pLineState+toSave+1);
+
            TRACE_INPUT(pLeadCode)
            pInputQueue->putLast (pLeadCode);
            delete pTemp;
@@ -745,6 +828,7 @@ int DecodeLine (int offset, char* pLineData, char *pLineState, QueueList* pInput
         offset += toSave;
         pLineData[toSave]  = saveCode; ShiftLeft (pLineData,  toSave);
         pLineState[toSave] = saveFlag; ShiftLeft (pLineState, toSave);
+        TrimContinuation(pLineData, pLineState);
 
         // extract open/closing brace from code, and place brace as separate
         // line from code. And create new structure for code
@@ -771,6 +855,7 @@ int DecodeLine (int offset, char* pLineData, char *pLineState, QueueList* pInput
                     pLineData[1] = saveCode;  ShiftLeft (pLineData,  1);
                     pLineState[1] = saveFlag; ShiftLeft (pLineState, 1);
 
+                    splitContinuation(pTemp, pLineData, pLineState);
                     extractMode  = 3;            // apply recursive extraction
 
                     break;
@@ -804,11 +889,13 @@ int DecodeLine (int offset, char* pLineData, char *pLineState, QueueList* pInput
                         pLineData[mark] = saveCode;  ShiftLeft (pLineData,  mark);
                         pLineState[mark] = saveFlag; ShiftLeft (pLineState, mark);
 
+                        splitContinuation(pTemp, pLineData, pLineState);
                         extractMode       = 3;       // apply recursive extraction
                     }
                     else // rest of data is considered as code !
                     {
                         pTemp     = ExtractCode (offset, pLineData, pLineState, CBrace);
+                        splitContinuation(pTemp, pLineData, pLineState);
                         pLineState = NULL;      // leave processing !
                     }
                     break;
@@ -846,7 +933,8 @@ int DecodeLine (int offset, char* pLineData, char *pLineState, QueueList* pInput
             pInputQueue->putLast (pTemp);
         }
         //##### If line has more than spacing/tabs then code
-        else if (TestLineHasCode (pLineState) != False)
+        else if (TestLineHasCode (pLineState) != False
+         && strcmp(pLineData, "\\") != 0)
         {
             // implement blank space
             InputStruct* pTemp = ExtractCode (offset, pLineData, pLineState);
@@ -1000,6 +1088,44 @@ bool ContinuedQuote(OutputStruct *pOut)
 }
 
 // ----------------------------------------------------------------------------
+// Check if the given fragment ends a statement (i.e., there's a semicolon that
+// isn't quoted, and not within parentheses
+bool EndsStatement(OutputStruct *pOut)
+{
+    const char left = '(', right = ')';
+    int nested = 0;
+
+    for (int n = 0; pOut -> pCode[n] != NULLC; n++)
+    {
+        if (pOut -> pCFlag[n] == Normal)
+        {
+            if (pOut -> pCode[n] == left)
+                nested++;
+            else
+            if (pOut -> pCode[n] == right)
+                nested--;
+            else
+            if (nested == 0
+             && pOut -> pCode[n] == SEMICOLON)
+                return True;
+        }
+    }
+    return False;
+}
+
+// ----------------------------------------------------------------------------
+// Check for an "else" or "else if" that doesn't finish the statement on the
+// given fragment.
+bool BeginsElseClause(OutputStruct *pOut)
+{
+    if (CompareKeyword(pOut -> pCode, "else"))
+    {
+        return !EndsStatement(pOut);
+    }
+    return False;
+}
+
+// ----------------------------------------------------------------------------
 // Function takes a QueueList object that contains InputStructure items, and
 // uses these items to reconstruct a compressed version of a output line of
 // code, comment, or both.
@@ -1126,7 +1252,7 @@ int ConstructLine (
                     if (pendingElse
                      && CompareKeyword(pOut -> pCode, "if"))
                         pOut -> splitElseIf = True;
-                    pendingElse = !strcmp(pOut -> pCode, "else");
+                    pendingElse = BeginsElseClause(pOut);
                 }
                 TRACE((stderr, "@%d, Set Code   = %s:%d indent %d\n", __LINE__, pOut->pCode, pOut->thisToken, pOut->indentSpace))
 
@@ -1177,7 +1303,7 @@ int ConstructLine (
                     switch (typeOfPreP(pTestType))
                     {
                         case 0:
-                            pOut -> indentSpace = 0;
+                            pOut -> indentSpace = indentStack + prepStack;
                             break;
                         case 1:
                             pOut -> indentSpace = indentStack + prepStack;
@@ -1240,6 +1366,26 @@ int ConstructLine (
 
 }
 
+// purge an Indent-stack
+static void freeIndentStack(StackList* pImode)
+{
+    while ((pImode -> pop()) != 0)
+        TRACE((stderr, "freeing...\n"));
+}
+
+// copy one Indent-stack to another.  The 'dst' stack is empty.
+// FIXME: this just copies pointers -- must revise to copy data
+static void copyIndentStack(StackList* src, StackList* dst)
+{
+    int n = 1;
+    ANYOBJECT* temp;
+    while ((temp = src -> peek(n++)) != 0)
+    {
+        //TRACE((stderr, "copying %d...\n", ((IndentStruct *)temp) -> pos))
+        TRACE((stderr, "copying %d...\n", n-1))
+        dst -> push(temp);
+    }
+}
 
 // no extra indent immediately after any brace
 void resetSingleIndent(StackList* pIMode)
@@ -1322,7 +1468,7 @@ void shiftToMatchSingleIndent(QueueList* pLines, int indention, int first)
             if (state == 1)
             {
                 if (pAlterLine -> pCode == 0
-                 || strcmp(pAlterLine -> pCode, "else"))
+                 || !BeginsElseClause(pAlterLine))
                     break;
                 state = 2;
             }
@@ -2004,6 +2150,42 @@ static bool PreProcessorEndif(OutputStruct *pOut)
 }
 
 // ----------------------------------------------------------------------------
+// Check if the first statement on the input-queue begins a preprocessor
+// command, is a continuation of one, or is neither.
+static int beginningPrePro (QueueList *pInputQueue, int Current)
+{
+    int n;
+    int result = 0;
+    InputStruct *pNextItem;
+
+    if ((n = pInputQueue -> status()) != 0)
+    {
+        pNextItem = (InputStruct*) pInputQueue -> peek(n);
+
+        switch (pNextItem -> dataType)
+        {
+            case PreP:
+                result = isContinuation(pNextItem) ? 1 : 0;
+                break;
+            case Code:
+            case CBrace:
+            case OBrace:
+                result = Current ? (isContinuation(pNextItem) ? Current+1 : 0) : 0;
+                break;
+            default:
+                result = 0;
+                break;
+        }
+        if (Current && !result)
+        {
+            TRACE((stderr, "FIXME:PEEK(%d)%s\n", Current, isContinuation(pNextItem) ? " CONT" : ""))
+            TRACE_INPUT(pNextItem)
+        }
+    }
+    return result;
+}
+
+// ----------------------------------------------------------------------------
 // Function is used to expand OutputStructures contained within a queue to the
 // users output file. Function also reformats braces, function spacing,
 // braces indenting.
@@ -2218,9 +2400,11 @@ int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
 
     int                 pendingBlank = 0;      // var used to control blank lines
     int                 indentStack  = 0;      // var used for brace spacing
+    int                 indentStack2 = 0;
 
     QueueList*          pOutputQueue = new QueueList();
     StackList*          pIMode       = new StackList();
+    StackList*          pIMode2      = new StackList();
     QueueList*          pInputQueue  = new QueueList();
 
     int                 FuncVar      = 0;      // variable used in processing function spacing !
@@ -2230,6 +2414,7 @@ int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
     bool                indentPreP   = False;
     bool                pendingElse  = False;
     int                 prepStack    = 0;
+    int                 in_prepro    = 0;
     HangStruct          hang_state;
     SqlStruct           sql_state;
 
@@ -2292,63 +2477,94 @@ int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
 
             if (DecodeLine (0, pData, lineState, pInputQueue) == 0) // if there are input items to process
             {
-                    int errorCode = ConstructLine (
-                            indentPreP,
-                            prepStack,
-                            indentStack,
-                            pendingElse,
-                            hang_state,
-                            sql_state,
-                            pInputQueue,
-                            pOutputQueue,
-                            userS);
+                int old_prepro = in_prepro;
+                bool restoreit = False;
 
-                    switch (errorCode)
+                if ((in_prepro = beginningPrePro(pInputQueue, in_prepro)) != 0)
+                {
+                    if (in_prepro == 1)
                     {
-                        case (0)  : break;
-                        case (-1) :
-                        {
-                            fprintf (stderr, "%s", errorMsg);
-                            delete pIMode;
-                            delete pInputQueue;
-                            delete pOutputQueue;
-                            return errorCode;
-                        }
-
-                        case (-2): // Construct line failed !
-                        {
-                            // output final line position
-                            fprintf (stderr, "\nLast Line Read %ld", lineNo);
-                            delete pIMode;
-                            delete pInputQueue;
-                            delete pOutputQueue;
-                            return errorCode;
-                        }
-
-                        default:
-                        {
-                            fprintf (stderr, "\nSomething Weird %d\n", errorCode);
-                            return errorCode;
-                        }
-
+                        TRACE((stderr, "FIXME: save indentStack: %d (%d)\n", in_prepro, indentStack))
+                        //copyIndentStack(pIMode, pIMode2);
+                        indentStack2 = indentStack;
                     }
+                    else if (in_prepro == 2)
+                    {
+                        TRACE((stderr, "FIXME: increase indentStack\n"))
+                        indentStack += userS.tabSpaceSize;
+                    }
+                }
+                else if (old_prepro)
+                {
+                    restoreit = True;
+                }
 
-                    pOutputQueue = OutputToOutFile (
-                                pOutFile,
-                                pOutputQueue,
-                                pIMode,
-                                FuncVar,
-                                userS,
-                                userS.queueBuffer,
-                                pendingBlank );
+                int errorCode = ConstructLine (
+                        indentPreP,
+                        prepStack,
+                        indentStack,
+                        pendingElse,
+                        hang_state,
+                        sql_state,
+                        pInputQueue,
+                        pOutputQueue,
+                        userS);
 
-                    if (pOutputQueue == NULL)
+                switch (errorCode)
+                {
+                    case (0)  : break;
+                    case (-1) :
                     {
                         fprintf (stderr, "%s", errorMsg);
                         delete pIMode;
                         delete pInputQueue;
-                        return -1; // memory allocation error !
+                        delete pOutputQueue;
+                        return errorCode;
                     }
+
+                    case (-2): // Construct line failed !
+                    {
+                        // output final line position
+                        fprintf (stderr, "\nLast Line Read %ld", lineNo);
+                        delete pIMode;
+                        delete pInputQueue;
+                        delete pOutputQueue;
+                        return errorCode;
+                    }
+
+                    default:
+                    {
+                        fprintf (stderr, "\nSomething Weird %d\n", errorCode);
+                        return errorCode;
+                    }
+
+                }
+
+                pOutputQueue = OutputToOutFile (
+                            pOutFile,
+                            pOutputQueue,
+                            pIMode,
+                            FuncVar,
+                            userS,
+                            restoreit ? 0 : userS.queueBuffer,
+                            pendingBlank );
+
+                if (pOutputQueue == NULL)
+                {
+                    fprintf (stderr, "%s", errorMsg);
+                    delete pIMode;
+                    delete pInputQueue;
+                    return -1; // memory allocation error !
+                }
+
+                if (restoreit)
+                {
+                    TRACE((stderr, "FIXME: restore indentStack (%d)\n", indentStack))
+                    //copyIndentStack(pIMode2, pIMode);
+                    //freeIndentStack(pIMode2);
+                    indentStack = indentStack2;
+                }
+
             }
         } // if there's data available
 

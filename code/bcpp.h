@@ -17,7 +17,7 @@
  * CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN        *
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.                   *
  ******************************************************************************/
-// $Id: bcpp.h,v 1.24 1997/01/08 01:44:57 tom Exp $
+// $Id: bcpp.h,v 1.25 1997/04/03 11:35:00 tom Exp $
 
 #ifndef _BCPP_HEADER
 #define _BCPP_HEADER
@@ -76,13 +76,13 @@ class InputStruct : public ANYOBJECT
 {
     public:
 
-        DataTypes dataType;   // i.e "/*" or "*/"                  (1)
-                              //     "//"                          (2)
-                              //     Code (a = 5; , if (a == b) .. (3)
-                              //     "{"                           (4)
-                              //     "}"                           (5)
-                              //     #define                       (6)
-                              //     SPACES (nothing, blank line)  (7)
+        DataTypes dataType;   // i.e "/*" or "*/"                  (CCom)
+                              //     "//"                          (CppCom)
+                              //     Code (a = 5; , if (a == b) .. (Code)
+                              //     "{"                           (OBrace)
+                              //     "}"                           (CBrace)
+                              //     #define                       (PreP)
+                              //     SPACES (nothing, blank line)  (ELine)
 
         Boolean comWcode;
                               //       -1 : True,  comment with code (for comment dataType)
