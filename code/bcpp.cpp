@@ -164,18 +164,31 @@
 #include "bcpp.h"
 
 // ----------------------------------------------------------------------------
-const int IndentWordLen  = 9;   // number of indent words in pIndentWords
-const int MultiIndent    = 4;   // pos in pIndentWords where multi-line indent starts
 
-const char pIndentWords [IndentWordLen][10] =
-{
-    "if", "while", "for", "else",                       // single line indentation
-    "case", "default", "public", "protected", "private" // multi-line indentation
+enum indentAttr { noIndent=0, oneLine=1, multiLine=2, blockLine=3 };
+
+const struct {
+    char *name;
+    indentAttr code;
+} pIndentWords[] = {
+    { "if",         oneLine },
+    { "while",      oneLine },
+    { "for",        oneLine },
+    { "else",       oneLine },
+    { "case",       multiLine },
+    { "default",    multiLine },
+    { "public",     multiLine },
+    { "protected",  multiLine },
+    { "private",    multiLine },
+    { "do",         blockLine },
+    { "switch",     blockLine },
+    { "while",      blockLine },
 };
 
 enum  DataTypes { CCom = 1,   CppCom = 2, Code  = 3,
                   OBrace = 4, CBrace = 5, PreP = 6, ELine = 7
                 };
+
 // ----------------------------------------------------------------------------
 
 // ----------------------------------------------------------------------------
@@ -198,10 +211,13 @@ class InputStruct : public ANYOBJECT
                               //        0 : False, comment with no Code
 
         char* pData;          // pointer to queue data !
+        char* pState;         // pointer to corresponding parse-state
 
-        inline InputStruct ()
+        inline InputStruct (DataTypes theType)
         {
-                comWcode = False;
+            dataType = theType;
+            comWcode = False;
+            pState = 0;       // only non-null for code
         }
 };
 
@@ -222,6 +238,7 @@ class OutputStruct : public ANYOBJECT
 #endif
            int   indentSpace;  // num of spaces
            char* pCode;
+           char* pState;
            char* pBrace;       // "}" or "{"
            int   filler;       // num of spaces
            char* pComment;
@@ -234,7 +251,7 @@ class OutputStruct : public ANYOBJECT
 #ifdef DEBUG
                 thisToken      = totalTokens++;
 #endif
-                pCode = pBrace = pComment = NULL;
+                pCode = pState = pBrace = pComment = NULL;
                 indentSpace    = filler   = 0;
            }
 
@@ -243,12 +260,11 @@ class OutputStruct : public ANYOBJECT
            inline ~OutputStruct (void)
            {
                 delete pCode;
+                delete pState;
                 delete pBrace;
                 delete pComment;
            }
 };
-
-enum indentAttr { noIndent=0, oneLine=1, multiLine=2 };
 
 // This structure is used to hold indent data on non-brace code.
 // This includes case statements, single line if's, while's, for statements...
@@ -329,18 +345,15 @@ bool CompareKeyword(const char *tst, const char *ref)
    return !isName(tst[n]);
 }
 
-const char *MatchKeyword(const char *tst, int Icount)
+int LookupKeyword(char *tst)
 {
-   if (tst != 0)
-   {
-      do
-      {
-         if (CompareKeyword(tst, pIndentWords[Icount]))
-            return tst;
-         Icount++;
-      } while (Icount < IndentWordLen);
-   }
-   return 0;
+    size_t n;
+    if (!emptyString(tst)) {
+        for (n = 0; n < sizeof(pIndentWords)/sizeof(pIndentWords[0]); n++)
+            if (CompareKeyword(tst, pIndentWords[n].name))
+                return n;
+    }
+    return -1;
 }
 
 #ifdef DEBUG
@@ -372,7 +385,7 @@ static void traceInput(int line, InputStruct *pIn)
 
 static void traceOutput(int line, OutputStruct *pOut)
 {
-    TRACE((stderr, "@%d, indent %d, fill %d, #%d:%s:%s:%s:\n",
+    TRACE((stderr, "@%d, indent %d, fill %d, OUT #%d:%s:%s:%s:\n",
         line,
         pOut->indentSpace,
         pOut->filler,
@@ -381,6 +394,7 @@ static void traceOutput(int line, OutputStruct *pOut)
         pOut->pBrace ? "brace" : "",
         pOut->pComment ? "comment" : ""))
     if (pOut->pCode)    TRACE((stderr, "----- code:%s\n", pOut->pCode))
+    if (pOut->pState)   TRACE((stderr, "---- state:%s\n", pOut->pState))
     if (pOut->pBrace)   TRACE((stderr, "---- brace:%s\n", pOut->pBrace))
     if (pOut->pComment) TRACE((stderr, "-- comment:%s\n", pOut->pComment))
 }
@@ -478,28 +492,29 @@ InputStruct* ExtractCode (char*    pLineData,
                           DataTypes dataType = Code,
                           Boolean  removeSpace = True)
 {
-    char* pNewCode =  NewString(pLineData);
+    char* pNewCode = 0;
+    char* pNewState = 0;
+    InputStruct* pItem = 0;
 
-    // ############## test memory #############
-    if (pNewCode == NULL)
-        return NULL;
-
-    // create new queue structure !
-    InputStruct* pItem = new InputStruct();
-    if (pItem != NULL)
+    if ((pNewCode = NewString(pLineData)) != 0)
     {
-            // strip spacing in new string before storing
-            if (removeSpace != False)
-                StripSpacingLeftRight (pNewCode, pLineState);
-            pItem -> pData    = pNewCode;
-            pItem -> dataType = dataType;
-            pItem -> comWcode = False;     // no applicable
-    }
-    else
+        if ((pNewState =  NewString(pLineState)) != 0)
+        {
+            if ((pItem = new InputStruct(dataType)) != 0)
+            {
+                // strip spacing in new string before storing
+                if (removeSpace != False)
+                    StripSpacingLeftRight (pNewCode, pNewState);
+                pItem -> pData    = pNewCode;
+                pItem -> pState   = pNewState;
+                return pItem;
+            }
+            delete pNewState;
+        }
         delete pNewCode;
+    }
 
-    return pItem;
-
+    return 0;
 }
 
 
@@ -516,6 +531,7 @@ inline void CleanInputStruct (InputStruct* pDelStruct)
 {
     if (pDelStruct != NULL)
     {
+        delete pDelStruct -> pState;
         delete pDelStruct -> pData;
         delete pDelStruct;
     }
@@ -639,15 +655,13 @@ int DecodeLine (char* pLineData, char *pLineState, QueueList* pInputQueue)
             ShiftLeft (pLineState, len);
 
             //#### create new queue structure !
-            InputStruct* pItem = new InputStruct();
+            InputStruct* pItem = new InputStruct(CCom);
 
             //#### Test if memory allocated
             if (pItem == NULL)
                 return DecodeLineCleanUp (pInputQueue);
 
             pItem -> pData    = pNewComment;
-            pItem -> dataType = CCom;      // comment
-            pItem -> comWcode = False;     // comment without code, even if it has some !
 
             TRACE_INPUT(pItem)
             pInputQueue->putLast (pItem);
@@ -694,15 +708,14 @@ int DecodeLine (char* pLineData, char *pLineState, QueueList* pInputQueue)
             //##### Make it NULL so that comment is removed, from Line
             TerminateLine(pLineData, pLineState, SChar);
 
-            InputStruct* pItem = new InputStruct();
+            InputStruct* pItem = new InputStruct(CCom);
 
             //#### Test if memory allocated
             if (pItem == NULL)
                 return DecodeLineCleanUp (pInputQueue);
 
             pItem -> pData    = pNewComment;
-            pItem -> dataType = CCom;       // Comment
-            pItem -> comWcode = False;
+
             // make multi-line C style comments totally separate
             // from code to avoid some likely errors occurring if they
             // are shifted due to being over written by code.
@@ -734,13 +747,12 @@ int DecodeLine (char* pLineData, char *pLineState, QueueList* pInputQueue)
             ShiftLeft (pLineData +SChar, len);
             ShiftLeft (pLineState+SChar, len);
 
-            InputStruct* pItem = new InputStruct();
+            InputStruct* pItem = new InputStruct(CCom);
             //#### Test if memory allocated
             if (pItem == NULL)
                 return DecodeLineCleanUp (pInputQueue);
 
             pItem -> pData    = pNewComment;
-            pItem -> dataType = CCom;                        // Comment
             pItem -> comWcode = TestLineHasCode (pLineData); // Comment without code ?
             TRACE((stderr, "@%d: set attrib to %d\n", __LINE__, pItem->comWcode))
 
@@ -768,13 +780,12 @@ int DecodeLine (char* pLineData, char *pLineState, QueueList* pInputQueue)
         TerminateLine(pLineData, pLineState, SChar);
 
         //#### create new queue structure !
-        InputStruct* pItem = new InputStruct();
+        InputStruct* pItem = new InputStruct(CppCom);
         //#### Test if memory allocated
         if (pItem == NULL)
             return DecodeLineCleanUp (pInputQueue);
 
         pItem -> pData    = pNewComment;
-        pItem -> dataType = CppCom;                      // Comment
         pItem -> comWcode = TestLineHasCode (pLineData); // Comment without code ?
         TRACE((stderr, "@%d: set comWcode to %d\n", __LINE__, pItem->comWcode))
 
@@ -789,14 +800,14 @@ int DecodeLine (char* pLineData, char *pLineState, QueueList* pInputQueue)
     if (pLineState[0] == POUNDC)
     {
         //#### create new queue structure !
-        InputStruct* pItem = new InputStruct();
+        InputStruct* pItem = new InputStruct(PreP);
 
         //#### Test if memory allocated
         if (pItem == NULL)
             return DecodeLineCleanUp (pInputQueue);
 
         pItem -> pData    = NewString(pLineData);
-        pItem -> dataType = PreP;                            // preprocessor
+
         TRACE_INPUT(pItem)
         pInputQueue->putLast (pItem);
 
@@ -1095,21 +1106,26 @@ static bool inputIsCode(InputStruct *pItem)
 //  0 = unknown (leave it alone!)
 //  1 = if-nesting
 //  2 = if-unnesting
-//  3 = other
+//  3 = nest/unnest
+//  4 = other
 int typeOfPreP(InputStruct *pItem)
 {
     static const struct {
         char *keyword;
         int code;
     } table[] = {
+        { "define",    4 },
+        { "elif",      3 },
+        { "else",      3 },
+        { "endif",     2 },
+        { "error",     4 },
         { "if",        1 },
         { "ifdef",     1 },
         { "ifndef",    1 },
-        { "endif",     2 },
-        { "elif",      3 },
-        { "undef",     3 },
-        { "define",    3 },
-        { "include",   3 }
+        { "include",   4 },
+        { "line",      4 },
+        { "pragma",    4 },
+        { "undef",     4 }
     };
 
     const char *s = pItem -> pData;
@@ -1132,6 +1148,22 @@ int combinedIndent(int indentStack, int prepStack, Config userS)
     if (prepStack > userS.tabSpaceSize)
         return indentStack + prepStack - userS.tabSpaceSize;
     return indentStack;
+}
+
+// ----------------------------------------------------------------------------
+// Analyze an OutputStruct to see if it began as a continued quoted-string.
+bool ContinuedQuote(OutputStruct *pOut)
+{
+    if (pOut -> pCode != 0
+     && pOut -> pState != 0)
+    {
+        if (pOut -> pState[0] == SQuoted
+         || pOut -> pState[0] == DQuoted)
+        {
+            return (pOut -> pState[0] != pOut -> pCode[0]);
+        }
+    }
+    return False;
 }
 
 // ----------------------------------------------------------------------------
@@ -1158,6 +1190,7 @@ int ConstructLine (Boolean &indentPreP, int &prepStack, int& indentStack, QueueL
 
     while ( pInputQueue->status() > 0 )
     {
+        int tokenIndent = indentStack;
         pTestType = (InputStruct*) pInputQueue -> takeNext();
 
         OutputStruct* pOut = new OutputStruct(pTestType -> dataType);
@@ -1232,8 +1265,10 @@ int ConstructLine (Boolean &indentPreP, int &prepStack, int& indentStack, QueueL
             // @@@@@@ Processing of code (i.e k = 1; enum show {one, two};)
             case (Code):
             {
-                pOut -> indentSpace     = combinedIndent(indentStack, prepStack, userS);
-                pOut -> pCode           = pTestType -> pData;
+                pOut -> pCode = pTestType -> pData;
+                pOut -> pState = pTestType -> pState;
+                if (!ContinuedQuote(pOut))
+                    pOut -> indentSpace = combinedIndent(indentStack, prepStack, userS);
                 TRACE((stderr, "@%d, Set Code   = %s:%d indent %d\n", __LINE__, pOut->pCode, pOut->thisToken, pOut->indentSpace))
 
                 break;
@@ -1250,6 +1285,7 @@ int ConstructLine (Boolean &indentPreP, int &prepStack, int& indentStack, QueueL
                     indentStack -= userS.tabSpaceSize;
                     if (indentStack < 0)
                         indentStack = 0;
+                    tokenIndent = indentStack;
                 }
 
                 pOut -> indentSpace     = combinedIndent(indentStack, prepStack, userS);
@@ -1296,6 +1332,11 @@ int ConstructLine (Boolean &indentPreP, int &prepStack, int& indentStack, QueueL
                             break;
                         case 3:
                             pOut -> indentSpace = indentStack + prepStack;
+                            if (prepStack >= userS.tabSpaceSize)
+                                pOut -> indentSpace -= userS.tabSpaceSize;
+                            break;
+                        case 4:
+                            pOut -> indentSpace = indentStack + prepStack;
                             break;
                     }
                 }
@@ -1309,9 +1350,12 @@ int ConstructLine (Boolean &indentPreP, int &prepStack, int& indentStack, QueueL
         if (pendingComment != NULL)
         {
             pOut -> pComment = pendingComment;
-            pOut -> filler = (userS.posOfCommentsWC - (indentStack + strlen (pTestType -> pData)));
+            pOut -> filler = (userS.posOfCommentsWC - (tokenIndent + strlen (pTestType -> pData)));
             pendingComment = NULL;
         }
+        if (pOut -> pCode == 0)
+            delete pTestType -> pState;
+
         pOutputQueue -> putLast (pOut);
 
         delete pTestType; // ##### Remove structure from memory, not its data
@@ -1367,11 +1411,24 @@ bool chainedSingleIndent(StackList* pIMode)
     {
         IndentStruct* pIndentItem = (IndentStruct*) pIMode -> peek(count);
         if (pIndentItem == 0
-         || pIndentItem -> attrib != 1
+         || pIndentItem -> attrib != oneLine
          || pIndentItem -> singleIndentLen == 0)
             return False;
     }
     return True;
+}
+
+// Return true if the current line is a blockLine preceding L_CURL.
+bool beginBlockLine(QueueList* pLines)
+{
+    OutputStruct *pItem = (OutputStruct *) pLines -> peek(1);
+    int findWord = LookupKeyword(pItem -> pCode);
+    if (findWord >= 0)
+    {
+        if (pIndentWords[findWord].code == blockLine)
+            return True;
+    }
+    return False;
 }
 
 // If we've had a chain of single indents before a L_CURL, we have to shift
@@ -1471,7 +1528,7 @@ QueueList* IndentNonBraceCode (QueueList* pLines, StackList* pIMode, Config& use
 
     IndentStruct* pIndentItem = (IndentStruct*) pIMode -> pop();
 
-    if ( ((pAlterLine -> pCode != NULL)     || ((pAlterLine -> pBrace != NULL) && (pIndentItem -> attrib == 2)) ) ||
+    if ( ((pAlterLine -> pCode != NULL)     || ((pAlterLine -> pBrace != NULL) && (pIndentItem -> attrib == multiLine)) ) ||
          ((userS.leaveCommentsNC != False)  && ((pAlterLine -> pCode == NULL)  && (pAlterLine -> pComment != NULL))) )
     {
         bool adjusted = False;
@@ -1479,6 +1536,7 @@ QueueList* IndentNonBraceCode (QueueList* pLines, StackList* pIMode, Config& use
         TRACE((stderr, "#%d, attrib=%d\n", pAlterLine->thisToken, pIndentItem->attrib))
         switch (pIndentItem -> attrib)
         {
+            case (blockLine):
             case (noIndent):
                 break;
 
@@ -1489,6 +1547,9 @@ QueueList* IndentNonBraceCode (QueueList* pLines, StackList* pIMode, Config& use
 
                 // Test if current code has a ';' char at end of line,
                 // if so then do full indent, else do 3 char indent!
+                if (ContinuedQuote(pAlterLine))
+                    indentAmount = 0;
+                else
                 if ((pAlterLine -> pCode != NULL) &&
                     lastChar(pAlterLine -> pCode) != SEMICOLON)
                 {
@@ -1497,7 +1558,7 @@ QueueList* IndentNonBraceCode (QueueList* pLines, StackList* pIMode, Config& use
                     TRACE((stderr, "#%d, use single-indent %d\n", pAlterLine->thisToken, pIndentItem->singleIndentLen))
                 }
                 else
-                if (pIndentItem -> firstPass != False)
+                if (pIndentItem -> firstPass != False && top)
                     indentAmount = (userS.tabSpaceSize << 1);
                 else
                     indentAmount = userS.tabSpaceSize;
@@ -1511,17 +1572,19 @@ QueueList* IndentNonBraceCode (QueueList* pLines, StackList* pIMode, Config& use
             // indent of a case statement !
             case (multiLine):
             {
-                // determine how many case like items are stored within
+                // determine how many case-like items are stored within
                 // list to determine how much to indent !
-                const char* pTest = NULL;
+                int pTest;
 
                 pAlterLine -> indentSpace += (userS.tabSpaceSize * (pIMode -> status()));
 
                 // test if not another case, or default, if so, dont indent !
-                pTest = MatchKeyword(pAlterLine -> pCode, MultiIndent);
+                pTest = LookupKeyword(pAlterLine -> pCode);
+                if (pTest >= 0 && pIndentWords[pTest].code != multiLine)
+                    pTest = -1;
 
                 // check for closing braces to end case indention
-                if ((pTest == NULL) && (pAlterLine -> pBrace != NULL))
+                if ((pTest < 0) && (pAlterLine -> pBrace != NULL))
                 {
                     if ((*(pAlterLine -> pBrace) == R_CURL) && (pAlterLine -> indentSpace == pIndentItem -> pos))
                     {
@@ -1531,7 +1594,7 @@ QueueList* IndentNonBraceCode (QueueList* pLines, StackList* pIMode, Config& use
                 }
 
                 // indent as per normal !
-                if ((pIndentItem != NULL) && (pTest == NULL))
+                if ((pIndentItem != NULL) && (pTest < 0))
                 {
                     pIMode -> push (pIndentItem); // ok to indent next item !
                     if (OutputContainsCode(pAlterLine))
@@ -1552,7 +1615,7 @@ QueueList* IndentNonBraceCode (QueueList* pLines, StackList* pIMode, Config& use
                 {
                     // if end single indent keyword found, check to see
                     // whether it is the correct one before removing it !
-                    if ((pTest != NULL) && (pIndentItem -> pos+userS.tabSpaceSize < pAlterLine -> indentSpace))
+                    if ((pTest >= 0) && (pIndentItem -> pos+userS.tabSpaceSize < pAlterLine -> indentSpace))
                     {
                         pIMode -> push (pIndentItem); // ok to indent next item !
                         if (OutputContainsCode(pAlterLine))
@@ -1623,7 +1686,10 @@ QueueList* IndentNonBraceCode (QueueList* pLines, StackList* pIMode, Config& use
 
         // Remove single line indentation from memory, if current line
         // does contain a if, else, while ... type keyowrd
-        if ((pIndentItem != NULL) && (pIndentItem -> attrib == 1))
+        if (pIndentItem == NULL)
+            ;
+        else
+        if (pIndentItem -> attrib == oneLine)
         {
             int block = 0;
  
@@ -1637,7 +1703,7 @@ QueueList* IndentNonBraceCode (QueueList* pLines, StackList* pIMode, Config& use
             pIndentItem = NULL;
 
             if (top
-             && chainedSingleIndent(pIMode)
+             && (chainedSingleIndent(pIMode) || beginBlockLine(pLines))
              && (block = peekIndexOBrace(pLines, 2)) != 0)
             {
                 shiftToMatchSingleIndent(pLines, pAlterLine->indentSpace, block);
@@ -1687,11 +1753,11 @@ QueueList* IndentNonBraces (StackList* pIMode, QueueList* pLines, Config userS)
         IndentStruct* pTestBrace = (IndentStruct*) pIMode -> pop();
 
         if ( (pBraceOnNewLn != NULL) &&
-            ((pBraceOnNewLn[0] == L_CURL) && (pTestBrace -> attrib == 1)) )
+            ((pBraceOnNewLn[0] == L_CURL) && (pTestBrace -> attrib == oneLine)) )
         {
             delete pTestBrace;
         }
-        else if (lastChar(pBraceOnCurLn) == L_CURL && (pTestBrace -> attrib == 1))
+        else if (lastChar(pBraceOnCurLn) == L_CURL && (pTestBrace -> attrib == oneLine))
         {
             delete pTestBrace;
         }
@@ -1707,27 +1773,15 @@ QueueList* IndentNonBraces (StackList* pIMode, QueueList* pLines, Config userS)
         return pLines;
 
     // determine if current line has a single line keyword ! (if, else, while, for, do)
-    if ( ((OutputStruct*) pLines -> peek (1)) -> pCode     != NULL)
+    char*   pTestCode = ((OutputStruct*) pLines -> peek (1)) -> pCode;
+    if (pTestCode != NULL)
     {
-        // test the existance of a key word !
-        int     findWord = 0;
-        char*   pTestCode = ((OutputStruct*) pLines -> peek (1)) -> pCode;
-
-        if (pTestCode != 0)
-        {
-           while (findWord < IndentWordLen)
-           {
-               if (CompareKeyword(pTestCode, pIndentWords[findWord]))
-                  break;
-               findWord++;
-           }
-        }
+        int     findWord = LookupKeyword(pTestCode);
 
         // if keyword found, check if next line not a brace or, comment !
 
         // Test if code not NULL, and No Hidden Open Braces
         // FIXME: punctuation need not be at end of line
-        // FIXME: pTestCode isn't reset if the previous scan failed
         switch (lastChar(pTestCode))
         {
             case L_CURL:
@@ -1740,17 +1794,17 @@ QueueList* IndentNonBraces (StackList* pIMode, QueueList* pLines, Config userS)
         }
 
         // Test if open brace not located on next line
-        if ((pTestCode != NULL) && (findWord < IndentWordLen))
+        if ((pTestCode != NULL) && (findWord >= 0))
         {
-                pTestCode = ((OutputStruct*) pLines -> peek (minLimit)) -> pBrace;
+            pTestCode = ((OutputStruct*) pLines -> peek (minLimit)) -> pBrace;
 
-                if ((pTestCode != NULL) && (pTestCode[0] == L_CURL))
-                    pTestCode = NULL;    // Dont process line as a single indentation !
-                else
-                    pTestCode = "E";     // make sure pointer is not null !
+            if ((pTestCode != NULL) && (pTestCode[0] == L_CURL))
+                pTestCode = NULL;    // Dont process line as a single indentation !
+            else
+                pTestCode = "E";     // make sure pointer is not null !
         }
 
-        if ((findWord < IndentWordLen) && (pTestCode != NULL))
+        if ((findWord >= 0) && (pTestCode != NULL))
         // create new structure !
         {
             IndentStruct* pIndent = new IndentStruct();
@@ -1764,30 +1818,21 @@ QueueList* IndentNonBraces (StackList* pIMode, QueueList* pLines, Config userS)
             }
 
             // do indent mode for (if, while, for, else)
-            if ((findWord >= 0) && (findWord < MultiIndent))
+            if (pIndentWords[findWord].code == oneLine)
             {
                 pTestCode = ((OutputStruct*) pLines -> peek (1)) -> pCode;
 
                 pIndent -> attrib = oneLine; // single indent !
 
                 // determine how much to indent the next line of code !
-                TRACE((stderr, "#%d: change single-indent from %d\n", ((OutputStruct *)pLines->peek(1))->thisToken, pIndent->singleIndentLen))
-                pIndent -> singleIndentLen = strlen (pIndentWords[findWord]);
-
-                // test if there is a space after statement.
-                pTestCode += pIndent -> singleIndentLen;
-                while (*pTestCode == SPACE)
-                {
-                    pTestCode++;
-                    pIndent -> singleIndentLen++;
-                }
-                TRACE((stderr, "... to %d\n", pIndent->singleIndentLen))
+                pIndent -> singleIndentLen = userS.tabSpaceSize;
+                TRACE((stderr, "#%d: set single-indent to %d\n", ((OutputStruct *)pLines->peek(1))->thisToken, pIndent->singleIndentLen))
             }
-            else // it's a case statement !
+            else // it's a case or other block-statement !
             {
-                pIndent -> attrib = multiLine; // multiple indent !
+                pIndent -> attrib = pIndentWords[findWord].code;
                 pIndent -> pos    = (((OutputStruct*) pLines -> peek (1)) -> indentSpace) - userS.tabSpaceSize;
-                TRACE((stderr, "#%d: set multi-indent\n", ((OutputStruct *)pLines->peek(1))->thisToken))
+                TRACE((stderr, "#%d: set multi-indent %d, pos = %d\n", ((OutputStruct *)pLines->peek(1))->thisToken, pIndent -> attrib, pIndent -> pos))
             }
 
             // place item on stack !
@@ -2143,16 +2188,7 @@ QueueList* OutputToOutFile (FILE* pOutFile, QueueList* pLines, StackList* pIMode
         // ######## debug
         //gotoxy (1,1);
         //printf ("%d Indent    %d  Filler   \n", pOut -> indentSpace, pOut -> filler);
-        TRACE((stderr, "#%d|%2d Indent  %2d Fill >%s\n",
-            pOut->thisToken,
-            pOut->indentSpace, pOut->filler,
-            pOut->pCode
-                ? pOut->pCode
-                : (pOut->pBrace
-                    ? pOut->pBrace
-                    : (pOut->pComment
-                        ? pOut->pComment
-                        : "?"))))
+        TRACE_OUTPUT(pOut)
 
         // expand pOut structure to print to the output file
         if (!emptyString(pOut -> pCode)
@@ -2171,6 +2207,14 @@ QueueList* OutputToOutFile (FILE* pOutFile, QueueList* pLines, StackList* pIMode
                     notes++;
                     leading++;
                 }
+            }
+            else
+            if (emptyString(pOut -> pCode)
+              && emptyString(pOut -> pBrace)
+              && !emptyString(pOut -> pComment))
+            {
+                if (pOut -> filler > leading)
+                    leading = 0;
             }
             pIndentation = TabSpacing (fillMode,  leading, userS.tabSpaceSize);
             pFiller      = TabSpacing (nn, pOut -> filler, userS.tabSpaceSize);

@@ -265,7 +265,7 @@ void ConfigAssignment (int& errorCount, int& configError, char* pPosInLine, int&
 
 void ConfigAssignment (int& errorCount, int& configError, char* pPosInLine, Boolean& variable)
 {
-    ConfigWords type;
+    ConfigWords type = ANYT;
 
     // check if key words are there
     pPosInLine = FindConfigWords (pPosInLine, type);
