@@ -1,5 +1,13 @@
-$Id: CHANGES,v 6.7 2004/06/20 22:45:37 tom Exp $
+$Id: CHANGES,v 6.9 2004/09/02 00:49:15 tom Exp $
 ------------------------------------------------------------------------------
+
+01 Sep 2004
+	+ for Cygwin, add a check for "check_case:strict" in the $CYGWIN
+	  environment variable.  If it exists, do not ignore case when
+	  comparing filenames (report by Igor Pechtchanski).
+	+ update configure script macros.
+	+ use 'const' in a few places (for gcc -Wwrite-strings).
+	+ update config.guess, config.sub (2004-06-24).
 
 20 Jun 2004
 	+ add Cygwin as a special case where filenames are case-insensitive,
