@@ -1,4 +1,4 @@
-/* $Id: system.h,v 7.10 1996/01/13 12:49:05 tom Exp $ */
+/* $Id: system.h,v 7.12 2001/02/27 19:47:20 tom Exp $ */
 
 #ifdef HAVE_CONFIG_H
 
@@ -18,17 +18,17 @@
 #  define SYS_MSDOS 1
 # endif
 
-# if !defined(SYS_VMS) || !defined(SYS_MSDOS)
+# if !defined(SYS_VMS) || !defined(SYS_MSDOS) || defined(WIN32)
 #  define SYS_UNIX 1	/* assume we're autoconfiguring */
 # endif
 
-#define ANSI_PROTOS 1
+#define CC_HAS_PROTOS 1
 #define HAVE_STRCHR 1
 
 #endif /* HAVE_CONFIG_H */
 
-#ifndef ANSI_PROTOS
-#define ANSI_PROTOS 0
+#ifndef CC_HAS_PROTOS
+#define CC_HAS_PROTOS 0
 #endif
 
 #ifndef HAVE_GETOPT_H
@@ -59,8 +59,8 @@
 #define SYS_VMS 0
 #endif
 
-#ifndef DECLARED_GETOPT
-#define DECLARED_GETOPT 0
+#ifndef HAVE_GETOPT_HEADER
+#define HAVE_GETOPT_HEADER 0
 #endif
 
 #ifndef PRINT_ROUNDS_DOWN
@@ -68,7 +68,7 @@
 #endif
 
 	/* Macros that ought to be defined on every system */
-#if ANSI_PROTOS
+#if CC_HAS_PROTOS
 #define ARGS(p) p
 #define _ARG(type,name) type name
 #define _DCL(type,name)

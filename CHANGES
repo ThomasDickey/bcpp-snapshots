@@ -1,3 +1,11 @@
+revision 7.7
+	2001/2/27
+		expand wildcards on WIN32 with _setargv().
+		Handle ^M^J line-endings for MSDOS, etc.
+		Updated configure script.
+	1999/1/11
+		add check for files w/o trailing newline.
+
 revision 7.6
 	1998/8/3
 		modify configure script to work with --srcdir (reported
@@ -33,7 +41,7 @@ revision 7.2
 revision 7.1
 	1996/01/13
 		adjusted ifdef's to assume UNIX (and we're autoconfiguring).
-		
+
 		use ARGS on the non-UNIX wildcard support prototypes, to work
 		with K&R compiler.
 
@@ -97,7 +105,7 @@ revision 3.0
 
 revision 2.0
 ------------
-	1990/05/10 
+	1990/05/10
 		ported to VAX/VMS 5.3 (expand wildcards, added "-o" option).
 		made usage-message more verbose
 
