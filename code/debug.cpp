@@ -3,7 +3,7 @@
 #include "config.h"
 #include "bcpp.h"
 
-#ifdef DEBUG
+#if defined(DEBUG) || defined(DEBUG2)
 char *traceDataType(DataTypes theType)
 {
     char *it;
@@ -23,11 +23,12 @@ char *traceDataType(DataTypes theType)
 
 void traceInput(int line, InputStruct *pIn)
 {
-    TRACE((stderr, "@%d, %s%s:%s\n",
+    TRACE((stderr, "@%d, %s%s\n",
         line,
         traceDataType(pIn->dataType),
-        pIn->comWcode ? " comWcode" : "",
-        pIn->pData))
+        pIn->comWcode ? " comWcode" : ""))
+    if (pIn->pData  != 0) TRACE((stderr, "---- data:%s\n", pIn->pData))
+    if (pIn->pState != 0) TRACE((stderr, "---- flag:%s\n", pIn->pState))
 }
 
 void traceOutput(int line, OutputStruct *pOut)
@@ -41,8 +42,9 @@ void traceOutput(int line, OutputStruct *pOut)
         pOut->pBrace ? "brace" : "",
         pOut->pComment ? "comment" : ""))
     if (pOut->pCode)    TRACE((stderr, "----- code:%s\n", pOut->pCode))
-    if (pOut->pState)   TRACE((stderr, "---- state:%s\n", pOut->pState))
+    if (pOut->pCFlag)   TRACE((stderr, "---- state:%s\n", pOut->pCFlag))
     if (pOut->pBrace)   TRACE((stderr, "---- brace:%s\n", pOut->pBrace))
+    if (pOut->pBFlag)   TRACE((stderr, "---- state:%s\n", pOut->pBFlag))
     if (pOut->pComment) TRACE((stderr, "-- comment:%s\n", pOut->pComment))
 }
 #endif

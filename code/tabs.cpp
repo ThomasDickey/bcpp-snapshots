@@ -60,18 +60,22 @@ static int skipEscape(char *String)
     if (isdigit(String[n]))
     {
         while (n <= 3)
+        {
             if (isdigit(String[n++]))
-                it = n;
+                it = n-1;
             else
                 break;
+        }
     }
     else if (String[n] == 'x')
     {
         while (n <= 3)
+        {
             if (isxdigit(String[++n]))
-                it = n;
+                it = n-1;
             else
                 break;
+        }
     }
     return it;
 }

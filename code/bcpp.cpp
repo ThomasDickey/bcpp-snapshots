@@ -162,10 +162,7 @@
 
 // ----------------------------------------------------------------------------
 
-const struct {
-    char *name;
-    indentAttr code;
-} pIndentWords[] = {
+const IndentwordStruct pIndentWords[] = {
     { "if",         oneLine },
     { "while",      oneLine },
     { "for",        oneLine },
@@ -180,8 +177,8 @@ const struct {
     { "while",      blockLine },
 };
 
-#ifdef DEBUG
-extern int   totalTokens;            // token count, for debugging
+#if defined(DEBUG) || defined(DEBUG2)
+int   totalTokens;            // token count, for debugging
 #endif
 
 // ----------------------------------------------------------------------------
@@ -211,7 +208,7 @@ inline void ShiftLeft(char *s, int len)
     strcpy (s, s + len);
 }
 
-int LookupKeyword(char *tst)
+int LookupKeyword(const char *tst)
 {
     size_t n;
     if (!emptyString(tst)) {
@@ -262,37 +259,33 @@ void StripSpacingLeftRight (char* pLineData, char* pLineState, int mode = 3)
 
 // ----------------------------------------------------------------------------
 // Function returns a Boolean value that shows where code is contained within
-// a string. Any chars within a string above space are considered code.
+// a string, given its parse-state.
 //
 // Parameters:
-// pLineData : Pointer to a string to process.
+// pLineState : Pointer to a string to process.
 //
 // Return Values:
 // Boolean   : False = line has no code
 //             True  = line has some sort of code
 //
-Boolean TestLineHasCode (char* pLineData)
+Boolean TestLineHasCode (char* pLineState)
 {
-    // save on segmentation error !
-    if (pLineData == NULL)
-       return False;
-
-    unsigned char* pTest = (unsigned char*) pLineData;
-    int      len         = strlen (pLineData);
-
-    while ((*pTest < 33) && (*pTest > 0))
-        pTest++;
-
-    if ((*pTest != 0) && (len > 0)) // if not null ending char, and char has length
-        return True;
-    else
-        return False;
+    if (pLineState != NULL)
+    {
+        while (*pLineState != NullC)
+        {
+            if (ispunct(*pLineState))
+                return True;
+            pLineState++;
+        }
+    }
+    return False;
 }
 
 
 // ----------------------------------------------------------------------------
 // This function is used within function DecodeLine(), it creates a new
-// InputStructure and stores whats is contained in pLineData string in
+// InputStructure and stores what is contained in pLineData string in
 // the newly created structure.
 //
 // Parameters:
@@ -570,7 +563,7 @@ int DecodeLine (char* pLineData, char *pLineState, QueueList* pInputQueue)
                 return DecodeLineCleanUp (pInputQueue);
 
             pItem -> pData    = pNewComment;
-            pItem -> comWcode = TestLineHasCode (pLineData); // Comment without code ?
+            pItem -> comWcode = TestLineHasCode (pLineState); // Comment without code ?
             TRACE((stderr, "@%d: set attrib to %d\n", __LINE__, pItem->comWcode))
 
             TRACE_INPUT(pItem)
@@ -603,7 +596,7 @@ int DecodeLine (char* pLineData, char *pLineState, QueueList* pInputQueue)
             return DecodeLineCleanUp (pInputQueue);
 
         pItem -> pData    = pNewComment;
-        pItem -> comWcode = TestLineHasCode (pLineData); // Comment without code ?
+        pItem -> comWcode = TestLineHasCode (pLineState); // Comment without code ?
         TRACE((stderr, "@%d: set comWcode to %d\n", __LINE__, pItem->comWcode))
 
         TRACE_INPUT(pItem)
@@ -670,8 +663,8 @@ int DecodeLine (char* pLineData, char *pLineState, QueueList* pInputQueue)
                 break;
         }
 
-        char BackUp = pLineData[EChar];
-        pLineData[EChar] = NULLC;
+        char saveData  = pLineData[EChar];  pLineData[EChar]  = NULLC;
+        char saveState = pLineState[EChar]; pLineState[EChar] = NULLC;
 
         InputStruct* pTemp = ExtractCode(pLineData, pLineState);
         if (pTemp == NULL)
@@ -680,9 +673,8 @@ int DecodeLine (char* pLineData, char *pLineState, QueueList* pInputQueue)
         TRACE_INPUT(pTemp)
         pInputQueue->putLast (pTemp);
 
-        pLineData[EChar]   = BackUp;
-        ShiftLeft (pLineData,  EChar);
-        ShiftLeft (pLineState, EChar);
+        pLineData[EChar]   = saveData;  ShiftLeft (pLineData,  EChar);
+        pLineState[EChar]  = saveState; ShiftLeft (pLineState, EChar);
 
         // restart decoding line !
         return DecodeLine (pLineData, pLineState, pInputQueue);
@@ -702,14 +694,15 @@ int DecodeLine (char* pLineData, char *pLineState, QueueList* pInputQueue)
     //##### Place whatever is before the open brace L_CURL, or R_CURL as code
     if ((SChar >= 0) || (EChar >= 0))
     {
-        char backUp;
+        char saveCode;
+        char saveFlag;
         int toSave = SChar >= 0 ? SChar : EChar;
 
-        backUp = pLineData[toSave];
-        pLineData[toSave] = NULLC;
+        saveCode = pLineData[toSave];  pLineData[toSave]  = NULLC;
+        saveFlag = pLineState[toSave]; pLineState[toSave] = NULLC;
 
         //#### Store leading code if any
-        if (TestLineHasCode (pLineData) != False)
+        if (TestLineHasCode (pLineState) != False)
         {
            char* pTemp = NewString(pLineData);
            if (pTemp == NULL)
@@ -724,15 +717,14 @@ int DecodeLine (char* pLineData, char *pLineState, QueueList* pInputQueue)
            if (pLeadCode == NULL)
                 return DecodeLineCleanUp (pInputQueue);
 
-            TRACE_INPUT(pLeadCode)
+           TRACE_INPUT(pLeadCode)
            pInputQueue->putLast (pLeadCode);
            delete pTemp;
         }
 
         //##### Update main string
-        pLineData[toSave] = backUp;
-        ShiftLeft (pLineData,  toSave);
-        ShiftLeft (pLineState, toSave);
+        pLineData[toSave]  = saveCode; ShiftLeft (pLineData,  toSave);
+        pLineState[toSave] = saveFlag; ShiftLeft (pLineState, toSave);
 
         // extract open/closing brace from code, and place brace as seperate
         // line from code. And create new structure for code
@@ -750,14 +742,14 @@ int DecodeLine (char* pLineData, char *pLineState, QueueList* pInputQueue)
             {
                 case (1):    // remove open brace
                 {
-                    backUp       = pLineData[1]; // contain a char, or NULLC char
-                    pLineData[1] = NULLC;
-                    pTemp        = ExtractCode (pLineData, pLineState, OBrace);//##### Define data type before storing
-                    //#### update string
-                    pLineData[1] = backUp;
+                    saveCode     = pLineData[1];  pLineData[1]  = NULLC;
+                    saveFlag     = pLineState[1]; pLineState[1] = NULLC;
 
-                    ShiftLeft (pLineData,  1);
-                    ShiftLeft (pLineState, 1);
+                    pTemp        = ExtractCode (pLineData, pLineState, OBrace);//##### Define data type before storing
+
+                    pLineData[1] = saveCode;  ShiftLeft (pLineData,  1);
+                    pLineState[1] = saveFlag; ShiftLeft (pLineState, 1);
+
                     extractMode  = 3;            // apply recursive extraction
 
                     break;
@@ -782,21 +774,20 @@ int DecodeLine (char* pLineData, char *pLineState, QueueList* pInputQueue)
                         else
                             mark = 1;
 
-                        backUp          = pLineData[mark];
-                        pLineData[mark] = NULLC;
+                        saveCode = pLineData[mark]; pLineData[mark] = NULLC;
+                        saveFlag = pLineState[mark]; pLineState[mark] = NULLC;
 
                         pTemp = ExtractCode (pLineData, pLineState, CBrace);
-                        // #### update string;
-                        pLineData[mark] = backUp;
-                        ShiftLeft (pLineData,  mark);
-                        ShiftLeft (pLineState, mark);
+
+                        pLineData[mark] = saveCode;  ShiftLeft (pLineData,  mark);
+                        pLineState[mark] = saveFlag; ShiftLeft (pLineState, mark);
 
                         extractMode       = 3;       // apply recursive extraction
                     }
                     else // rest of data is considered as code !
                     {
                         pTemp     = ExtractCode (pLineData, pLineState, CBrace);
-                        pLineData = NULL;            // leave processing !
+                        pLineState = NULL;      // leave processing !
                     }
                     break;
                 }
@@ -815,10 +806,9 @@ int DecodeLine (char* pLineData, char *pLineState, QueueList* pInputQueue)
             TRACE_INPUT(pTemp)
             pInputQueue->putLast (pTemp); // store Item
 
-        } while ((TestLineHasCode (pLineData) != False) && (pTemp != NULL));
+        } while ((TestLineHasCode (pLineState) != False) && (pTemp != NULL));
 
     }
-
     else //##### Line contains either code, or spacing
     {
         //##### If nothing in string, and nothing stored in queue, then blank line
@@ -834,7 +824,7 @@ int DecodeLine (char* pLineData, char *pLineState, QueueList* pInputQueue)
             pInputQueue->putLast (pTemp);
         }
         //##### If line has more than spacing/tabs then code
-        else if (TestLineHasCode (pLineData) != False)
+        else if (TestLineHasCode (pLineState) != False)
         {
             // implement blank space
             InputStruct* pTemp = ExtractCode (pLineData, pLineState);
@@ -972,12 +962,12 @@ int combinedIndent(int indentStack, int prepStack, Config userS)
 bool ContinuedQuote(OutputStruct *pOut)
 {
     if (pOut -> pCode != 0
-     && pOut -> pState != 0)
+     && pOut -> pCFlag != 0)
     {
-        if (pOut -> pState[0] == SQuoted
-         || pOut -> pState[0] == DQuoted)
+        if (pOut -> pCFlag[0] == SQuoted
+         || pOut -> pCFlag[0] == DQuoted)
         {
-            return (pOut -> pState[0] != pOut -> pCode[0]);
+            return (pOut -> pCFlag[0] != pOut -> pCode[0]);
         }
     }
     return False;
@@ -1005,6 +995,7 @@ int ConstructLine (
     int &prepStack,
     int& indentStack,
     bool& pendingElse,
+    int& hang_state,
     int& sql_state,
     QueueList* pInputQueue,
     QueueList* pOutputQueue,
@@ -1023,7 +1014,7 @@ int ConstructLine (
         if (pOut == NULL)
             return -1;
 
-        // Special logic to make comments for MCCONFIG look "correct"
+        // Special logic to make controls for MCCONFIG look "correct"
         if (pTestType -> dataType == CppCom)
         {
             const char *tst = SkipBlanks(pTestType -> pData + 2);
@@ -1090,8 +1081,8 @@ int ConstructLine (
             // @@@@@@ Processing of code (i.e k = 1; enum show {one, two};)
             case (Code):
             {
-                pOut -> pCode = pTestType -> pData;
-                pOut -> pState = pTestType -> pState;
+                pOut -> pCode  = pTestType -> pData;
+                pOut -> pCFlag = pTestType -> pState;
                 if (!ContinuedQuote(pOut))
                 {
                     pOut -> indentSpace = combinedIndent(indentStack, prepStack, userS);
@@ -1125,6 +1116,7 @@ int ConstructLine (
 
                 pOut -> indentSpace     = combinedIndent(indentStack, prepStack, userS);
                 pOut -> pBrace          = pTestType -> pData;
+                pOut -> pBFlag          = pTestType -> pState;
                 TRACE((stderr, "@%d, Set pBrace = %s:%d indent %d\n", __LINE__, pOut->pBrace, pOut->thisToken, pOut->indentSpace))
 
                 // ##### advance to the right !
@@ -1188,13 +1180,14 @@ int ConstructLine (
             pOut -> filler = (userS.posOfCommentsWC - (tokenIndent + strlen (pTestType -> pData)));
             pendingComment = NULL;
         }
-        if (pOut -> pCode == 0)
+        if (pOut -> pCode == 0
+         && pOut -> pBrace == 0)
             delete pTestType -> pState;
 
+        IndentHanging(pOut, hang_state);
+
         if (userS.indent_sql)
-        {
-            IndentSQL(pOut, userS, sql_state);
-        }
+            IndentSQL(pOut, sql_state);
 
         pOutputQueue -> putLast (pOut);
 
@@ -1222,7 +1215,6 @@ void resetSingleIndent(StackList* pIMode)
     {
         TRACE((stderr, "...reset single-indent (%d)\n", pIndentItem->singleIndentLen))
         pIndentItem->singleIndentLen = 0;
-        pIndentItem->firstPass = False;
         pIndentItem->attrib = noIndent;
     }
 }
@@ -1393,13 +1385,9 @@ QueueList* IndentNonBraceCode (QueueList* pLines, StackList* pIMode, const Confi
                 if ((pAlterLine -> pCode != NULL) &&
                     lastChar(pAlterLine -> pCode) != SEMICOLON)
                 {
-                    pIndentItem -> firstPass    = True;
                     indentAmount = pIndentItem -> singleIndentLen;
                     TRACE((stderr, "#%d, use single-indent %d\n", pAlterLine->thisToken, pIndentItem->singleIndentLen))
                 }
-                else
-                if (pIndentItem -> firstPass != False && top)
-                    indentAmount = (userS.tabSpaceSize << 1);
                 else
                     indentAmount = userS.tabSpaceSize;
 
@@ -2017,7 +2005,7 @@ QueueList* OutputToOutFile (FILE* pOutFile, QueueList* pLines, StackList* pIMode
              return NULL;               //#### Memory Allocation Failure
 
         // reformat open braces if user option set !
-        if (userS. braceLoc == False) // place open braces on same line as code
+        if (userS.braceLoc == False)    // place open braces on same line as code
         {
             pLines = ReformatBraces (pLines, userS);
             if (pLines == NULL)
@@ -2037,7 +2025,7 @@ QueueList* OutputToOutFile (FILE* pOutFile, QueueList* pLines, StackList* pIMode
          || !emptyString(pOut -> pComment))
         {
             int nn = (pOut -> pCode == 0 && pOut -> pBrace == 0) ? fillMode : 2;
-            int leading  = pOut -> indentSpace;
+            int leading  = pOut -> indentSpace + (pOut -> indentHangs * userS.tabSpaceSize); // FIXME: indentHangs should use separate param
             char *notes  = pOut -> pComment;
 
             // convert leading whitespace in a comment back to tabs
@@ -2186,6 +2174,7 @@ int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
     bool                indentPreP   = False;
     bool                pendingElse  = False;
     int                 prepStack    = 0;
+    int                 hang_state   = 0;
     int                 sql_state    = 0;
 
     // Check memory allocated !
@@ -2252,6 +2241,7 @@ int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
                             prepStack,
                             indentStack,
                             pendingElse,
+                            hang_state,
                             sql_state,
                             pInputQueue,
                             pOutputQueue,
@@ -2287,10 +2277,15 @@ int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
 
                     }
 
-                    pOutputQueue = OutputToOutFile (pOutFile, pOutputQueue,
-                                                    pIMode  , FuncVar,
-                                                    userS   , userS.queueBuffer,
-                                                    pendingBlank );
+                    pOutputQueue = OutputToOutFile (
+                                pOutFile,
+                                pOutputQueue,
+                                pIMode,
+                                FuncVar,
+                                userS,
+                                userS.queueBuffer,
+                                pendingBlank );
+
                     if (pOutputQueue == NULL)
                     {
                         fprintf (stderr, "%s", errorMsg);
@@ -2304,10 +2299,14 @@ int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
     }// while data
 
     // flush queue ...
-    pOutputQueue = OutputToOutFile (pOutFile, pOutputQueue,
-                                    pIMode,   FuncVar,
-                                    userS,    0,
-                                    pendingBlank);
+    pOutputQueue = OutputToOutFile (
+            pOutFile,
+            pOutputQueue,
+            pIMode,
+            FuncVar,
+            userS,
+            0,
+            pendingBlank);
 
     // output final line position
     if (userS.output != False)
