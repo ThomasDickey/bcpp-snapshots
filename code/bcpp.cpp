@@ -1183,7 +1183,14 @@ bool ContinuedQuote(OutputStruct *pOut)
 //         0 = No problems
 //        -1 = Memory allocation failure
 //        -2 = Line construction error, unexpected type found.
-int ConstructLine (Boolean &indentPreP, int &prepStack, int& indentStack, QueueList* pInputQueue, QueueList* pOutputQueue, Config userS)
+int ConstructLine (
+    bool &indentPreP,
+    int &prepStack,
+    int& indentStack,
+    bool& pendingElse,
+    QueueList* pInputQueue,
+    QueueList* pOutputQueue,
+    Config userS)
 {
     InputStruct* pTestType = NULL;
     char *pendingComment = NULL;
@@ -1268,7 +1275,15 @@ int ConstructLine (Boolean &indentPreP, int &prepStack, int& indentStack, QueueL
                 pOut -> pCode = pTestType -> pData;
                 pOut -> pState = pTestType -> pState;
                 if (!ContinuedQuote(pOut))
+                {
                     pOut -> indentSpace = combinedIndent(indentStack, prepStack, userS);
+
+                    // Special case: align "else" and "if" if they're on successive lines
+                    if (pendingElse
+                     && CompareKeyword(pOut -> pCode, "if"))
+                        pOut -> indentSpace -= userS.tabSpaceSize;
+                    pendingElse = !strcmp(pOut -> pCode, "else");
+                }
                 TRACE((stderr, "@%d, Set Code   = %s:%d indent %d\n", __LINE__, pOut->pCode, pOut->thisToken, pOut->indentSpace))
 
                 break;
@@ -1279,6 +1294,8 @@ int ConstructLine (Boolean &indentPreP, int &prepStack, int& indentStack, QueueL
             // @@@@@@ Processing of closed brackets "} k = 1;"
             case (CBrace):
             {
+                pendingElse = False;
+
                 // indent back before adding brace, some error checking
                 if (pTestType -> dataType == CBrace)
                 {
@@ -2093,7 +2110,8 @@ void FunctionSpacing (QueueList* pLines, const Config& userS, int& FuncVar, int 
         if ( ((FuncVar == 0) && (pTestLine -> indentSpace <= 0 )) &&
              (pTestLine -> pBrace != NULL) )
         {
-             if (pTestLine -> pBrace[0] == R_CURL)
+             if (pTestLine -> pBrace[0] == R_CURL
+              && pTestLine -> pBrace[1] == NULLC)
              {
                 FuncVar = 1; // add function spacing !
                 return;
@@ -2109,12 +2127,12 @@ void FunctionSpacing (QueueList* pLines, const Config& userS, int& FuncVar, int 
 
         if ( (FuncVar == 2) &&
              (((pTestLine -> pCode != NULL ) || (pTestLine -> pBrace != NULL)) || (pTestLine -> pComment != NULL)) )
-                      FuncVar = 0;
+              FuncVar = 0;
         else if (FuncVar == 2)
-             {
-                OutputStruct* dump = (OutputStruct*) pLines -> takeNext(); // dump line from queue!
-                delete dump;
-             }
+        {
+            OutputStruct* dump = (OutputStruct*) pLines -> takeNext(); // dump line from queue!
+            delete dump;
+        }
     }
 }
 
@@ -2342,7 +2360,8 @@ int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
     CharState           curState     = Blank;
     char*               lineState    = NULL;
     Boolean             codeOnLine   = False;
-    Boolean             indentPreP   = False;
+    bool                indentPreP   = False;
+    bool                pendingElse  = False;
     int                 prepStack    = 0;
 
     // Check memory allocated !
@@ -2404,7 +2423,14 @@ int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
 
             if (DecodeLine (pData, lineState, pInputQueue) == 0) // if there are input items to process
             {
-                    int errorCode = ConstructLine (indentPreP, prepStack, indentStack, pInputQueue, pOutputQueue, userS);
+                    int errorCode = ConstructLine (
+                            indentPreP,
+                            prepStack,
+                            indentStack,
+                            pendingElse,
+                            pInputQueue,
+                            pOutputQueue,
+                            userS);
 
                     switch (errorCode)
                     {
