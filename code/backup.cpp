@@ -17,7 +17,7 @@
 // OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR   *
 // PERFORMANCE OF THIS SOFTWARE.                                               *
 //******************************************************************************
-// $Id: backup.cpp,v 1.5 1999/01/02 01:28:25 tom Exp $
+// $Id: backup.cpp,v 1.6 1999/01/05 15:50:16 tom Exp $
 
 #include "bcpp.h"
 
@@ -51,9 +51,9 @@ static char *FileSuffix(char *name)
     return suffix;
 }
 
-// Function creates a backup of oldFilename, by renaming it to either a "~" or
-// ".bac" extension.  Thereafter, the program will read from the backup file,
-// and write to the orignal filename.
+// Function creates a backup of oldFilename, by renaming it to either
+// a ".orig" or ".bac" extension.  Thereafter, the program will read
+// from the backup file, and write to the orignal filename.
 //
 int BackupFile (char*& oldFilename, char*& newFilename)
 {
@@ -69,10 +69,19 @@ int BackupFile (char*& oldFilename, char*& newFilename)
 
     char * pLook = FileSuffix(oldFilename);
 
-    strcat(oldFilename, "~");
-    if (rename(newFilename, oldFilename) != 0) {
+    strcat(oldFilename, ".orig");
+    if (rename(newFilename, oldFilename) != 0)
+    {
+        FILE *fp = fopen(oldFilename, "r");
+        if (fp != 0)
+        {
+            warning("backup already exists: %s\n", oldFilename);
+            fclose(fp);
+            return -1;
+        }
         strcpy (pLook, suffix);
-        if (rename(newFilename, oldFilename) != 0) {
+        if (rename(newFilename, oldFilename) != 0)
+        {
             warning("cannot rename %s\n", newFilename);
             return -1;
         }

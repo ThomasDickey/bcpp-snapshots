@@ -2829,7 +2829,7 @@ int LoadnRun (int argc, char* argv[])
         settings.output = False; // if using standard out, don't corrupt output
     }
     else
-        pOutputFile = fopen(pOutFile, "w");
+        pOutputFile = fopen(pOutFile, "wb");
 
     // Check user defined I/O streams
     if (pInputFile == NULL)

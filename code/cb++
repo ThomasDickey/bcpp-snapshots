@@ -1,5 +1,5 @@
 #!/bin/sh
-# $Id: cb++,v 1.2 1999/01/04 22:44:16 tom Exp $
+# $Id: cb++,v 1.3 1999/01/05 17:00:20 tom Exp $
 # Wrapper for 'bcpp', which does indention of C++ code (but doesn't trim
 # whitespace properly).
 OPTS=""
@@ -12,7 +12,7 @@ do
 		echo '...Ignored  '$name
 		;;
 	*.cpp|*.cc|*.hh|*.h|*.ppc|*.pc|*.ph|*.htm*)
-		save=${name}~
+		save=${name}.orig
 		rm -f $save
 		bcpp -fnc bcpp.cfg -yb $name
 		test -f $save && echo '** Modified '$name
