@@ -1,0 +1,207 @@
+.\" $Id: c_count.1,v 7.2 1995/05/14 00:58:08 tom Exp $
+.de EX
+.RS
+.nf
+.sp
+.fam C	\" groff: Courier
+..
+.de EE
+.fi
+.RE
+.sp .5
+.fam T	\" groff: Times-Roman (default)
+..
+.
+.TH C_COUNT 1
+.hy 0
+.
+.SH NAME
+.PP
+\fBc_count\fR \- C-language line counter
+.
+.SH USAGE
+.PP
+\fBc_count\fI [options] [file-specifications]
+.
+.SH SYNOPSIS
+.PP
+\fBC_count\fR counts lines and statements in C-language source files.
+It provides related statistics on the amount of whitespace, comments
+and code.
+\fBC_count\fR also shows the presence of unbalanced (or
+nested) comments, unbalanced quotation marks and illegal characters.
+.
+.SH DESCRIPTION
+.PP
+\fBC_count\fR reads one or more C-language source files and displays
+simple statistics about them.
+It counts statements (i.e., sequences
+of tokens terminated with semicolon) and measures the relative
+amount of commentary.
+\fBC_count\fR ignores semicolons where they appear in
+comments or in quoted literals.
+.PP
+A count of semicolons is a reasonable way of counting C statements.
+Note, however, that it does not count preprocessor definitions as
+C statements.
+.PP
+The statistics summary shows you the relative amount of commentary.
+This is the ratio of the alphanumeric characters in comments to the
+total of characters in the code (ignoring tabs and other whitespace
+which are not inside quotes).
+\fBC_count\fR only counts alphanumeric characters,
+thus ignoring punctuation used as fillers.
+It also suppresses
+RCS and DEC/CMS history comments from this ratio.
+.PP
+\fBC_count\fR counts the number of tokens (names and constants)
+in the source files and gives this total, as well as their average length.
+.PP
+\fBC_count\fR provides you not only with measurements, but also
+diagnostics in the form of a set of flags shown next to each file name:
+.TP
+.ft B
+"
+file contains an unbalanced quote (\fB"\fR).
+.TP
+.B
+?
+file contains illegal characters
+(e.g., nonprinting, nonwhitespace characters such as an escape).
+\fBC_count\fR also flags tabs inside quotes.
+.TP
+.B *
+file contains unterminated or nested comments.
+.PP
+Unbalanced quotes may be legal.
+The C preprocessor permits you to
+define symbols which contain an unbalanced quote mark, for example:
+.EX
+#define	WARN	(void)printf("** warning:
+	...
+	WARN item \"%s\" not found\n", token);
+.EE
+.PP
+Rather than duplicate all of the complexity of the C preprocessor,
+\fBc_count\fR permits you to specify symbols which contain
+unbalanced quote marks.
+.
+.SH OPTIONS
+Command line options of \fBc_count\fR are:
+.TP
+.B \-c
+display character-level statistics.
+.TP
+.B \-d
+show each token as \fBc_count\fR parses it from the input stream.
+.TP
+.B \-i
+display identifier-level statistics.
+.TP
+.B \-j
+annotate summary in technical format (i.e., "physical
+source statements" and "logical source statements" for "lines"
+and "statements" respectively).
+.TP
+.B \-l
+display line-level statistics.
+.TP
+.BI \-o " file"
+write the report to the specifed file,
+rather than to the standard output.
+.TP
+.B \-p
+display statistics on a per-file basis.
+.TP
+.BI \-q " define"
+define tokens which may
+evaluate with an unbalanced quote mark '\fB"\fR'.
+For example,
+.RS
+.EX
+-q\ WARN
+.EE
+.PP
+tells \fBc_count\fR that the token "WARN" contains a quote mark.
+.RE
+.TP
+.B \-s
+display specialized statistics (e.g., code:comment ratio).
+.TP
+.B \-t
+generate output in spreadsheet format (e.g., comma-separated columns).
+If you set any of the options "\fB\-c\fR", "\fB\-i\fR",
+"\fB\-l\fR" or "\fB\-s\fR", \fBc_count\fR generates these statistics.
+Otherwise it generates only the lines/statements.
+.TP
+.B \-v
+direct \fBc_count\fR not only
+to print a summary line for each file, but also to print a running
+summary showing each source line, together with the current line
+and statement numbers, as well as the cumulative flags.
+.
+.SH OPERATIONS
+.PP
+\fBC_count\fR reads one or more C language source files and writes
+its statistics to standard output.
+If you do not give any file names,
+\fBc_count\fR reads a list of file names from standard input.
+.PP
+The special filename "-" directs \fBc_count\fR to read the file
+itself from the standard input.
+.PP
+Following is an example of the use of \fBc_count\fR, showing
+the detailed types of information which it reports.
+.EX
+bsd(5) c_count */*.[ch]
+   927   352   |src/c_count.c
+     5     0?" |test/test1.c
+     6     2?  |test/test2.c
+    20     1   |test/test3.c
+----------------
+   958   355?"  total lines/statements
+
+   121	lines had comments        12.6 %
+    48	lines had history          5.0 %
+    36	comments are inline       -3.8 %
+    73	lines were blank           7.6 %
+    22	lines for preprocessor     2.3 %
+   730	lines containing code     76.2 %
+   958	total lines              100.0 %
+
+  3475	comment-chars             15.7 %
+  1021	history-chars              4.6 %
+  1003	nontext-comment-chars      4.5 %
+  4731	whitespace-chars          21.3 %
+   322	preprocessor-chars         1.5 %
+ 11644	statement-chars           52.5 %
+ 22196	total characters         100.0 %
+
+  1541	tokens, average length 4.91
+
+  0.29	ratio of comment:code
+     3	?:illegal characters found
+     2	":lines with unterminated quotes
+.EE
+.PP
+If you use the "\fB\-p\fR" option,
+\fBc_count\fR prints the detailed information
+for each file, as well as for all files together.
+.
+.SH ENVIRONMENT
+.PP
+\fBC_count\fR runs in a portable UNIX\*R environment.
+Execute it on VAX/VMS by defining it as a foreign command.
+.
+.SH FILES
+.PP
+\fBC_count\fR is a single binary module, that uses no auxiliary
+files (e.g., \fBC_COUNT.EXE\fR on VAX/VMS).
+.
+.SH AUTHOR
+.PP
+Thomas Dickey (dickey@clark.net).
+.
+.SH SEE ALSO
+.PP
+wc\ (1)

@@ -1,0 +1,4 @@
+! $Id: vmsshare.opt,v 1.1 1995/05/14 23:20:58 tom Exp $
+!
+! Linking against a sharable library makes the .EXE-file smaller.
+sys$library:vaxcrtl.exe/share

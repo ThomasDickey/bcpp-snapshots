@@ -1,0 +1,24 @@
+     5     1   |test1.c
+     6     2?  |test2.c
+----------------
+    11     3    total lines/statements
+
+     0	lines had comments         0.0 %
+     0	comments are inline        0.0 %
+     1	lines were blank           9.1 %
+     1	lines for preprocessor     9.1 %
+     9	lines containing code     81.8 %
+    11	total lines              100.0 %
+
+     0	comment-chars              0.0 %
+     0	nontext-comment-chars      0.0 %
+    19	whitespace-chars          10.2 %
+    19	preprocessor-chars        10.2 %
+   149	statement-chars           79.7 %
+   187	total characters         100.0 %
+
+    46	tokens, average length 0.91
+
+  0.00	ratio of comment:code
+     1	?:illegal characters found
+
