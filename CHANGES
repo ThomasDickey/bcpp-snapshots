@@ -1,3 +1,11 @@
+revision 7.3
+	1997/4/25
+		correct state-parsing of "/*<LF>", supplied test.
+
+		modify display of line and statement numbers to show the
+		latter only when there's a change, and increment the former
+		to start at 1.
+
 revision 7.2
 	1996/12/19
 		allow '$' in identifiers.
