@@ -17,6 +17,7 @@ BCPP.o	= \
         $(D)stacklis.o \
         $(D)cmdline.o \
         $(D)config.o \
+        $(D)strings.o \
         $(D)tabs.o
 
 bcpp:		$(BCPP.o)

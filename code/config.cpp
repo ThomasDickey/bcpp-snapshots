@@ -198,7 +198,7 @@ void ErrorMessage (int lineNo, int errorCode, int& errorCount, const char* pMess
 
 // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 // ConfigAssignment function is used to assigned Boolean, or unsigned integer
-// values from 0 - 500 to variables that are passed to it.
+// values from 0 - 5000 to variables that are passed to it.
 //
 // Parameters:
 // type       : This variable defines the keyword next to expect within config line.
@@ -260,8 +260,8 @@ void ConfigAssignment (ConfigWords type, int assignType, int& errorCount, int& c
                 ErrorMessage (errorCount, 3, configError);
 
             // check range of lines numbers between functions!
-            if ( (variable < 0) || (variable > 500) )
-                   ErrorMessage (errorCount, 2, configError, " Valid Range = 0 - 500");
+            if ( (variable < 0) || (variable > 5000) )
+                   ErrorMessage (errorCount, 2, configError, " Valid Range = 0 - 5000");
 
             break;
         }

@@ -1,4 +1,4 @@
-MANIFEST for bcpp, version t1996-10-12
+MANIFEST for bcpp, version t1996-10-20
 --------------------------------------------------------------------------------
 MANIFEST                        this file
 README                          top-level README for bcpp
@@ -18,6 +18,7 @@ code/config.h                   interface of config.cpp
 code/makefile                   makefile for UNIX (g++)
 code/stacklis.cpp               container class that stores items in a linked list
 code/stacklis.h                 interface of stacklis.cpp
+code/strings.cpp                simple string-utilities
 code/tabs.cpp                   tab expansion/conversion for BCPP
 txtdocs                         subdirectory
 txtdocs/hirachy.txt             text-version of class-hierarchy
