@@ -1,4 +1,4 @@
-.\" $Id: c_count.1,v 7.3 1997/10/05 21:13:53 tom Exp $
+.\" $Id: c_count.1,v 7.5 1998/07/02 23:43:27 tom Exp $
 .de EX
 .RS
 .nf
@@ -75,6 +75,9 @@ file contains unterminated or nested comments.
 .TP
 .B +
 file contains unterminated curly-braces.
+.TP
+.B >
+file contains identifiers longer than specified.
 .PP
 Unbalanced quotes may be legal.
 The C preprocessor permits you to
@@ -148,7 +151,12 @@ direct \fBc_count\fR not only
 to print a summary line for each file, but also to print a running
 summary showing each source line, together with the current line
 and statement numbers, as well as the cumulative flags.
-.
+.TP
+.BI \-w " LEN"
+specify the length for identifiers beyond which we should report an error.
+If this option is not given, \fBc_count\fR reports identifiers longer than
+31 characters.
+..
 .SH OPERATIONS
 .PP
 \fBC_count\fR reads one or more C language source files and writes
