@@ -1,9 +1,29 @@
-MANIFEST for bcpp, version v1_8
+MANIFEST for bcpp, version t1996-10-12
 --------------------------------------------------------------------------------
 MANIFEST                        this file
+README                          top-level README for bcpp
+bcppall.bat                     run bcpp for a whole directory
+code                            subdirectory
+code/anyobj.cpp                 the base class for all objects...
+code/anyobj.h                   interface of anyobj.cpp
+code/baseq.cpp                  objects which are descendents of ANYOBJECT
+code/baseq.h                    interface of baseq.cpp
+code/bcpp.cfg                   sample config-file for bcpp (used in testing also)
+code/bcpp.cpp                   main program (Beautify C++)
+code/bcpp.h                     common interface/defs for bcpp
+code/cmdline.cpp                command-line options-parsing
+code/cmdline.h                  interface of cmdline.cpp
+code/config.cpp                 config-file reader
+code/config.h                   interface of config.cpp
+code/makefile                   makefile for UNIX (g++)
+code/stacklis.cpp               container class that stores items in a linked list
+code/stacklis.h                 interface of stacklis.cpp
+code/tabs.cpp                   tab expansion/conversion for BCPP
 txtdocs                         subdirectory
 txtdocs/hirachy.txt             text-version of class-hierarchy
-txtdocs/manual.txt              text-version of manual
+unix                            subdirectory
+unix/makefile                   original UNIX makefile
+unix/util                       subdirectory
+unix/util/convert.cc            msdos/unix crlf/lf converter
 wpdocs                          subdirectory
 wpdocs/hirachy.doc              document, in WP51 format
-wpdocs/manual.doc               document, in WP51 format
