@@ -1,5 +1,6 @@
 // Compute hanging-indent for most multiline statements.
 
+#include <stdlib.h>
 #include <ctype.h>
 
 #include "config.h"

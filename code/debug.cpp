@@ -1,5 +1,7 @@
 // Debug/trace functions for BCPP
 
+#include <stdlib.h>
+
 #include "config.h"
 #include "bcpp.h"
 
@@ -23,10 +25,11 @@ char *traceDataType(DataTypes theType)
 
 void traceInput(int line, InputStruct *pIn)
 {
-    TRACE((stderr, "@%d, %s%s\n",
+    TRACE((stderr, "@%d, %s%s (col:%d)\n",
         line,
         traceDataType(pIn->dataType),
-        pIn->comWcode ? " comWcode" : ""))
+        pIn->comWcode ? " comWcode" : "",
+        pIn->offset))
     if (pIn->pData  != 0) TRACE((stderr, "---- data:%s\n", pIn->pData))
     if (pIn->pState != 0) TRACE((stderr, "---- flag:%s\n", pIn->pState))
 }
