@@ -222,6 +222,6 @@ extern void ExpandTabs (char* &pString,
     int deleteChars,
     Boolean quoteChars,
     CharState &curState, char * &lineState, Boolean &codeOnLine);
-extern char* TabSpacing (int mode, int len, int spaceIndent);
+extern char* TabSpacing (int mode, int col, int len, int spaceIndent);
 
 #endif // _BCPP_HEADER
