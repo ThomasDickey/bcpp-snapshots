@@ -1,4 +1,4 @@
-/* $Id: conflict.h,v 6.4 2004/03/27 11:32:52 tom Exp $
+/* $Id: conflict.h,v 6.6 2004/06/20 22:48:13 tom Exp $
  *
  * Common/configurable definitions and types for 'conflict'.
  */
@@ -66,6 +66,10 @@
 # endif
 #endif
 
+#if defined(__CYGWIN__)
+# define SYS_CYGWIN 1
+#endif
+
 #if defined(__EMX__) || defined(__UNIXOS2__)
 # define SYS_OS2_EMX 1		/* makefile.emx, or configure-script */
 #endif
@@ -95,6 +99,10 @@
 
 #ifndef STDC_HEADERS
 #define STDC_HEADERS 0
+#endif
+
+#ifndef SYS_CYGWIN
+#define SYS_CYGWIN 0
 #endif
 
 #ifndef SYS_MSDOS
@@ -176,7 +184,7 @@
 #if HAVE_GETOPT_H
 #include <getopt.h>
 #else
-extern int getopt(int, char *const*, const char *);
+extern int getopt(int, char *const *, const char *);
 extern int optind;
 extern char *optarg;
 #endif
@@ -224,7 +232,7 @@ extern char *optarg;
 # define PATHLIST_SEP ':'
 #endif
 
-typedef	unsigned type_t;
+typedef unsigned type_t;
 
 /*
  * If files can be linked together, it's simplest to 'stat()' them to determine
@@ -239,71 +247,72 @@ typedef	unsigned type_t;
 #define	SAME_DIRS(j,k)		(dirs[j].device == dirs[k].device\
 			&&	 dirs[j].inode  == dirs[k].inode)
 
-typedef	struct	{
-		type_t	flags;
-		dev_t	device;
-		ino_t	inode;
-	} NODE;
+typedef struct {
+    type_t flags;
+    dev_t device;
+    ino_t inode;
+} NODE;
 
-typedef	struct	{
-		char	*name;
-		dev_t	device;
-		ino_t	inode;
-	} DIRS;
+typedef struct {
+    char *name;
+    dev_t device;
+    ino_t inode;
+} DIRS;
 
-#else	/* e.g., MSDOS */
+#else /* e.g., MSDOS */
 #define USE_INODE 0
 
 #define	SAME_NODE(j,k)		(j == k)
 #define	SAME_DIRS(j,k)		SameString(dirs[j].actual, dirs[k].actual)
 
-typedef	struct	{
-		type_t	flags;
-	} NODE;
+typedef struct {
+    type_t flags;
+} NODE;
 
-typedef	struct	{
-		char	*name;
-		char	*actual;
-	} DIRS;
+typedef struct {
+    char *name;
+    char *actual;
+} DIRS;
 
 #endif
 
 #define NODEFLAGS(j)		ip->node[j].flags
 #define IS_A_NODE(j)		(NODEFLAGS(j) != 0)
 
-typedef	struct	{
-		char	*name;	/* name of executable file */
-		NODE	*node;	/* stat-result, for comparing */
-	} INPATH;
+typedef struct {
+    char *ip_name;		/* name of executable file */
+    char *ip_NAME;		/* ...for caseless compare, etc. */
+    NODE *node;			/* stat-result, for comparing */
+} INPATH;
 
 /*
  * Prototypes for functions defined in this program:
  */
-extern	int	main (int argc, char *argv[]);
-extern	void	failed (char *s);
-extern	char	*fleaf (char *name);
-extern	char	*ftype (char *name);
-extern	void	blip (int c);
+extern int main(int argc, char *argv[]);
+extern void failed(char *s);
+extern char *fleaf(char *name);
+extern char *ftype(char *name);
+extern void blip(int c);
 
 /* MSDOS and OS/2 need a wrapper for 'chdir()' to also switch drives */
 #if SYS_MSDOS || SYS_OS2 || SYS_OS2_EMX || SYS_WIN32
-extern	int	have_drive (char *name);
-extern	int	same_drive (char *a, char *b);
-extern	int	set_drive (char *name);
-extern	int	set_directory (char *name);
+extern int have_drive(char *name);
+extern int same_drive(char *a, char *b);
+extern int set_drive(char *name);
+extern int set_directory(char *name);
 #else
 #define set_directory(path) (chdir(path) >= 0)
 #endif
 
 #define USE_TXTALLOC 1
 #if USE_TXTALLOC
-extern	char	*txtalloc (char *s);
-extern	void	free_txtalloc (void);
-extern	void	txtfree (char *s);
+extern char *txtalloc(char *s);
+extern void free_txtalloc(void);
+extern void txtfree(char *s);
 
 # define MakeString(a)   txtalloc(a)
 # define SameString(a,b) ((a) == (b))	/* txtalloc vs strcmp... */
-# define FreeString(a)			/* ...actually we don't  */
+# define FreeString(a)		/* ...actually we don't  */
 #else
 # define MakeString(a)    strdup(a)
 # define SameString(a,b) !strcmp(a,b)
@@ -316,12 +325,12 @@ extern	void	txtfree (char *s);
  */
 #if !USE_INODE && !HAVE_REALPATH
 # define realpath my_realpath
-char	*my_realpath (char *given, char *actual);
+char *my_realpath(char *given, char *actual);
 #endif
 
 #if !HAVE_STRDUP
 # define strdup my_strdup
-char	*my_strdup (char *s);
+char *my_strdup(char *s);
 #endif
 
 /*

@@ -1,8 +1,8 @@
-# $Id: makefile.in,v 6.12 2004/06/19 10:42:52 tom Exp $
+# $Id: makefile.in,v 6.14 2004/06/21 00:39:11 tom Exp $
 # Makefile-template for 'conflict'
 
 THIS		= conflict
-RELEASE		= t20040619
+RELEASE		= t20040620
 
 #### Start of system configuration section. ####
 
@@ -110,5 +110,5 @@ shar:	$(DISTFILES)
 
 $(THIS)$o:	config.h
 
-check: $(THIS)
+check: $(PROG)
 	sh $(srcdir)/run_test.sh	

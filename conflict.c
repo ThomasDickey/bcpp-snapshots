@@ -19,7 +19,7 @@
  ******************************************************************************/
 
 #ifndef	NO_IDENT
-static const char Id[] = "$Header: /users/source/archives/conflict.vcs/RCS/conflict.c,v 6.7 2004/06/19 14:38:28 tom Exp $";
+static const char Id[] = "$Header: /users/source/archives/conflict.vcs/RCS/conflict.c,v 6.10 2004/06/20 23:38:49 tom Exp $";
 #endif
 
 /*
@@ -76,6 +76,12 @@ static char *w_opt_text = "--------";
 #define TYPES_PATH ".COM.EXE.BAT.LNK"	/* could also use .CMD and .PIF */
 #endif
 
+#if SYS_MSDOS || SYS_OS2 || SYS_WIN32 || SYS_OS2_EMX || SYS_CYGWIN
+#define NULL_FTYPE 0		/* "." is the same as "" */
+#else
+#define NULL_FTYPE 1		/* "." and "" are different types */
+#endif
+
 static char *TypesOf(size_t len, INPATH * ip);
 
 #if USE_INODE
@@ -90,7 +96,7 @@ static void node_found(INPATH * ip, unsigned n, type_t flags);
 static int
 cmp_INPATH(const void *p1, const void *p2)
 {
-    return strcmp(((const INPATH *) (p1))->name, ((const INPATH *) (p2))->name);
+    return strcmp(((const INPATH *) (p1))->ip_NAME, ((const INPATH *) (p2))->ip_NAME);
 }
 
 /*
@@ -201,7 +207,7 @@ ShowPathnames(INPATH * ip)
     char bfr[MAXPATHLEN];
 
     if (num_types != 0) {
-	(void) strcpy(bfr, ip->name);
+	(void) strcpy(bfr, ip->ip_name);
 	*ftype(bfr) = EOS;
     }
 
@@ -222,14 +228,14 @@ ShowPathnames(INPATH * ip)
 		    (void) printf("%s%c%s\n",
 				  dirs[j].name,
 				  PATHNAME_SEP,
-				  ip->name);
+				  ip->ip_name);
 		}
 	    }
 	}
     } else if (num_types != 0) {
 	(void) printf(": %s (%s)\n", bfr, TypesOf(path_len, ip));
     } else {
-	(void) printf(": %s\n", ip->name);
+	(void) printf(": %s\n", ip->ip_name);
     }
 }
 
@@ -355,6 +361,10 @@ LookupType(char *name)
     char temp[MAXPATHLEN];
     char *type = DOS_upper(strcpy(temp, ftype(name)));
 
+#if !NULL_FTYPE
+    if (*type == '\0')
+	type = ".";
+#endif
     for (k = 0; k < num_types; k++) {
 	if (!strcmp(type, FileTypes[k]))
 	    return (1 << k);
@@ -368,13 +378,30 @@ SameTypeless(char *a, char *b)
 {
     char *type_a = ftype(a);
     char *type_b = ftype(b);
-    if (type_a - a == type_b - b) {
+    if ((type_a - a) == (type_b - b)) {
 	if (!strncmp(a, b, (size_t) (type_a - a)))
 	    return TRUE;
     }
     return FALSE;
 }
+
 #define SameName(a,b) ((FileTypes == 0) ? SameString(a,b) : SameTypeless(a,b))
+
+/*
+ * For systems where case does not matter, return an uppercased copy of the
+ * pathname.
+ */
+#if SYS_MSDOS || SYS_OS2 || SYS_WIN32 || SYS_OS2_EMX || SYS_CYGWIN
+static char *
+ToCompare(char *a)
+{
+    char buffer[MAXPATHLEN];
+    strncpy(buffer, a, sizeof(buffer))[sizeof(buffer) - 1] = '\0';
+    return MakeString(strupr(buffer));
+}
+#else
+#define ToCompare(a) (a)	/* with txtalloc, we still have same pointer */
+#endif
 
 static void
 ScanConflicts(char *path, unsigned inx, int argc, char **argv)
@@ -418,12 +445,14 @@ ScanConflicts(char *path, unsigned inx, int argc, char **argv)
 	    int found = FALSE;
 	    char buffer[MAXPATHLEN];
 	    char *the_name;
+	    char *the_NAME;
 
 	    if (do_blips)
 		blip('.');
 
 	    (void) sprintf(buffer, "%.*s", (int) NAMLEN(de), de->d_name);
 	    the_name = MakeString(DOS_upper(buffer));
+	    the_NAME = ToCompare(the_name);
 
 	    /* If arguments are given, restrict search to them */
 	    if (argc > optind) {
@@ -456,7 +485,7 @@ ScanConflicts(char *path, unsigned inx, int argc, char **argv)
 	    /* Find the name in our array of all names */
 	    found = FALSE;
 	    for (k = 0; k < total; k++) {
-		if (SameName(inpath[k].name, the_name)) {
+		if (SameName(inpath[k].ip_NAME, the_NAME)) {
 		    FoundNode(&inpath[k], inx);
 		    found = TRUE;
 		    break;
@@ -464,23 +493,28 @@ ScanConflicts(char *path, unsigned inx, int argc, char **argv)
 	    }
 
 	    /* If not there, add it */
-	    if (!found) {
+	    if (found) {
+		if (the_NAME != the_name) {
+		    FreeString(the_NAME);
+		}
+	    } else {
 		if (!(total & CHUNK)) {
-		    size_t need = ((total * 3) / 2 | CHUNK) + 1;
+		    size_t need = (((total * 3) / 2) | CHUNK) + 1;
 		    if (inpath != 0)
 			inpath = TypeRealloc(INPATH, inpath, need);
 		    else
 			inpath = TypeAlloc(INPATH, need);
 		}
 		j = total++;
-		inpath[j].name = the_name;
+		inpath[j].ip_name = the_name;
+		inpath[j].ip_NAME = the_NAME;
 		inpath[j].node = TypeAlloc(NODE, path_len);
 		FoundNode(&inpath[j], inx);
 	    }
 	    if (v_opt > 2) {
 		(void) printf("%c %s%c%s\n",
 			      found ? '+' : '*',
-			      path, PATHNAME_SEP, the_name);
+			      path, PATHNAME_SEP, buffer);
 	    }
 	}
 	(void) closedir(dp);
@@ -691,7 +725,7 @@ main(int argc, char *argv[])
 	for (s = type_list, num_types = 0; *s != EOS; s++) {
 	    if (*s == '.') {
 		num_types++;
-#if SYS_UNIX			/* "." and "" are different types */
+#if NULL_FTYPE			/* "." and "" are different types */
 		if ((s[1] == '.') || (s[1] == EOS))
 		    num_types++;
 #endif
@@ -706,7 +740,7 @@ main(int argc, char *argv[])
 	do {
 	    if (*--s == '.') {
 		FileTypes[--j] = strdup(s);
-#if SYS_UNIX			/* "." and "" are different types */
+#if NULL_FTYPE			/* "." and "" are different types */
 		if (s[1] == EOS)
 		    FileTypes[--j] = strdup("");
 #endif
@@ -742,10 +776,10 @@ main(int argc, char *argv[])
 	    if (!found) {
 #if !USE_INODE
 		if (strcmp(bfr, "."))
-			dirs[kk].name = MakeString(dirs[kk].actual);
+		    dirs[kk].name = MakeString(dirs[kk].actual);
 		else
 #endif
-			dirs[kk].name = MakeString(bfr);
+		    dirs[kk].name = MakeString(bfr);
 		kk++;
 	    }
 	}
@@ -814,7 +848,10 @@ main(int argc, char *argv[])
     }
     if (inpath != 0) {
 	for (k = 0; k < total; k++) {
-	    FreeString(inpath[k].name);
+	    if (inpath[k].ip_NAME != inpath[k].ip_name) {
+		FreeString(inpath[k].ip_NAME);
+	    }
+	    FreeString(inpath[k].ip_name);
 	    free((char *) (inpath[k].node));
 	}
 	free((char *) inpath);

@@ -1,5 +1,11 @@
-$Id: CHANGES,v 6.6 2004/06/19 10:31:57 tom Exp $
+$Id: CHANGES,v 6.7 2004/06/20 22:45:37 tom Exp $
 ------------------------------------------------------------------------------
+
+20 Jun 2004
+	+ add Cygwin as a special case where filenames are case-insensitive,
+	  and trailing "." is treated like DOS.
+	+ modify to handle case-insensitive filesystems, e.g., OS/2 and Win32.
+	+ modify run_test.sh to use mktemp (suggested by Igor Pechtchanski).
 
 19 Jun 2004
 	+ change copyright to BSD-style.
