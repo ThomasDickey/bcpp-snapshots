@@ -10,38 +10,10 @@
 
 #include <stdio.h>          // FILE Structure
 
-static const char  pConfigWord[][29] = {
-                                  ";"                         , // 0
-
-                                  "FUNCTION_SPACING"          , // 1
-
-                                  "USE_TABS"                  , // 2
-                                  "INDENT_SPACING"            , // 3
-                                  "NONASCII_QUOTES_TO_OCTAL"  , // 4
-
-                                  "COMMENTS_WITH_CODE"        , // 5
-                                  "COMMENTS_WITH_NOCODE"      , // 6
-                                  //JZAS Start
-				                  "LEAVE_COMMENTS_NOCODE"     , // 7
-                                  // JZAS End
-
-                                  "LEAVE_GRAPHIC_CHARS"       , // 8
-                                  "ASCII_CHARS_ONLY"          , // 9
-                                  "PLACE_BRACE_ON_NEW_LINE"   , // 10
-                                  "PROGRAM_OUTPUT"            , // 11
-                                  "QUEUE_BUFFER"              , // 12
-                                  "BACKUP_FILE"               , // 13
-
-                                  "="                         , // 14
-                                  "YES"                       , // 15
-                                  "ON"                        , // 16
-                                  "NO"                        , // 17
-                                  "OFF"                         // 18
-                                };
-
 enum Boolean     {False = 0, True = -1};
 
-enum ConfigWords {ANYT = 0, FSPC, UTAB, ISPC, NAQTOOCT, COMWC, COMNC, LCNC,
+enum ConfigWords {ANYT = 0, FSPC, UTAB, ISPC, IPRO,
+                  NAQTOOCT, COMWC, COMNC, LCNC,
                   LGRAPHC, ASCIIO, PBNLINE, PROGO, QBUF, BUF,
                   EQUAL, YES, ON, NO, OFF};
 
@@ -78,6 +50,7 @@ struct Config
   Boolean output         ;  // Set this True for normal program output
   int     queueBuffer    ;  // Set the number if lines to store in memory at a time !
   Boolean backUp         ;  // backup the original file, have output file become input file name !
+  Boolean indentPreP     ;  // indent preprocessor controls to match code
 };
 
 
@@ -174,5 +147,6 @@ void ConfigAssignment (ConfigWords type, int assignType, int& errorCount, int& c
 //                config file.
 //
 int SetConfig (FILE* pConfigFile, Config& userSettings);
+
 
 #endif

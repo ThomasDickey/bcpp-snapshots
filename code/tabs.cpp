@@ -238,7 +238,7 @@ void ExpandTabs (char* &pString,
 
     lineState[0] = NullC;
 
-    //TRACE((stderr, " ExpandTabs(%s)\n", pString))
+    //TRACE((stderr, " ExpandTabs(%s)%s\n", pString, codeOnLine ? " code" : ""))
     while (*pSTab != NULLC)
     {
         col++;
@@ -395,7 +395,7 @@ void ExpandTabs (char* &pString,
     // Set up for the next time through this procedure
     if (curState == Ignore)
         curState = Normal;
-    else if (col == 0
+    if (col == 0
      || pString[col-1] != ESCAPE)
     {
         codeOnLine = False;
