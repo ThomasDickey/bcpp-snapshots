@@ -1,5 +1,5 @@
 .\"*****************************************************************************
-.\" Copyright 1995,2002 by Thomas E. Dickey.  All Rights Reserved.             *
+.\" Copyright 1995-2002,2004 by Thomas E. Dickey.  All Rights Reserved.        *
 .\"                                                                            *
 .\" Permission to use, copy, modify, and distribute this software and its      *
 .\" documentation for any purpose and without fee is hereby granted, provided  *
@@ -17,7 +17,7 @@
 .\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR *
 .\" IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.                *
 .\"*****************************************************************************
-.\" $Id: conflict.1,v 6.2 2004/06/19 14:38:53 tom Exp $
+.\" $Id: conflict.1,v 6.3 2004/06/20 23:30:29 tom Exp $
 .de DS
 .RS
 .nf
@@ -34,15 +34,15 @@
 .SH NAME
 \fBconflict\fR \- filename conflict listing
 .
-.SH USAGE
+.SH SYNOPSIS
 \fBconflict\fP\fI [options] [file-specifications]\fP
 .
-.SH SYNOPSIS
+.SH DESCRIPTION
 \fBConflict\fR displays conflicting filenames in your execution path.
 Unlike the csh command \fIwhich\fR,
 it displays all of the (non-alias) executable files in your path.
 .
-.SH DESCRIPTION
+.PP
 \fBConflict\fR reports pathname conflicts by making a list of the
 directories which are listed in the environment variable PATH, and
 then scanning these directories for executable files.
@@ -60,37 +60,47 @@ Conflicting names are reported on succeeding lines.
 .
 .SH OPTIONS
 .TP
-.BI \-e " name"
+.BI -e " name"
 specify another environment variable than PATH
 (e.g., INFOPATH, LD_LIBRARY_PATH).
 .
 .TP
-.BI \-I " path"
+.BI -I " path"
 for compatibility with C-preprocessor options, build up the search path
 with the given directory.
-(The corresponding \-D and \-U options are ignored.)
-Using the \-I or \-L options overrides the use of environment variables
+(The corresponding \fB-D\fP and \fB-U\fP options are ignored.)
+Using the \fB-I\fP or \fB-L\fP options overrides the use of environment variables
 for the search path.
 .
 .TP
-.BI \-L " path"
+.BI -L " path"
 for compatibility with C-compiler options, build up the search path
 with the given directory.
 .
 .TP
-.B \-p
+.B -p
 print pathnames only, rather than the table.
 .
 .TP
-.B \-r
+.B -r
 look for readable files
 .
 .TP
-.BI \-t " types"
+.BI -t " types"
 specify a list of file types which are treated as conflicting.
+The option value is a list of file suffixes (a "." followed by
+zero or more other characters).
+The list separator is the "." which begins each suffix, e.g.,
+.DS
+	conflict -t.exe.com
+.DE
+.IP
+If no \fB-t\fP option is given,
+a built-in list of executable file types is used for systems
+where this is known.
 .
 .TP
-.B \-v
+.B -v
 Use verbose option to control how much is shown.
 Repeat the option for different levels:
 .RS
@@ -108,24 +118,24 @@ summary, showing executable file (with its full path) as it is found).
 .RE
 .
 .TP
-.B \-V
+.B -V
 print the version, exit.
 .
 .TP
-.B \-w
+.B -w
 look for writable files
 .
 .TP
-.BI \-W " number"
+.BI -W " number"
 expand width of display by number of columns (default: one column per path).
 .
 .TP
-.B \-x
+.B -x
 look for executable files (the default).
 .
 .PP
-You may combine the "\-r", "\-w" and "\-x" options.
-If you do not specify one of these, \fBconflict\fR assumes "\-x".
+You may combine the "\fB-r\fP", "\fB-w\fP" and "\fB-x\fP" options.
+If you do not specify one of these, \fBconflict\fR assumes "\fB-x\fP".
 .
 .SH OPERATIONS
 \fBConflict\fR may be used to list all conflicting names in your
@@ -157,7 +167,7 @@ Current working directory is "/home/dickey/src/conflict"
 .
 .SH ENVIRONMENT
 \fBConflict\fR runs in a portable UNIX\*R environment, as well as
-MSDOS and OS/2 command-line.
+MSDOS, Win32 and OS/2 command-line.
 .
 .SH FILES
 \fBConflict\fR is a single binary module, which uses no auxiliary files.
