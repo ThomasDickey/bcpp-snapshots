@@ -63,12 +63,14 @@ class InputStruct : public ANYOBJECT
                               //       -1 : True,  comment with code (for comment dataType)
                               //        0 : False, comment with no Code
 
+        int offset;           // offset within original line's text
         char* pData;          // pointer to queue data !
         char* pState;         // pointer to corresponding parse-state
 
-        inline InputStruct (DataTypes theType)
+        inline InputStruct (DataTypes theType, int theOffset)
         {
             dataType = theType;
+            offset = theOffset;
             comWcode = False;
             pState = 0;       // only non-null for code
         }
@@ -83,14 +85,15 @@ extern int   totalTokens;            // token count, for debugging
 // expanded with its real tabs/spaces within the output function of the program.
 class OutputStruct : public ANYOBJECT
 {
-    private:
     public:
            DataTypes pType;
 #if defined(DEBUG) || defined(DEBUG2)
            int   thisToken;     // current token number
 #endif
+           int   offset;        // offset within original line's text
            int   indentSpace;   // num of spaces
            int   indentHangs;   // num of indents for continuation
+           bool  splitElseIf;   // special case for aligning else/if
            char* pCode;
            char* pCFlag;        // state-flags for pCode
            char* pBrace;        // "}" or "{", with possible code-fragment
@@ -98,16 +101,46 @@ class OutputStruct : public ANYOBJECT
            int   filler;        // num of spaces
            char* pComment;
 
+    private:
+           void Initialize()
+           {
+                pType = ELine;
+#if defined(DEBUG) || defined(DEBUG2)
+                thisToken      = totalTokens++;
+#endif
+                pCode =
+                pCFlag =
+                pBrace =
+                pBFlag =
+                pComment = NULL;
+                indentSpace =
+                indentHangs =
+                filler =
+                offset = 0;
+                splitElseIf = False;
+           }
+
+    public:
            // Constructor
            // Automate initalisation
            inline  OutputStruct  (DataTypes theType)
            {
+                Initialize();
                 pType          = theType;
-#if defined(DEBUG) || defined(DEBUG2)
-                thisToken      = totalTokens++;
-#endif
-                pCode = pCFlag = pBrace = pBFlag = pComment = NULL;
-                indentSpace = indentHangs = filler = 0;
+           }
+
+           inline  OutputStruct  (InputStruct* theIn)
+           {
+                Initialize();
+                pType          = theIn -> dataType;
+                offset         = theIn -> offset;
+           }
+
+           inline  OutputStruct  (OutputStruct* theIn)
+           {
+                Initialize();
+                pType          = theIn -> pType;
+                offset         = theIn -> offset;
            }
 
            // Destructor

@@ -247,7 +247,7 @@ void ExpandTabs (char* &pString,
     {
         col++;
 
-        if (isprint(*pSTab))
+        if (isgraph(*pSTab))
             had_print = True;
 
         if (skip || !isspace(*pSTab))
@@ -268,7 +268,7 @@ void ExpandTabs (char* &pString,
             else
                 tabAmount = ((((col+tabLen-1) / tabLen)) * tabLen) - col + 1;
 
-            //TRACE((stderr, "amount:%d, col:%d\n", tabAmount, col))
+            //TRACE((stderr, "amount:%d, col:%d, state:%s (%d)\n", tabAmount, col, showCharState(curState), had_print))
             if (tabAmount > 0)
             {
                 // create newString, remove tab !
@@ -415,7 +415,7 @@ void ExpandTabs (char* &pString,
 
     TRACE((stderr, " Expanded  (%s)\n", pString))
     TRACE((stderr, " lineState (%s)\n", lineState))
-    TRACE((stderr, "FIXME %d/%d %s\n", last, strlen(pString), showCharState(curState)))
+    TRACE((stderr, "%s %d/%d %s\n", last > strlen(pString)+1 ? "FIXME" : "", last, strlen(pString), showCharState(curState)))
 }
 
 // ----------------------------------------------------------------------------

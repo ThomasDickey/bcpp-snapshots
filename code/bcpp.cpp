@@ -162,6 +162,8 @@
 
 // ----------------------------------------------------------------------------
 
+const char *ccom_begin = "/*";
+
 const IndentwordStruct pIndentWords[] = {
     { "if",         oneLine },
     { "while",      oneLine },
@@ -197,7 +199,7 @@ static Boolean IsStartOfComment(char *pLineData, char *pLineState)
 {
     if (pLineState[0] == Comment)
     {
-        if (!strncmp(pLineData, "/*", 2))
+        if (!strncmp(pLineData, ccom_begin, 2))
             return True;
     }
     return False;
@@ -205,7 +207,8 @@ static Boolean IsStartOfComment(char *pLineData, char *pLineState)
 
 inline void ShiftLeft(char *s, int len)
 {
-    strcpy (s, s + len);
+    if (len > 0)
+        strcpy (s, s + len);
 }
 
 int LookupKeyword(const char *tst)
@@ -230,9 +233,12 @@ int LookupKeyword(const char *tst)
 //             2 = remove spaces from right
 //             3 = remove spaces from left, and right
 //
-void StripSpacingLeftRight (char* pLineData, char* pLineState, int mode = 3)
+// Returns: the number of spaces removed from the left.
+//
+int StripSpacingLeftRight (char* pLineData, char* pLineState, int mode = 3)
 {
     int n;
+    int result = 0;
 
     if (mode & 1)
     {
@@ -243,6 +249,7 @@ void StripSpacingLeftRight (char* pLineData, char* pLineState, int mode = 3)
         {
             ShiftLeft(pLineData,  n+1);
             ShiftLeft(pLineState, n+1);
+            result = n+1;
         }
     }
 
@@ -254,6 +261,7 @@ void StripSpacingLeftRight (char* pLineData, char* pLineState, int mode = 3)
             pLineState[n-1] = NullC;
         }
     }
+    return result;
 }
 
 
@@ -283,21 +291,30 @@ Boolean TestLineHasCode (char* pLineState)
 }
 
 
+inline void TerminateLine(char *pData, char *pState, size_t n)
+{
+    pData[n] = NULLC;
+    pState[n] = NullC;
+}
+
 // ----------------------------------------------------------------------------
 // This function is used within function DecodeLine(), it creates a new
 // InputStructure and stores what is contained in pLineData string in
 // the newly created structure.
 //
 // Parameters:
+// offset     : offset within original line's text of this component
 // pLineData  : Pointer to the string to store within the InputStructure.
 // dataType   : Type of data that is to be stored within the InputStructure
 //              see DataTypes enum.
+// removeSpace : true when we're to remove leading/trailing blanks
 //
 // Return Values:
 // InputStruct* : Returns a pointer to the newly constructed InputStructure,
-//                returns a NULL value is unable to allocate memory.
+//                returns a NULL value if unable to allocate memory.
 //
-InputStruct* ExtractCode (char*    pLineData,
+InputStruct* ExtractCode (int      offset,
+                          char*    pLineData,
                           char*    pLineState,
                           DataTypes dataType = Code,
                           Boolean  removeSpace = True)
@@ -310,11 +327,11 @@ InputStruct* ExtractCode (char*    pLineData,
     {
         if ((pNewState =  NewString(pLineState)) != 0)
         {
-            if ((pItem = new InputStruct(dataType)) != 0)
+            // strip spacing in new string before storing
+            if (removeSpace != False)
+                offset += StripSpacingLeftRight (pNewCode, pNewState);
+            if ((pItem = new InputStruct(dataType, offset)) != 0)
             {
-                // strip spacing in new string before storing
-                if (removeSpace != False)
-                    StripSpacingLeftRight (pNewCode, pNewState);
                 pItem -> pData    = pNewCode;
                 pItem -> pState   = pNewState;
                 return pItem;
@@ -327,6 +344,60 @@ InputStruct* ExtractCode (char*    pLineData,
     return 0;
 }
 
+
+// ----------------------------------------------------------------------------
+// Extracting comments from the input line is a little more complicated than
+// the code fragments, since we'll strip the comments out of the input line
+// after extracting them.
+//
+InputStruct* ExtractCCmt (int&     offset,
+                          int      start,
+                          int      end,
+                          char*    pLineData,
+                          char*    pLineState,
+                          DataTypes dataType = CCom)
+{
+    InputStruct* pItem = 0;
+    char endData = NULLC;
+    char endState = NULLC;
+    size_t len = end >= 0 ? (end - start + 2) : strlen(pLineData);
+    size_t last = start + len;
+
+    if (end >= 0)
+    {
+        endData  = pLineData[last];
+        endState = pLineState[last];
+        TerminateLine(pLineData, pLineState, last);
+    }
+
+    pItem = ExtractCode(
+        offset + start,
+        pLineData + start,
+        pLineState + start,
+        dataType,
+        False);
+
+    if (end >= 0)
+    {
+        pLineData[last]  = endData;
+        pLineState[last] = endState;
+        ShiftLeft (pLineData +start, len);
+        ShiftLeft (pLineState+start, len);
+    }
+    else
+    {
+        TerminateLine(pLineData, pLineState, start);
+    }
+
+    if (pItem != 0)
+    {
+        pItem -> comWcode = TestLineHasCode (pLineState); // Comment without code ?
+    }
+
+    offset += len;
+    TRACE((stderr, "Updated offset to %d\n", offset))
+    return pItem;
+}
 
 // ----------------------------------------------------------------------------
 // This Function is used to de-allocate memory in a InputStructure.
@@ -414,20 +485,15 @@ static int FindPunctuation(char *pLineData, char *pLineState, char punct)
     return it;
 }
 
-inline void TerminateLine(char *pData, char *pState, size_t n)
-{
-    pData[n] = NULLC;
-    pState[n] = NullC;
-}
-
 // ----------------------------------------------------------------------------
 // This function is a single pass decoder for a line of input code that
 // is read from the user's input file. The function stores each part of a line,
-// be it a comment (with is attributes), code, open brace, close brace, or
+// be it a comment (with its attributes), code, open brace, close brace, or
 // blank line as a InputStructure, each InputStructure is stored within
 // a Queue Object.
 //
 // Parameters:
+// offset     : offset within original line's text of this component
 // pLineData  : Pointer to a line of a users input file (string).
 // pLineState : Pointer to a state of a users input line (string).
 // QueueList* : Pointer to a QueueList object will contains all of
@@ -440,7 +506,7 @@ inline void TerminateLine(char *pData, char *pState, size_t n)
 //              -1 : Memory allocation failure
 //               0 : No Worries
 //
-int DecodeLine (char* pLineData, char *pLineState, QueueList* pInputQueue)
+int DecodeLine (int offset, char* pLineData, char *pLineState, QueueList* pInputQueue)
 {
     int         SChar = -1;
     int         EChar = -1;
@@ -454,31 +520,17 @@ int DecodeLine (char* pLineData, char *pLineState, QueueList* pInputQueue)
 
         if (EChar >= 0)
         {
-            size_t len = EChar + 2;
-            char* pNewComment =  NewSubstring(pLineData, len);
+            InputStruct* pItem = ExtractCCmt(offset, 0, EChar, pLineData, pLineState, CCom);
 
-            //#### Test if memory allocated
-            if (pNewComment == NULL)
-                return DecodeLineCleanUp (pInputQueue);
-
-            ShiftLeft (pLineData, len); //##### Shift left string from current pos
-            ShiftLeft (pLineState, len);
-
-            //#### create new queue structure !
-            InputStruct* pItem = new InputStruct(CCom);
-
-            //#### Test if memory allocated
             if (pItem == NULL)
                 return DecodeLineCleanUp (pInputQueue);
-
-            pItem -> pData    = pNewComment;
 
             TRACE_INPUT(pItem)
             pInputQueue->putLast (pItem);
         }
         else //##### Place output as comment without code (C comment terminator not found)
         {
-            InputStruct* pTemp = ExtractCode (pLineData, pLineState, CCom, False); // don't remove spaces !
+            InputStruct* pTemp = ExtractCode (offset, pLineData, pLineState, CCom, False); // don't remove spaces !
 
             //#### Test if memory allocated
             if (pTemp == NULL)
@@ -497,7 +549,7 @@ int DecodeLine (char* pLineData, char *pLineState, QueueList* pInputQueue)
     // N.B Place this function here as to sure not to corrupt relative pointer
     // settings that may be used within pLinedata, and become altered through
     // using this routine.
-    StripSpacingLeftRight (pLineData, pLineState);
+    offset += StripSpacingLeftRight (pLineData, pLineState);
 
     //@@@@@@ Extract /* comment */ C type comments on one line
     SChar = FindStartofComment (pLineState);  // find start of C Comment
@@ -509,22 +561,10 @@ int DecodeLine (char* pLineData, char *pLineState, QueueList* pInputQueue)
         //##### If negative then comments are on multiple lines !
         if (EChar < 0)
         {
-            char* pNewComment = NewString(pLineData+SChar);
+            InputStruct* pItem = ExtractCCmt(offset, SChar, -1, pLineData, pLineState, CCom);
 
-            //#### Test if memory allocated
-            if (pNewComment == NULL)
-                return DecodeLineCleanUp (pInputQueue);
-
-            //##### Make it NULL so that comment is removed, from Line
-            TerminateLine(pLineData, pLineState, SChar);
-
-            InputStruct* pItem = new InputStruct(CCom);
-
-            //#### Test if memory allocated
             if (pItem == NULL)
                 return DecodeLineCleanUp (pInputQueue);
-
-            pItem -> pData    = pNewComment;
 
             // make multi-line C style comments totally separate
             // from code to avoid some likely errors occurring if they
@@ -532,7 +572,7 @@ int DecodeLine (char* pLineData, char *pLineState, QueueList* pInputQueue)
 
             // apply recursion so that comment is last item placed
             // in queue !
-            if (DecodeLine (pLineData, pLineState, pInputQueue) != 0)
+            if (DecodeLine (offset, pLineData, pLineState, pInputQueue) != 0)
             {
                 // problems !
                 delete pItem -> pData;
@@ -547,76 +587,47 @@ int DecodeLine (char* pLineData, char *pLineState, QueueList* pInputQueue)
         }
         else
         {
-            size_t len = EChar - SChar + 2;
-            char* pNewComment =  NewSubstring(pLineData+SChar, len);
+            InputStruct* pItem = ExtractCCmt(offset, SChar, EChar, pLineData, pLineState, CCom);
 
-            //#### Test if memory allocated
-            if (pNewComment == NULL)
-                return DecodeLineCleanUp (pInputQueue);
-
-            ShiftLeft (pLineData +SChar, len);
-            ShiftLeft (pLineState+SChar, len);
-
-            InputStruct* pItem = new InputStruct(CCom);
-            //#### Test if memory allocated
             if (pItem == NULL)
                 return DecodeLineCleanUp (pInputQueue);
-
-            pItem -> pData    = pNewComment;
-            pItem -> comWcode = TestLineHasCode (pLineState); // Comment without code ?
-            TRACE((stderr, "@%d: set attrib to %d\n", __LINE__, pItem->comWcode))
 
             TRACE_INPUT(pItem)
             pInputQueue->putLast (pItem);
 
         } //##### else
 
-    }//##### If "/*" C comments pressent
+    }//##### If "/*" C comments present
 
     //##### Remove blank spacing from left & right of string
-    StripSpacingLeftRight (pLineData, pLineState);
+    offset += StripSpacingLeftRight (pLineData, pLineState);
 
     //@@@@@@ C++ Comment Processing !
     SChar = FindStartofComment (pLineState, Ignore);
     if (SChar >= 0)
     {
-        char* pNewComment = NewString(pLineData+SChar);
+        int myoff = offset;
+        InputStruct* pItem = ExtractCCmt(myoff, SChar, -1, pLineData, pLineState, CppCom);
 
-        //#### Test if memory allocated
-        if (pNewComment == NULL)
-            return DecodeLineCleanUp (pInputQueue);
-
-        //##### Terminate original string !
-        TerminateLine(pLineData, pLineState, SChar);
-
-        //#### create new queue structure !
-        InputStruct* pItem = new InputStruct(CppCom);
-        //#### Test if memory allocated
         if (pItem == NULL)
             return DecodeLineCleanUp (pInputQueue);
-
-        pItem -> pData    = pNewComment;
-        pItem -> comWcode = TestLineHasCode (pLineState); // Comment without code ?
-        TRACE((stderr, "@%d: set comWcode to %d\n", __LINE__, pItem->comWcode))
 
         TRACE_INPUT(pItem)
         pInputQueue->putLast (pItem);
     }
 
     //##### Remove blank spacing from left & right of string
-    StripSpacingLeftRight (pLineData, pLineState);
+    offset += StripSpacingLeftRight (pLineData, pLineState);
 
     //@@@@@@ #define (preprocessor extraction)
     if (pLineState[0] == POUNDC)
     {
         //#### create new queue structure !
-        InputStruct* pItem = new InputStruct(PreP);
+        InputStruct* pItem = ExtractCode(offset, pLineData, pLineState, PreP);
 
         //#### Test if memory allocated
         if (pItem == NULL)
             return DecodeLineCleanUp (pInputQueue);
-
-        pItem -> pData    = NewString(pLineData);
 
         TRACE_INPUT(pItem)
         pInputQueue->putLast (pItem);
@@ -626,7 +637,7 @@ int DecodeLine (char* pLineData, char *pLineState, QueueList* pInputQueue)
 
     //################# Actual Code Extraction #################
 
-    StripSpacingLeftRight (pLineData, pLineState);
+    offset += StripSpacingLeftRight (pLineData, pLineState);
 
     //@@@@@@ Test what's left in line for L_CURL, and R_CURL braces
 
@@ -666,18 +677,19 @@ int DecodeLine (char* pLineData, char *pLineState, QueueList* pInputQueue)
         char saveData  = pLineData[EChar];  pLineData[EChar]  = NULLC;
         char saveState = pLineState[EChar]; pLineState[EChar] = NULLC;
 
-        InputStruct* pTemp = ExtractCode(pLineData, pLineState);
+        InputStruct* pTemp = ExtractCode(offset, pLineData, pLineState);
         if (pTemp == NULL)
             return DecodeLineCleanUp (pInputQueue);
 
         TRACE_INPUT(pTemp)
         pInputQueue->putLast (pTemp);
 
+        offset += EChar;
         pLineData[EChar]   = saveData;  ShiftLeft (pLineData,  EChar);
         pLineState[EChar]  = saveState; ShiftLeft (pLineState, EChar);
 
         // restart decoding line !
-        return DecodeLine (pLineData, pLineState, pInputQueue);
+        return DecodeLine (offset, pLineData, pLineState, pInputQueue);
         // end of recursive call !
 
     } // if L_CURL and R_CURL exit on same line
@@ -712,7 +724,7 @@ int DecodeLine (char* pLineData, char *pLineState, QueueList* pInputQueue)
            //#### means that pointers that are calculated before stripSpacing function
            //#### remain valid.
 
-           InputStruct* pLeadCode = ExtractCode (pTemp, pLineState);
+           InputStruct* pLeadCode = ExtractCode (offset, pTemp, pLineState);
 
            if (pLeadCode == NULL)
                 return DecodeLineCleanUp (pInputQueue);
@@ -723,6 +735,7 @@ int DecodeLine (char* pLineData, char *pLineState, QueueList* pInputQueue)
         }
 
         //##### Update main string
+        offset += toSave;
         pLineData[toSave]  = saveCode; ShiftLeft (pLineData,  toSave);
         pLineState[toSave] = saveFlag; ShiftLeft (pLineState, toSave);
 
@@ -745,8 +758,9 @@ int DecodeLine (char* pLineData, char *pLineState, QueueList* pInputQueue)
                     saveCode     = pLineData[1];  pLineData[1]  = NULLC;
                     saveFlag     = pLineState[1]; pLineState[1] = NULLC;
 
-                    pTemp        = ExtractCode (pLineData, pLineState, OBrace);//##### Define data type before storing
+                    pTemp        = ExtractCode (offset, pLineData, pLineState, OBrace);//##### Define data type before storing
 
+                    offset += 1;
                     pLineData[1] = saveCode;  ShiftLeft (pLineData,  1);
                     pLineState[1] = saveFlag; ShiftLeft (pLineState, 1);
 
@@ -777,8 +791,9 @@ int DecodeLine (char* pLineData, char *pLineState, QueueList* pInputQueue)
                         saveCode = pLineData[mark]; pLineData[mark] = NULLC;
                         saveFlag = pLineState[mark]; pLineState[mark] = NULLC;
 
-                        pTemp = ExtractCode (pLineData, pLineState, CBrace);
+                        pTemp = ExtractCode (offset, pLineData, pLineState, CBrace);
 
+                        offset += mark;
                         pLineData[mark] = saveCode;  ShiftLeft (pLineData,  mark);
                         pLineState[mark] = saveFlag; ShiftLeft (pLineState, mark);
 
@@ -786,7 +801,7 @@ int DecodeLine (char* pLineData, char *pLineState, QueueList* pInputQueue)
                     }
                     else // rest of data is considered as code !
                     {
-                        pTemp     = ExtractCode (pLineData, pLineState, CBrace);
+                        pTemp     = ExtractCode (offset, pLineData, pLineState, CBrace);
                         pLineState = NULL;      // leave processing !
                     }
                     break;
@@ -794,7 +809,7 @@ int DecodeLine (char* pLineData, char *pLineState, QueueList* pInputQueue)
 
                 case (3):   // remove what is left on line as code.
                 {
-                    return DecodeLine (pLineData, pLineState, pInputQueue);
+                    return DecodeLine (offset, pLineData, pLineState, pInputQueue);
                     // end of recursive call !
                 }
             }// switch;
@@ -815,7 +830,7 @@ int DecodeLine (char* pLineData, char *pLineState, QueueList* pInputQueue)
         if ((pLineData[0] == NULLC) && ((pInputQueue->status()) <= 0))
         {
             //##### implement blank space
-            InputStruct* pTemp = ExtractCode (pLineData, pLineState, ELine);
+            InputStruct* pTemp = ExtractCode (offset, pLineData, pLineState, ELine);
 
             if (pTemp == NULL)
                 return DecodeLineCleanUp (pInputQueue);
@@ -827,7 +842,7 @@ int DecodeLine (char* pLineData, char *pLineState, QueueList* pInputQueue)
         else if (TestLineHasCode (pLineState) != False)
         {
             // implement blank space
-            InputStruct* pTemp = ExtractCode (pLineData, pLineState);
+            InputStruct* pTemp = ExtractCode (offset, pLineData, pLineState);
 
             if (pTemp == NULL)
                 return DecodeLineCleanUp (pInputQueue);
@@ -845,35 +860,39 @@ int DecodeLine (char* pLineData, char *pLineState, QueueList* pInputQueue)
 void dontHangComment(InputStruct *pIn, OutputStruct *pOut, QueueList* pLines)
 {
     if (pIn -> dataType == CCom
-     && pOut -> indentSpace != 0
-     && strstr(pOut -> pComment, "/*") == 0)
+     && strncmp(pOut -> pComment, ccom_begin, 2) != 0)
     {
-        char *text = pOut -> pComment;
-        int n;
-
-        // If the comment text has as much leading whitespace as the indention,
-        // remove that amount from the indention, to better retain the original
-        // appearance of the comments.
-        for (n = 0; n < pOut -> indentSpace && text[n] == SPACE; n++)
-            ;
-        if (n >= pOut -> indentSpace)
-            pOut -> indentSpace = 0;
-        else if (n != 0)
-            pOut -> indentSpace -= n;
+        const char *text = SkipBlanks(pOut -> pComment);
+        int count = pLines -> status();
+        int length = text - pOut -> pComment;
 
         // If the comment text begins with an '*', increase the indention by
         // one unless it follows a comment-line that didn't begin with '*'.
-        if (text[n] == '*'
-         && (n = pLines -> status()) > 0)
+        if (count > 0)
         {
-            OutputStruct *pTemp = (OutputStruct*) pLines -> peek (n);
-            if (pTemp != 0
-             && pTemp -> pComment != 0)
-                text = pTemp -> pComment;
-            while (*text == SPACE)
-                text++;
-            if (*text == '*'
-             || !strncmp(text, "/*", 2))
+            bool star = (*text == '*');
+
+            while (count > 0)
+            {
+                OutputStruct *pTemp = (OutputStruct *) pLines -> peek(count--);
+                if (pTemp == 0
+                 || pTemp -> pComment == 0)
+                    continue;
+                text = SkipBlanks(pTemp -> pComment);
+                if (!strncmp(text, ccom_begin, 2))
+                {
+                    if (!star)
+                    {
+                        if (length > pTemp -> offset)
+                            length = pTemp -> offset;
+                    }
+                    break;
+                }
+                if (*text != '*')
+                    star = False;
+            }
+            ShiftLeft(pOut -> pComment, length);
+            if (star)
                 pOut -> indentSpace += 1;
         }
     }
@@ -1009,7 +1028,7 @@ int ConstructLine (
         int tokenIndent = indentStack;
         pTestType = (InputStruct*) pInputQueue -> takeNext();
 
-        OutputStruct* pOut = new OutputStruct(pTestType -> dataType);
+        OutputStruct* pOut = new OutputStruct(pTestType);
 
         if (pOut == NULL)
             return -1;
@@ -1090,7 +1109,7 @@ int ConstructLine (
                     // Special case: align "else" and "if" if they're on successive lines
                     if (pendingElse
                      && CompareKeyword(pOut -> pCode, "if"))
-                        pOut -> indentSpace -= userS.tabSpaceSize;
+                        pOut -> splitElseIf = True;
                     pendingElse = !strcmp(pOut -> pCode, "else");
                 }
                 TRACE((stderr, "@%d, Set Code   = %s:%d indent %d\n", __LINE__, pOut->pCode, pOut->thisToken, pOut->indentSpace))
@@ -1477,7 +1496,7 @@ QueueList* IndentNonBraceCode (QueueList* pLines, StackList* pIMode, const Confi
             {
                 // reconstruct queue !
                 QueueList*    pNewQueue = new QueueList();
-                OutputStruct* pNewItem  = new OutputStruct(pAlterLine -> pType);
+                OutputStruct* pNewItem  = new OutputStruct(pAlterLine);
                 pAlterLine              = (OutputStruct*) pLines -> takeNext();
 
                 if (pNewItem == NULL)
@@ -1600,8 +1619,18 @@ QueueList* IndentNonBraces (StackList* pIMode, QueueList* pLines, const Config& 
     if (pLines -> status () < minLimit)
         return pLines;
 
+    OutputStruct *pOut = (OutputStruct*) pLines -> peek (1);
+
+    // Cancel the indent applied by "else" to "if", and abandon the indent
+    // that would be computed in this function for the code under "if".
+    if (pOut -> splitElseIf)
+    {
+        pOut -> indentSpace -= userS.tabSpaceSize;
+        return pLines;
+    }
+
     // determine if current line has a single line keyword ! (if, else, while, for, do)
-    char*   pTestCode = ((OutputStruct*) pLines -> peek (1)) -> pCode;
+    char*   pTestCode = pOut -> pCode;
     if (pTestCode != NULL)
     {
         int     findWord = LookupKeyword(pTestCode);
@@ -1787,9 +1816,9 @@ QueueList* ReformatBraces (QueueList* pLines, const Config& userS)
             int overWrite = pCodeLine -> indentSpace + strlen (pCodeLine -> pCode) + 1 + strlen (pBraceLine -> pBrace);
             if (overWrite >= userS.posOfCommentsWC) // if true then place comment on new line !
             {
-                pNewItem                = new OutputStruct(pCodeLine -> pType);
+                pNewItem = new OutputStruct(pCodeLine);
                 if (pNewItem == NULL)
-                             return NULL;
+                    return NULL;
 
                 pNewItem  -> filler      = userS.posOfCommentsWC;
                 pNewItem  -> pComment    = pCodeLine -> pComment;
@@ -1800,7 +1829,7 @@ QueueList* ReformatBraces (QueueList* pLines, const Config& userS)
         }
 
         // place brace code onto new output structure !
-        pNewItem = new OutputStruct(pCodeLine -> pType);
+        pNewItem = new OutputStruct(pCodeLine);
         // code + space + brace + nullc
         pNewMem  = new char [strlen (pCodeLine -> pCode) + strlen (pBraceLine -> pBrace) + 1 + 1];
 
@@ -1839,7 +1868,7 @@ QueueList* ReformatBraces (QueueList* pLines, const Config& userS)
         // process brace Line !, create new output structure for brace comment
         if (pBraceLine -> pComment != NULL)
         {
-            pNewItem = new OutputStruct(pBraceLine -> pType);
+            pNewItem = new OutputStruct(pBraceLine);
 
             if (pNewItem == NULL)
             {
@@ -2234,7 +2263,7 @@ int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
                 return -1;
             }
 
-            if (DecodeLine (pData, lineState, pInputQueue) == 0) // if there are input items to process
+            if (DecodeLine (0, pData, lineState, pInputQueue) == 0) // if there are input items to process
             {
                     int errorCode = ConstructLine (
                             indentPreP,
