@@ -3,12 +3,13 @@
 D		=../code/
 
 C++		=gcc
-C++FLAGS	=-I$(D) -O2 -Wall
+CPPFLAGS	=-I$(D) -O2 -Wall
+C++FLAGS	= -x c++ $(CPPFLAGS)
 
 .SUFFIXES:	.cpp .o
 
 .cpp.o:
-	$(C++) $(C++FLAGS) -x c++ -c $< -o $@
+	$(C++) $(C++FLAGS) -c $< -o $@
 
 BCPP.o	= \
         $(D)bcpp.o \
