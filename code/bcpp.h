@@ -9,10 +9,27 @@
 #define TRACE(p) /*nothing*/
 #endif
 
-enum CharState { Normal, Comment, DQuoted, SQuoted, Ignore  };
+// Character-state, chosen to allow storing as a null-terminated char-string
+enum CharState {
+    NullC   = 0,
+    Blank   = ' ',      // whitespace not in other categories
+    Normal  = '.',      // code
+    DQuoted = '"',      // "string"
+    SQuoted = '\'',     // 'c'
+    Comment = 'c',      // C comment
+    Ignore  = 'C'       // C++ comment
+    };
+
+// strings.cpp
+extern char *NewString (const char *src);
+extern char *NewSubstring (const char *src, size_t len);
 
 // tabs.cpp
-extern char* ExpandTabs (char* pString, int tabLen, CharState &leftState, CharState &rightState);
+extern void ExpandTabs (char* &pString,
+    int tabLen,
+    int deleteChars,
+    Boolean quoteChars,
+    CharState &curState, char * &lineState);
 extern char* TabSpacing (int mode, int len, int spaceIndent);
 
 #endif // _BCPP_HEADER

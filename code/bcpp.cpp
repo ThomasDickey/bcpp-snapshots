@@ -78,7 +78,7 @@
 //        if (strcmp (pAString, "A String") == 0) // test for "A String"
 //                                                ^
 //                                                |
-//  Not recoginised as a comment becuase of the quotes chars!
+//  Not recognized as a comment becuase of the quotes chars!
 //
 //      - struct a { int b, c, d; } as;
 //        The above now gets decoded properly.
@@ -155,12 +155,13 @@
 #include <string.h>            // strlen(), strstr(), strchr(), strcpy(), strcmp()
 #include <ctype.h>             // character-types
 
-#include "bcpp.h"
 #include "anyobj.h"            // Use ANYOBJECT base class
 #include "baseq.h"             // QueueList class to store Output structures
 #include "stacklis.h"          // StackList class to store indentStruct
 #include "cmdline.h"           // ProcessCommandLine()
 #include "config.h"            // SetConfig()
+
+#include "bcpp.h"
 
 // ----------------------------------------------------------------------------
 const int IndentWordLen  = 9;   // number of indent words in pIndentWords
@@ -279,6 +280,26 @@ inline bool isName(char c)
    return isalnum(c) || (c == '_') || (c == '$');
 }
 
+static Boolean IsStartOfComment(char *pLineData, char *pLineState)
+{
+    if (pLineState[0] == Comment)
+    {
+        if (!strncmp(pLineData, "/*", 2))
+            return True;
+    }
+    return False;
+}
+
+inline bool emptyString(char *s)
+{
+    return s == 0 || *s == 0;
+}
+
+inline void ShiftLeft(char *s, int len)
+{
+    strcpy (s, s + len);
+}
+
 bool CompareKeyword(const char *tst, const char *ref)
 {
    int n;
@@ -303,109 +324,6 @@ const char *MatchKeyword(const char *tst, int Icount)
    return 0;
 }
 
-// ----------------------------------------------------------------------------
-// Function returns a True/False value according if a word/character is
-// contained within quotes within a string.
-// examples: hello "world"        : world lies within quotes (returns True)
-//           hello 'world'        : same as above
-//           "hello" world        : world no long lies within quotes (returns false)
-//
-// Parameters:
-// pLeftLoc      : Pointer in the string of the left most starting position to
-//                 start searching.
-// pRightLoc     : Pointer in the string of the right most starting position to
-//                 start searching.
-// pStartOfString: Pointer to the actual start location of the string that is
-//                 going to be searched.
-//
-// Return Values :
-// Boolean       : Returns True if sub-string is within quotes, else returns
-//                 False.
-//
-Boolean CheckCharsWithinQuotes (char* pLeftLoc, char* pRightLoc, char* pStartOfString)
-{
-    char TQuote   = NULLC;
-    
-    while (  (pLeftLoc >= pStartOfString)
-       &&  ((*pLeftLoc != DQUOTE) && (*pLeftLoc != SQUOTE)) )
-              pLeftLoc--;
-
-    while ( (*pRightLoc != NULLC)
-       &&  ((*pRightLoc != DQUOTE) && (*pRightLoc != SQUOTE)) )
-              pRightLoc++;
-
-    if  ((*pLeftLoc == DQUOTE) && (*pRightLoc == DQUOTE))
-        TQuote = DQUOTE;
-    else if ((*pLeftLoc == SQUOTE) && (*pRightLoc == SQUOTE))
-        TQuote = SQUOTE;
-
-    if  (TQuote != NULLC)
-    {
-        // scan from left to right testing for multiple "quotes !"
-        char* pTLeft  = pStartOfString;
-        char* pTRight = pStartOfString;
-
-        for (;;)
-        {
-            pTLeft = strchr (pTLeft, TQuote);
-            if (pTLeft == NULL)
-               return False;
-            else if (*(pTLeft-1) == ESCAPE)   // a constant !
-                 {
-                    pTLeft++;
-                    continue;               // continue next search !
-                 }
-
-            char* pBackup = pTLeft;
-            do
-            {
-                pTRight = strchr (pTLeft+1, TQuote);
-                if (pTRight == NULL)
-                   return False;
-                else if (*(pTRight-1) == ESCAPE)
-                   pTLeft = pTRight;
-
-            } while (*(pTRight-1) == ESCAPE);
-
-            pTLeft = pBackup;
-
-            if ((pLeftLoc >= pTLeft) && (pRightLoc <= pTRight))
-               return True;
-
-            pTLeft = pTRight+1;
-        }
-    }
-
-    return False;
-}
-
-
-// ----------------------------------------------------------------------------
-// Function is used to test if characters found on a line arn't just
-// C++ comments in disguise. This is used to test C comments.
-// example // /* C comment*/              : returns True
-//         /* C comment*/ // C++ comment  : returns False
-//
-// Parameters:
-// pLeftLoc       : Pointer to the start of the sub-string to start searching
-//                  left for a C++ comment
-// pStartOfString : Pointer to the actual start location of the whole string
-//                  that is going to be searched.
-//
-// Return Values:
-// Boolean      : Returns True if sub-string is within a C++ comment,
-//                else returns False
-//
-Boolean CheckCharsNotCppComments (char* pLeftLoc, char* pStartOfString)
-{
-    char* pCppCommentLoc = strstr (pStartOfString, "//");
-
-    if ((pCppCommentLoc != NULL) && (pCppCommentLoc < pLeftLoc))
-        return True;
-    else
-        return False;
-}
-
 
 // ----------------------------------------------------------------------------
 // Function removes leading, trailing, both leading/trailing characters
@@ -418,208 +336,36 @@ Boolean CheckCharsNotCppComments (char* pLeftLoc, char* pStartOfString)
 //             2 = remove spaces from right
 //             3 = remove spaces from left, and right
 //
-// Return Values:
-// char*     : Returns a pointer to the newly reformated string.
-//
-char* StripSpacingLeftRight (char* pLineData, int mode = 3)
+void StripSpacingLeftRight (char* pLineData, char* pLineState, int mode = 3)
 {
-             int   counter   = strlen (pLineData);
-    unsigned char* pLeftPos  = (unsigned char*) pLineData;
-    unsigned char* pRightPos = (unsigned char*) pLineData + counter;
+    int n;
 
-
-    // find left start of code !
-    // over chars that are greater than 32 !
-
-    if ((mode & 1) == 1)
+    if (mode & 1)
     {
-        while ((*pLeftPos <= 32) && (counter > 0))
+        for (n = -1; pLineState[n+1] == Blank; n++)
+            ;
+
+        if (n >= 0)
         {
-            pLeftPos++;
-            counter--;
+            ShiftLeft(pLineData,  n+1);
+            ShiftLeft(pLineState, n+1);
         }
     }
 
-    // find right start of code !
-    // over chars that are greater than 32 !
-    if ((mode & 2) == 2)
+    if (mode & 2)
     {
-        while ((*pRightPos <= 32)  && (pRightPos > pLeftPos))
-              pRightPos--;
-    }
-
-    // copy that part of the code to the start of the string
-    if (counter == 0)
-       pRightPos[0] = NULLC;  // create null string
-    else
-       pRightPos[1] = NULLC;  // create a shortened string
-
-    pLineData = strcpy (pLineData, (char*) pLeftPos);
-
-    return pLineData;
-}
-
-
-// ----------------------------------------------------------------------------
-// Function takes a unsigned char and converts it to a C type string that
-// contains the char's value, but in octal (i.e "\000" = null char).
-//
-// Parameters:
-// value     : The value that wishes to be converted
-//
-// Return Values:
-// char*     : Returns a pointer to the string that was converted.
-// Memory is allocated via the new command, and once string has been used,
-// memory should be returned to the system.
-//
-char* ConvertCharToOctal (unsigned char value)
-{
-    const char octalVals[] = "01234567";
-
-    char* pOctalValue = new char[5]; // \000 digits plus null terminator
-
-    if (pOctalValue != NULL)
-    {
-
-        for (int pos = 3; pos >= 1; pos--)
+        for (n = strlen(pLineData); n > 0 && pLineState[n-1] == Blank; n--)
         {
-            pOctalValue[pos] = octalVals[(value & 7)];
-            value >>= 3; // left shift to next three bits
+            pLineData[n-1] = NULLC;
+            pLineState[n-1] = NullC;
         }
-        pOctalValue[0] = ESCAPE;
-        pOctalValue[4] = NULLC;
-
     }
-
-    return pOctalValue;
-}
-
-
-// ----------------------------------------------------------------------------
-// This function will strip any non-printable characters from a string,
-// any characters between quotes are converted to octal character notation,
-// if quoteChar parameter set.
-//
-// Parameters:
-// pLineData  : Pointer to the string to process
-// mode       : The type of characters to strip, and move over ...
-//          1 : Remove non-printing chars (i.e control chars, non-ASCII chars).
-//          3 : Same as above cept leave graphic chars alone.
-// quoteChars : Boolean char used to change non-ascii chars that lie within
-//            : quotes to character/octal notation if set to True.
-//
-// Return Values:
-// char*      : Returns a pointer to the newly altered string (if any chars removed).
-//
-char* StripNonPrintables (char* pLineData, int mode, Boolean quoteChars)
-{
-    unsigned char* pCheckByte = (unsigned char*) pLineData;
-
-    while (*pCheckByte != NULLC)
-    {
-    Boolean removeChar = False;
-
-        // type cast unsigned chars to ints to stop compiler wingeing.
-        switch (mode)
-        {
-            case (1):
-            {
-                // remove chars below a space, but not if char is a TAB.
-                // Remove chars if greater than 127 (non ascii ... IBM)
-                if ( ((( (int) *pCheckByte > 0)   && ((int) *pCheckByte <= 31) ) && ((int) *pCheckByte != 9)) ||
-                     (( (int) *pCheckByte >= 127) && ( (int) *pCheckByte <= 255)) )
-                   removeChar = True;
-                break;
-            }
-            case (3):
-            {
-                if ( ((( (int) *pCheckByte > 0)   && ((int) *pCheckByte <= 31) ) && ((int) *pCheckByte != 9)) ||
-                     (( (int) *pCheckByte >= 127) && ( (int) *pCheckByte <= 175)) )
-                {
-                   // check for non graph chars
-                   if (( (int) *pCheckByte >= 224) && ( (int) *pCheckByte <= 255))
-                       removeChar = False; // graphic char
-                   else
-                       removeChar = True;  // a non-graphic char !
-                }
-                break;
-            }
-        } // switch
-
-        if (removeChar != False) // remove char from string
-        {
-            Boolean shuffleChars = True;
-
-            // test to see if char lies within quotes, if true then covert it to
-            // octal !
-            // Do test if not CPP comment !!!
-            if ((CheckCharsWithinQuotes   ((char*)pCheckByte, (char*)pCheckByte, pLineData) != False) &&
-                (quoteChars == True))
-            {
-                char* pStartQuote = strchr (pLineData, DQUOTE); // try find first type of quote in string
-
-                if (pStartQuote == NULL)   // find other type of quote if other doesn't exist
-                   pStartQuote = strchr (pLineData, SQUOTE);
-
-                // char isn't within a cpp comment !
-                if (CheckCharsNotCppComments (pStartQuote, pLineData) == False)
-                {
-
-                    char* pOctalVal  = ConvertCharToOctal (*pCheckByte);
-                    char* pTempStore = new char[strlen(pLineData)+strlen(pOctalVal)+1]; // include length of octal, plus null terminator
-
-                    // memory allocation failed
-                    if ((pTempStore == NULL) || (pOctalVal == NULL))
-                    {
-                        delete pOctalVal;
-                        delete pTempStore;
-                        delete pLineData;
-                        return NULL;
-                    }
-
-                    *pCheckByte     = NULLC; // terminate offending char
-                    // concatinate orignal string, octal string, and remaining original string!
-                    strcpy (pTempStore, pLineData);   // copy first part of string
-                    strcpy (pTempStore + strlen(pTempStore), pOctalVal);
-                    strcpy (pTempStore + strlen(pTempStore), (char*)pCheckByte+1);
-
-                    delete pLineData;
-                    delete pOctalVal;
-                    pLineData       = pTempStore;
-                    pCheckByte      = (unsigned char*) pLineData; // rescan line !
-
-                    shuffleChars    = False;                      // bypass removing char !
-                } // if chars not within a cpp comment !
-            }
-
-            // remove char from string, so long it's not within a quote !
-            if ((shuffleChars != False) &&
-                (CheckCharsWithinQuotes   ((char*)pCheckByte, (char*)pCheckByte, pLineData) == False))
-            {
-
-                // shuffle next char over offending non-printg char !
-                unsigned char* pShuff = pCheckByte;
-
-                while (*pShuff != NULLC)
-                {
-                      pShuff[0] = pShuff[1];
-                      pShuff++;
-                }
-                pCheckByte--;   //recheck copied char over original!
-            }
-
-        } // remove/alter char from/in string !
-
-        pCheckByte++;
-    }// while
-
-    return pLineData;
 }
 
 
 // ----------------------------------------------------------------------------
 // Function returns a Boolean value that shows where code is contained within
-// a string. Any chars within a string above space are consided code.
+// a string. Any chars within a string above space are considered code.
 //
 // Parameters:
 // pLineData : Pointer to a string to process.
@@ -661,26 +407,25 @@ Boolean TestLineHasCode (char* pLineData)
 // InputStruct* : Returns a pointer to the newly constructed InputStructure,
 //                returns a NULL value is unable to allocate memory.
 //
-InputStruct* ExtractCode (char*    pLineData, DataTypes dataType = Code,
+InputStruct* ExtractCode (char*    pLineData,
+                          char*    pLineState,
+                          DataTypes dataType = Code,
                           Boolean  removeSpace = True)
 {
-    char* pNewCode =  new char[strlen (pLineData)+1];
+    char* pNewCode =  NewString(pLineData);
 
     // ############## test memory #############
     if (pNewCode == NULL)
         return NULL;
 
-    pNewCode = strcpy (pNewCode, pLineData);
-    
     // create new queue structure !
     InputStruct* pItem = new InputStruct();
     if (pItem != NULL)
     {
             // strip spacing in new string before storing
             if (removeSpace != False)
-                pItem -> pData    = StripSpacingLeftRight (pNewCode);
-            else
-                pItem -> pData = pNewCode;
+                StripSpacingLeftRight (pNewCode, pLineState);
+            pItem -> pData    = pNewCode;
             pItem -> dataType = dataType;
             pItem -> attrib   = False;     // no applicable
     }
@@ -719,36 +464,68 @@ inline void CleanInputStruct (InputStruct* pDelStruct)
 // Parameters:
 // PDelQueue : Pointer to a QueueList object which in general will contain
 //             InputStructures.
-// pLineData : Pointer to a string will contain a line of a users input file.
 //
-void DecodeLineCleanUp (QueueList* pDelQueue, char* pLineData)
+int DecodeLineCleanUp (QueueList* pDelQueue)
 {
     // Don't implement destructor as other objects may be using the same
     // memory when using structure in output line processing (simple garbage collection)
     while (pDelQueue->status() > 0)
         CleanInputStruct ( ((InputStruct*)pDelQueue -> takeNext()) );
-
-    delete pLineData;
+    return -1;
 }
 
-static char *FindPunctuation(char *pLineData, char punct)
+static int FindStartofComment(char *pLineState, CharState code = Comment)
 {
-    char *pSChar = pLineData-1;
-
-    for (;;)
+    int it = -1;
+    int n;
+    for (n = 0; pLineState[n] != NullC; n++)
     {
-        pSChar = strchr (pSChar+1, punct);
-
-        if (pSChar != NULL)
+        if (pLineState[n] == code)
         {
-           if (CheckCharsWithinQuotes (pSChar, pSChar, pLineData) == False)
-               break;
-           // else continue and try and find next one after comment !
-        }
-        else
+            it = n;
             break;
+        }
     }
-    return pSChar;
+    return it;
+}
+
+static int FindEndofComment(char *pLineState)
+{
+    int it = -1;
+    int n;
+    for (n = 0; pLineState[n] == Comment; n++)
+    {
+        if (pLineState[n+1] == Comment
+         && pLineState[n+2] != Comment)
+        {
+            it = n;
+            break;
+        }
+    }
+    return it;
+}
+
+// find punctuation delimiting code, e.g., curly braces or semicolon
+static int FindPunctuation(char *pLineData, char *pLineState, char punct)
+{
+    int it = -1;
+    int n;
+    for (n = 0; pLineData[n] != NULLC; n++)
+    {
+        if (pLineState[n] == Normal
+         && pLineData[n] == punct)
+        {
+            it = n;
+            break;
+        }
+    }
+    return it;
+}
+
+inline void TerminateLine(char *pData, char *pState, size_t n)
+{
+    pData[n] = NULLC;
+    pState[n] = NullC;
 }
 
 // ----------------------------------------------------------------------------
@@ -760,13 +537,10 @@ static char *FindPunctuation(char *pLineData, char punct)
 //
 // Parameters:
 // pLineData  : Pointer to a line of a users input file (string).
-// CComments  : This variable is used to test if the current line is
-//              a C type comment (i.e multi-line comment). True value
-//              indicated Currently in C comment extraction mode, else
-//              in normal extraction mode.
+// pLineState : Pointer to a state of a users input line (string).
 // QueueList* : Pointer to a QueueList object will contains all of
 //              a lines basic elements. If this object doesn't contain
-//              any elements, then it sugguests there was a processing
+//              any elements, then it suggests there was a processing
 //              problem.
 //
 // Return Values:
@@ -774,78 +548,52 @@ static char *FindPunctuation(char *pLineData, char punct)
 //              -1 : Memory allocation failure
 //               0 : No Worries
 //
-int DecodeLine (char* pLineData, Boolean& CComments, QueueList* pInputQueue)
+int DecodeLine (char* pLineData, char *pLineState, QueueList* pInputQueue)
 {
-    char*      pSChar = NULL; // used to find the starting location of certain elements in a string
-    char*      pEChar = NULL; // used as a terminator of an element in a string !
-
-
-    // remove unwanted space chars ????
-    // pLineData = StripSpacingLeftRight (pLineData);
+    int         SChar = -1;
+    int         EChar = -1;
 
     // @@@@@@ C Comment processing, if over multiple lines @@@@@@
-    if (CComments == True)
+    if (*pLineState == Comment && !IsStartOfComment(pLineData, pLineState))
     {
 
         //#### Test to see if end terminating C comment has arrived !
-        pSChar = strstr (pLineData, "*/");
+        EChar = FindEndofComment(pLineState);
 
-        if (pSChar != NULL)
+        if (EChar >= 0)
         {
-            pSChar[1] = NULLC;   //#### make temp string !
-            char* pNewComment =  new char[strlen (pLineData) + 2];
+            size_t len = EChar + 2;
+            char* pNewComment =  NewSubstring(pLineData, len);
 
             //#### Test if memory allocated
             if (pNewComment == NULL)
-            {
-                DecodeLineCleanUp (pInputQueue, pLineData);
-                return -1;
-            }
+                return DecodeLineCleanUp (pInputQueue);
 
-            pNewComment        = strcpy (pNewComment, pLineData);
-            int len            = strlen (pNewComment);
-            pNewComment[len]   = '/';
-            pNewComment[len+1] = NULLC;
-
-            pSChar += 2;                //##### Advance two mem locations to the right
-            strcpy (pLineData, pSChar); //##### Shift left string from current pos
+            ShiftLeft (pLineData, len); //##### Shift left string from current pos
+            ShiftLeft (pLineState, len);
 
             //#### create new queue structure !
             InputStruct* pItem = new InputStruct();
 
             //#### Test if memory allocated
-            if (pItem != NULL)
-            {
-                pItem -> pData    = pNewComment;
-                pItem -> dataType = CCom;      // comment
-                pItem -> attrib   = False;     // comment without code, even if it has some !
+            if (pItem == NULL)
+                return DecodeLineCleanUp (pInputQueue);
 
-                pInputQueue->putLast (pItem);
-            }
-            else
-            {
-                DecodeLineCleanUp (pInputQueue, pLineData);
-                return -1;
-            }
+            pItem -> pData    = pNewComment;
+            pItem -> dataType = CCom;      // comment
+            pItem -> attrib   = False;     // comment without code, even if it has some !
 
-            CComments = False;                 //##### No more C like comments
-
+            pInputQueue->putLast (pItem);
         }
         else //##### Place output as comment without code (C comment terminator not found)
         {
-            InputStruct* pTemp = ExtractCode (pLineData, CCom, False); // don't remove spaces !
+            InputStruct* pTemp = ExtractCode (pLineData, pLineState, CCom, False); // don't remove spaces !
 
             //#### Test if memory allocated
-            if (pTemp != NULL)
-            {
-                pInputQueue->putLast (pTemp);
-                delete pLineData;
-            }
-            else
-            {
-                DecodeLineCleanUp (pInputQueue, pLineData);
-                return -1;
-            }
+            if (pTemp == NULL)
+                return DecodeLineCleanUp (pInputQueue);
+
+            pInputQueue->putLast (pTemp);
 
             return 0;
         }
@@ -857,155 +605,110 @@ int DecodeLine (char* pLineData, Boolean& CComments, QueueList* pInputQueue)
     // N.B Place this function here as to sure not to corrupt relative pointer
     // settings that may be used within pLinedata, and become altered through 
     // using this routine.     
-    pLineData = StripSpacingLeftRight (pLineData); 
+    StripSpacingLeftRight (pLineData, pLineState);
     
     //@@@@@@ Extract /* comment */ C type comments on one line
-    pSChar = strstr (pLineData, "/*");  // find start of C Comment
-    if (pSChar != NULL)
+    SChar = FindStartofComment (pLineState);  // find start of C Comment
+    if (SChar >= 0)
     {
-        //##### Check if "/*" isn't within quotes
-        if ((CheckCharsWithinQuotes (pSChar, pSChar+1, pLineData) == False) &&
-            (CheckCharsNotCppComments (pSChar, pLineData) == False))
+        //##### Check if there is a ending C terminator comment string
+        EChar = FindEndofComment(pLineState+SChar) + SChar;
+
+        //##### If negative then comments are on multiple lines !
+        if (EChar < 0)
         {
-            //##### Check if there is a ending "*/" C terminator comment string
-            pEChar = strstr (pLineData, "*/");
+            char* pNewComment = NewString(pLineData+SChar);
 
-            //##### If NULL then comments are on multiple lines !
-            if (pEChar == NULL)
+            //#### Test if memory allocated
+            if (pNewComment == NULL)
+                return DecodeLineCleanUp (pInputQueue);
+
+            //##### Make it NULL so that comment is removed, from Line
+            TerminateLine(pLineData, pLineState, SChar);
+
+            InputStruct* pItem = new InputStruct();
+
+            //#### Test if memory allocated
+            if (pItem == NULL)
+                return DecodeLineCleanUp (pInputQueue);
+
+            pItem -> pData    = pNewComment;
+            pItem -> dataType = CCom;       // Comment
+            pItem -> attrib   = False;
+            // make multi-line C style comments totally separate
+            // from code to avoid some likely errors occurring if they
+            // are shifted due to being over written by code.
+
+            // apply recursion so that comment is last item placed
+            // in queue !
+            if (DecodeLine (pLineData, pLineState, pInputQueue) != 0)
             {
-                char* pNewComment = new char[strlen (pSChar)+1];
-
-                //#### Test if memory allocated
-                if (pNewComment == NULL)
-                {
-                    DecodeLineCleanUp (pInputQueue, pLineData);
-                    return -1;
-                }
-
-                pNewComment = strcpy (pNewComment, pSChar);
-                *pSChar  = NULLC; //##### Make it NULL so that comment is removed, from Line
-
-                InputStruct* pItem = new InputStruct();
-
-                //#### Test if memory allocated
-                if (pItem != NULL)
-                {
-                    pItem -> pData    = pNewComment;
-                    pItem -> dataType = CCom;       // Comment
-                    pItem -> attrib   = False;
-                    // make multi-line C style comments totally seperate
-                    // from code to avoid some likely errors occuring if they
-                    // are shifted due to being over written by code.
-
-                    // apply recursion so that comment is last item placed
-                    // in queue !
-                    if (DecodeLine (pLineData, CComments, pInputQueue) != 0)
-                    {
-                        // problems !
-                        delete pItem -> pData;
-                        delete pItem;
-                        return -1;
-                    }
-                    else
-                        pInputQueue->putLast (pItem);
-
-                    //##### Set multi-line comment variable on
-                    CComments = True;
-
-                    return 0; // no need to continue processing
-                }
-                else
-                {
-                    DecodeLineCleanUp (pInputQueue, pLineData);
-                    return -1;
-                }
+                // problems !
+                delete pItem -> pData;
+                delete pItem;
+                return -1;
             }
-            else
-            {
-                pEChar[1] = NULLC; //##### make temp string !
-                char* pNewComment =  new char[strlen (pSChar) + 2];
 
-                //#### Test if memory allocated
-                if (pNewComment == NULL)
-                {
-                    DecodeLineCleanUp (pInputQueue, pLineData);
-                    return -1;
-                }
+            pInputQueue->putLast (pItem);
 
-                pNewComment        = strcpy (pNewComment, pSChar);
-                int len            = strlen (pNewComment);
-                pNewComment[len]   = '/';
-                pNewComment[len+1] = NULLC;
+            return 0; // no need to continue processing
+        }
+        else
+        {
+            size_t len = EChar - SChar + 2;
+            char* pNewComment =  NewSubstring(pLineData+SChar, len);
 
-                pEChar += 2;      //##### Advance two memory locs to the right
-                strcpy (pSChar, pEChar);
+            //#### Test if memory allocated
+            if (pNewComment == NULL)
+                return DecodeLineCleanUp (pInputQueue);
 
-                InputStruct* pItem = new InputStruct();
-                //#### Test if memory allocated
-                if (pItem != NULL)
-                {
-                    pItem -> pData    = pNewComment;
-                    pItem -> dataType = CCom;                        // Comment
-                    pItem -> attrib   = TestLineHasCode (pLineData); // Comment without code ?
-                    TRACE((stderr, "@%d: set attrib to %d\n", __LINE__, pItem->attrib))
+            ShiftLeft (pLineData +SChar, len);
+            ShiftLeft (pLineState+SChar, len);
 
-                    pInputQueue->putLast (pItem);
+            InputStruct* pItem = new InputStruct();
+            //#### Test if memory allocated
+            if (pItem == NULL)
+                return DecodeLineCleanUp (pInputQueue);
 
-                }
-                else
-                {
-                    DecodeLineCleanUp (pInputQueue, pLineData);
-                    return -1;
-                }
+            pItem -> pData    = pNewComment;
+            pItem -> dataType = CCom;                        // Comment
+            pItem -> attrib   = TestLineHasCode (pLineData); // Comment without code ?
+            TRACE((stderr, "@%d: set attrib to %d\n", __LINE__, pItem->attrib))
 
-            } //##### else
+            pInputQueue->putLast (pItem);
 
-        } //##### If comment not within quotes
+        } //##### else
 
     }//##### If "/*" C comments pressent
     
     //##### Remove blank spacing from left & right of string
-    pLineData = StripSpacingLeftRight (pLineData);
+    StripSpacingLeftRight (pLineData, pLineState);
 
     //@@@@@@ C++ Comment Processing !
-    pSChar = strstr (pLineData, "//");
-    if (pSChar != NULL)
+    SChar = FindStartofComment (pLineState, Ignore);
+    if (SChar >= 0)
     {
-        //##### Check if "//" arn't within quotes, if false then it's a comment
-        if (CheckCharsWithinQuotes (pSChar, pSChar+1, pLineData) == False)
-        {
-            char* pNewComment =  new char[strlen (pSChar) + 1];
+        char* pNewComment = NewString(pLineData+SChar);
 
-            //#### Test if memory allocated
-            if (pNewComment == NULL)
-            {
-                DecodeLineCleanUp (pInputQueue, pLineData);
-                return -1;
-            }
+        //#### Test if memory allocated
+        if (pNewComment == NULL)
+            return DecodeLineCleanUp (pInputQueue);
 
-            // copy comment into allocated memory
-            strcpy (pNewComment, pSChar);
-            *pSChar  = NULLC;                   //##### Terminate original string !
+        //##### Terminate original string !
+        TerminateLine(pLineData, pLineState, SChar);
 
-            //#### create new queue structure !
-            InputStruct* pItem = new InputStruct();
-            //#### Test if memory allocated
-            if (pItem != NULL)
-            {
-                pItem -> pData    = pNewComment;
-                pItem -> dataType = CppCom;                      // Comment
-                pItem -> attrib   = TestLineHasCode (pLineData); // Comment without code ?
-                TRACE((stderr, "@%d: set attrib to %d\n", __LINE__, pItem->attrib))
+        //#### create new queue structure !
+        InputStruct* pItem = new InputStruct();
+        //#### Test if memory allocated
+        if (pItem == NULL)
+            return DecodeLineCleanUp (pInputQueue);
 
-                pInputQueue->putLast (pItem);
+        pItem -> pData    = pNewComment;
+        pItem -> dataType = CppCom;                      // Comment
+        pItem -> attrib   = TestLineHasCode (pLineData); // Comment without code ?
+        TRACE((stderr, "@%d: set attrib to %d\n", __LINE__, pItem->attrib))
 
-            }
-            else
-            {
-                DecodeLineCleanUp (pInputQueue, pLineData);
-                return -1;
-            }
-        }
+        pInputQueue->putLast (pItem);
     }
 
     //@@@@@@ #define (preprocessor extraction)
@@ -1015,42 +718,34 @@ int DecodeLine (char* pLineData, Boolean& CComments, QueueList* pInputQueue)
         InputStruct* pItem = new InputStruct();
 
         //#### Test if memory allocated
-        if (pItem != NULL)
-        {
-            pItem -> pData    = pLineData;
-            pItem -> dataType = PreP;                            // preprocessor
-            pInputQueue->putLast (pItem);
+        if (pItem == NULL)
+            return DecodeLineCleanUp (pInputQueue);
 
-        }
-        else
-        {
-            DecodeLineCleanUp (pInputQueue, pLineData);
-            return -1;
-        }
+        pItem -> pData    = NewString(pLineData);
+        pItem -> dataType = PreP;                            // preprocessor
+        pInputQueue->putLast (pItem);
 
         return 0; // no worries !
     }
 
     //################# Actual Code Extraction #################
 
-    pLineData = StripSpacingLeftRight (pLineData);
+    StripSpacingLeftRight (pLineData, pLineState);
     
     //@@@@@@ Test what's left in line for L_CURL, and R_CURL braces
 
-    pSChar = FindPunctuation(pLineData, L_CURL);
-    pEChar = FindPunctuation(pLineData, R_CURL);
-
-    //##### check if braces aren't within quotes, if so .. then ignore!
+    SChar = FindPunctuation(pLineData, pLineState, L_CURL);
+    EChar = FindPunctuation(pLineData, pLineState, R_CURL);
 
     Boolean testEnumType = False;
-    if ( ((pSChar != NULL) && (pEChar != NULL)) && (pSChar < pEChar))
+    if ( ((SChar >= 0) && (EChar >= 0)) && (SChar < EChar))
     {
         // test to see if there are multiple open/ close braces in enum
         // selective range
         // i.e. { if ( a == b ) { b = c } else { d = e } }
-        char* pOBrace = FindPunctuation(pSChar+1, L_CURL);
+        int OBrace = FindPunctuation(pLineData+SChar+1, pLineState+SChar+1, L_CURL);
 
-        if ( (pOBrace == NULL) || ((pOBrace > pEChar) && (pOBrace != NULL)) )
+        if ( (OBrace < 0) || ((OBrace > EChar) && (OBrace >= 0)) )
            testEnumType = True;
     }
 
@@ -1059,96 +754,73 @@ int DecodeLine (char* pLineData, Boolean& CComments, QueueList* pInputQueue)
     // line then .... extract as enum.
     if ( (testEnumType != False) && (pInputQueue -> status () <= 0) )
     {
-        //store code as enum type if follow if condition is true
-        pEChar++;
+        //store code as enum type if follow-up condition is true
+        EChar++;
 
-        if (*pEChar == SEMICOLON) // advance another char
-                pEChar++;
+        if (pLineData[EChar] == SEMICOLON) // advance another char
+                EChar++;
             
-        char BackUp = *pEChar;
-        *pEChar     = NULLC;
+        char BackUp = pLineData[EChar];
+        pLineData[EChar] = NULLC;
 
-        InputStruct* pTemp = ExtractCode(pLineData);
+        InputStruct* pTemp = ExtractCode(pLineData, pLineState);
         if (pTemp == NULL)
-        {
-            DecodeLineCleanUp (pInputQueue, pLineData);
-            return -1;
-        }
+            return DecodeLineCleanUp (pInputQueue);
 
         pInputQueue->putLast (pTemp);
 
-        *pEChar   = BackUp;
-        strcpy (pLineData, pEChar);
+        pLineData[EChar]   = BackUp;
+        ShiftLeft (pLineData,  EChar);
+        ShiftLeft (pLineState, EChar);
 
         // restart decoding line !
-        return DecodeLine (pLineData, CComments, pInputQueue);
+        return DecodeLine (pLineData, pLineState, pInputQueue);
         // end of recursive call !
 
     } // if L_CURL and R_CURL exit on same line
 
     //##### Determine extraction precedence !
-    if ((pSChar != NULL) && (pEChar != NULL))
+    if ((SChar >= 0) && (EChar >= 0))
     {
-        if (pSChar > pEChar)
-            pSChar = NULL;
+        if (SChar > EChar)
+            SChar = -1;
         else
-            pEChar = NULL;
+            EChar = -1;
     }
 
     //##### Place whatever is before the open brace L_CURL, or R_CURL as code
-    if ((pSChar != NULL) || (pEChar != NULL))
+    if ((SChar >= 0) || (EChar >= 0))
     {
         char backUp;
+        int toSave = SChar >= 0 ? SChar : EChar;
 
-        if (pSChar != NULL)
-        {
-            backUp         = *pSChar;
-            *pSChar        = NULLC;
-        }
-        else
-        {
-            backUp = *pEChar;
-            *pEChar        = NULLC;
-        }
+        backUp = pLineData[toSave];
+        pLineData[toSave] = NULLC;
 
         //#### Store leading code if any
         if (TestLineHasCode (pLineData) != False)
         {
-           char* pTemp = new char [strlen (pLineData) +1];
+           char* pTemp = NewString(pLineData);
            if (pTemp == NULL)
-           {
-                DecodeLineCleanUp (pInputQueue, pLineData);
-                return -1;
-           }
+                return DecodeLineCleanUp (pInputQueue);
 
            //#### strip spacing is handled within extractCode routine. This
            //#### means that pointers that are calculated before stripSpacing function
            //#### remain valid.
 
-           pTemp = strcpy (pTemp, pLineData);
-           InputStruct* pLeadCode = ExtractCode (pTemp);
+           InputStruct* pLeadCode = ExtractCode (pTemp, pLineState);
 
            if (pLeadCode == NULL)
-           {
-                DecodeLineCleanUp (pInputQueue, pLineData);
-                return -1;
-           }
+                return DecodeLineCleanUp (pInputQueue);
 
            pInputQueue->putLast (pLeadCode);
            delete pTemp;
         }
 
         //##### Update main string
-        if (pSChar != NULL)
-        {
-           *pSChar        = backUp;
-           pLineData      = strcpy (pLineData, pSChar);
-        }
-        else
-        {
-           *pEChar        = backUp;
-           pLineData      = strcpy (pLineData, pEChar);
-        }
+        pLineData[toSave] = backUp;
+        ShiftLeft (pLineData,  toSave);
+        ShiftLeft (pLineState, toSave);
 
         // extract open/closing brace from code, and place brace as seperate
         // line from code. And create new structure for code
@@ -1168,11 +840,12 @@ int DecodeLine (char* pLineData, Boolean& CComments, QueueList* pInputQueue)
                 {
                     backUp       = pLineData[1]; // contain a char, or NULLC char
                     pLineData[1] = NULLC;
-                    pTemp        = ExtractCode (pLineData, OBrace);//##### Define data type before storing
+                    pTemp        = ExtractCode (pLineData, pLineState, OBrace);//##### Define data type before storing
                     //#### update string
                     pLineData[1] = backUp;
 
-                    strcpy (pLineData, pLineData+1);
+                    ShiftLeft (pLineData,  1);
+                    ShiftLeft (pLineState, 1);
                     extractMode  = 3;            // apply recursive extraction
 
                     break;
@@ -1186,29 +859,31 @@ int DecodeLine (char* pLineData, Boolean& CComments, QueueList* pInputQueue)
                     //@@@@@@ Test what's left in line for L_CURL, and R_CURL braces
 
                     // start one after first char !
-                    pSChar = FindPunctuation(pLineData+1, L_CURL);
-                    pEChar = FindPunctuation(pLineData+1, R_CURL);
+                    SChar = FindPunctuation(pLineData+1, pLineState+1, L_CURL);
+                    EChar = FindPunctuation(pLineData+1, pLineState+1, R_CURL);
 
-                    if ((pSChar != NULL) || (pEChar != NULL))
+                    if ((SChar >= 0) || (EChar >= 0))
                     {
+                        int mark;
                         if (pLineData[1] == SEMICOLON)     // if true, extract after char
-                            pEChar        = pLineData+2;
+                            mark = 2;
                         else
-                            pEChar        = pLineData+1;
+                            mark = 1;
 
-                        backUp            = *pEChar;
-                        *pEChar           = NULLC;
+                        backUp          = pLineData[mark];
+                        pLineData[mark] = NULLC;
 
-                        pTemp = ExtractCode (pLineData, CBrace);
+                        pTemp = ExtractCode (pLineData, pLineState, CBrace);
                         // #### update string;
-                        *pEChar           = backUp;
-                        strcpy (pLineData, pEChar);
+                        pLineData[mark] = backUp;
+                        ShiftLeft (pLineData,  mark);
+                        ShiftLeft (pLineState, mark);
 
                         extractMode       = 3;       // apply recursive extraction
                     }
                     else // rest of data is considered as code !
                     {
-                        pTemp     = ExtractCode (pLineData, CBrace);
+                        pTemp     = ExtractCode (pLineData, pLineState, CBrace);
                         pLineData = NULL;            // leave processing !
                     }
                     break;
@@ -1216,17 +891,14 @@ int DecodeLine (char* pLineData, Boolean& CComments, QueueList* pInputQueue)
 
                 case (3):   // remove what is left on line as code.
                 {
-                    return DecodeLine (pLineData, CComments, pInputQueue);
+                    return DecodeLine (pLineData, pLineState, pInputQueue);
                     // end of recursive call !
                 }
             }// switch;
 
             //#### Test if memory allocated
             if (pTemp == NULL)
-            {
-                DecodeLineCleanUp (pInputQueue, pLineData);
-                return -1;
-            }
+                return DecodeLineCleanUp (pInputQueue);
 
             pInputQueue->putLast (pTemp); // store Item
 
@@ -1240,34 +912,25 @@ int DecodeLine (char* pLineData, Boolean& CComments, QueueList* pInputQueue)
         if ((pLineData[0] == NULLC) && ((pInputQueue->status()) <= 0))
         {
             //##### implement blank space
-            InputStruct* pTemp = ExtractCode (pLineData, ELine);
+            InputStruct* pTemp = ExtractCode (pLineData, pLineState, ELine);
 
-            if (pTemp != NULL)
-                pInputQueue->putLast (pTemp);
-            else
-            {
-                DecodeLineCleanUp (pInputQueue, pLineData);
-                return -1;
-            }
+            if (pTemp == NULL)
+                return DecodeLineCleanUp (pInputQueue);
+
+            pInputQueue->putLast (pTemp);
         }
         //##### If line has more than spacing/tabs then code
         else if (TestLineHasCode (pLineData) != False)
              {
                   // implement blank space
-                  InputStruct* pTemp = ExtractCode (pLineData);
+                  InputStruct* pTemp = ExtractCode (pLineData, pLineState);
 
-                  if (pTemp != NULL)
-                     pInputQueue->putLast (pTemp);
-                  else
-                  {
-                      DecodeLineCleanUp (pInputQueue, pLineData);
-                      return -1;
-                  }
+                  if (pTemp == NULL)
+                      return DecodeLineCleanUp (pInputQueue);
+
+                  pInputQueue->putLast (pTemp);
              }
     }
-    
-    //##### Final cleanup before returning queue with line elements
-    delete pLineData;
     return 0;  // no worries
 }
 
@@ -1369,7 +1032,7 @@ int ConstructLine (int& indentStack, QueueList* pInputQueue, QueueList* pOutputQ
                         {
 
                             // if pData length overwrites comments then place comments on newline
-                            if ( (indentStack + strlen (pTestType -> pData)) > (userS.posOfCommentsWC) )
+                            if ( (indentStack + (int)strlen (pTestType -> pData)) > (userS.posOfCommentsWC) )
                             {
                                 pOut -> filler = userS.posOfCommentsWC;
                                 pOutputQueue -> putLast (pOut);
@@ -2223,28 +1886,27 @@ QueueList* ReformatBraces (QueueList* pLines, Config userS)
 //                1 = output blank lines
 //                2 = delete blank OutputStructures in queue until code is reached.
 //
-QueueList* FunctionSpacing (FILE* pOutFile, QueueList* pLines, const Config& userS, int& FuncVar )
+void FunctionSpacing (QueueList* pLines, const Config& userS, int& FuncVar, int &pendingBlank )
 {
     if (pLines -> status () > 0) // if there are items in the queue !
     {
         OutputStruct* pTestLine      =  (OutputStruct*) pLines -> peek (1);
         
-        // check is end of function, structure, class has been reached !
+        // check if end of function, structure, class has been reached !
         if ( ((FuncVar == 0) && (pTestLine -> indentSpace <= 0 )) &&
              (pTestLine -> pBrace != NULL) )
         {
              if (pTestLine -> pBrace[0] == R_CURL)
              {
                 FuncVar = 1; // add function spacing !
-                return pLines;
+                return;
              }
         }
 
         if (FuncVar == 1)
         {
             // go into blank line output mode between functions!
-            for (int outBlank = 0; outBlank < userS.numOfLineFunc; outBlank++)
-                fputc (LF, pOutFile); // output line feed!
+            pendingBlank = userS.numOfLineFunc; 
             FuncVar = 2;
         }
 
@@ -2257,8 +1919,6 @@ QueueList* FunctionSpacing (FILE* pOutFile, QueueList* pLines, const Config& use
                 delete dump;
              }
     }
-
-    return pLines;
 }
 
 
@@ -2281,7 +1941,7 @@ QueueList* FunctionSpacing (FILE* pOutFile, QueueList* pLines, const Config& use
 //
 // returns NULL if memory allocation failed
 //
-QueueList* OutputToOutFile (FILE* pOutFile, QueueList* pLines, StackList* pIMode, int& FuncVar, const Config& userS, int stopLimit)
+QueueList* OutputToOutFile (FILE* pOutFile, QueueList* pLines, StackList* pIMode, int& FuncVar, const Config& userS, int stopLimit, int &pendingBlank)
 {
     OutputStruct* pOut         = NULL;
     char*         pIndentation = NULL;
@@ -2297,7 +1957,7 @@ QueueList* OutputToOutFile (FILE* pOutFile, QueueList* pLines, StackList* pIMode
         // process function spacing !!!!!
         int testProcessing = pLines -> status();
 
-        pLines = FunctionSpacing (pOutFile, pLines, userS, FuncVar );
+        FunctionSpacing (pLines, userS, FuncVar, pendingBlank );
 
         if (pLines -> status () < testProcessing) // line removed, test next line in buffer
              continue;
@@ -2332,32 +1992,45 @@ QueueList* OutputToOutFile (FILE* pOutFile, QueueList* pLines, StackList* pIMode
                         : "?"))))
 
         // expand pOut structure to print to the output file
-        pIndentation = TabSpacing (fillMode, pOut -> indentSpace, userS.tabSpaceSize );
-        pFiller      = TabSpacing (2, pOut -> filler, userS.tabSpaceSize);
-
-        // Output data
-        if (pIndentation != NULL)
+        if (!emptyString(pOut -> pCode)
+         || !emptyString(pOut -> pBrace)
+         || !emptyString(pOut -> pComment))
         {
-            fprintf (pOutFile, "%s", pIndentation);
-            delete pIndentation;
+            pIndentation = TabSpacing (fillMode, pOut -> indentSpace, userS.tabSpaceSize );
+            pFiller      = TabSpacing (2, pOut -> filler, userS.tabSpaceSize);
+
+            while (pendingBlank > 0)
+            {
+                fputc (LF, pOutFile); // output line feed!
+                pendingBlank--;
+            }
+
+            // Output data
+            if (pIndentation != NULL)
+            {
+                fprintf (pOutFile, "%s", pIndentation);
+                delete pIndentation;
+            }
+
+            if (pOut -> pCode != NULL)
+                fprintf (pOutFile, "%s", pOut -> pCode);
+
+            if (pOut -> pBrace != NULL)
+                fprintf (pOutFile, "%s", pOut -> pBrace);
+
+            if (pFiller != NULL)
+            {
+                fprintf (pOutFile, "%s", pFiller);
+                delete pFiller;
+            }
+
+            if (pOut -> pComment != NULL)
+                    fprintf (pOutFile, "%s", pOut -> pComment);
+
+            fputc (LF, pOutFile); // output line feed!
         }
-
-        if (pOut -> pCode != NULL)
-            fprintf (pOutFile, "%s", pOut -> pCode);
-
-        if (pOut -> pBrace != NULL)
-            fprintf (pOutFile, "%s", pOut -> pBrace);
-
-        if (pFiller != NULL)
-        {
-            fprintf (pOutFile, "%s", pFiller);
-            delete pFiller;
-        }
-
-        if (pOut -> pComment != NULL)
-                fprintf (pOutFile, "%s", pOut -> pComment);
-
-        fputc (LF, pOutFile); // output line feed!
+        else
+            pendingBlank = 1;
 
         // free memory
         delete pOut;
@@ -2427,7 +2100,7 @@ int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
     int                 EndOfFile    = 0;      // Var used by readline() to show eof has been reached
     char*               pData        = 0;
 
-    Boolean             CComments    = False;  // var used to test existance of multiline C Comments
+    int                 pendingBlank = 0;      // var used to control blank lines
     int                 indentStack  = 0;      // var used for brace spacing
 
     QueueList*          pOutputQueue = new QueueList();
@@ -2435,8 +2108,8 @@ int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
     QueueList*          pInputQueue  = new QueueList();
 
     int                 FuncVar      = 0;      // variable used in processing function spacing !
-    CharState           leftState    = Normal;
-    CharState           rightState   = Normal;
+    CharState           curState     = Blank;
+    char*               lineState    = NULL;
 
     // Check memory allocated !
     if (((pOutputQueue == NULL) || (pIMode == NULL)) || (pInputQueue == NULL))
@@ -2459,7 +2132,16 @@ int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
 
     while (! EndOfFile)
     {
+        if (pData != 0)
+            delete pData;
+
         pData = ReadLine (pInFile, EndOfFile);
+
+        if (lineState != 0)
+        {
+            delete lineState;
+            lineState = NULL;
+        }
 
         if (pData != NULL)
         {
@@ -2472,20 +2154,21 @@ int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
                     printf ("%ld ", lineNo);
             }
 
-            if (userS.deleteHighChars != 0)
-                    pData = StripNonPrintables (pData, userS.deleteHighChars, userS.quoteChars);
-                    
-               pData = ExpandTabs (pData, userS.tabSpaceSize, leftState, rightState);
-               if (pData == NULL)
-               {
-                    printf ("%s", errorMsg);
-                    delete pIMode;
-                    delete pInputQueue;
-                    delete pOutputQueue;
-                    return -1;
-               }
+            ExpandTabs (pData,
+                userS.tabSpaceSize,
+                userS.deleteHighChars,
+                userS.quoteChars,
+                curState, lineState);
+            if (pData == NULL)
+            {
+                printf ("%s", errorMsg);
+                delete pIMode;
+                delete pInputQueue;
+                delete pOutputQueue;
+                return -1;
+            }
                
-            if (DecodeLine (pData, CComments, pInputQueue) == 0) // if there are input items to process
+            if (DecodeLine (pData, lineState, pInputQueue) == 0) // if there are input items to process
             {
                     int errorCode = ConstructLine (indentStack, pInputQueue, pOutputQueue, userS);
 
@@ -2521,7 +2204,8 @@ int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
 
                     pOutputQueue = OutputToOutFile (pOutFile, pOutputQueue,
                                                     pIMode  , FuncVar,
-                                                    userS   , userS.queueBuffer );
+                                                    userS   , userS.queueBuffer,
+                                                    pendingBlank );
                     if (pOutputQueue == NULL)
                     {
                         fprintf (stderr, "%s", errorMsg);
@@ -2537,7 +2221,8 @@ int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
     // flush queue ...
     pOutputQueue = OutputToOutFile (pOutFile, pOutputQueue,
                                     pIMode,   FuncVar,
-                                    userS,    0);
+                                    userS,    0,
+                                    pendingBlank);
 
     // output final line position
     if (userS.output != False)
@@ -2552,6 +2237,7 @@ int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
     delete pOutputQueue;
     delete pInputQueue;
     delete pData;
+    delete lineState;
 
     if (userS.output != False)
     {

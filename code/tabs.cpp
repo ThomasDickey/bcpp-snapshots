@@ -3,8 +3,52 @@
 #include <ctype.h>
 #include <string.h>            // strlen(), strstr(), strchr(), strcpy(), strcmp()
 
-#include "bcpp.h"
 #include "config.h"
+#include "bcpp.h"
+
+// ----------------------------------------------------------------------------
+// Function takes a unsigned char and converts it to a C type string that
+// contains the char's value, but in octal (i.e "\000" = null char).
+//
+// Parameters:
+// value     : The value that wishes to be converted
+//
+// Return Values:
+// char*     : Returns a pointer to the string that was converted.
+// Memory is allocated via the new command, and once string has been used,
+// memory should be returned to the system.
+//
+static char* ConvertCharToOctal (unsigned char value)
+{
+    const char octalVals[] = "01234567";
+
+    char* pOctalValue = new char[5]; // \000 digits plus null terminator
+
+    if (pOctalValue != NULL)
+    {
+        int last = 1;
+        switch (value)
+        {
+            case '\a':  pOctalValue[1] = 'a';   break;
+            case '\b':  pOctalValue[1] = 'b';   break;
+            case '\f':  pOctalValue[1] = 'f';   break;
+            case '\n':  pOctalValue[1] = 'n';   break;
+            case '\r':  pOctalValue[1] = 'r';   break;
+            case '\t':  pOctalValue[1] = 't';   break;
+            default:
+                last = 3;
+                for (int pos = last; pos >= 1; pos--)
+                {
+                    pOctalValue[pos] = octalVals[(value & 7)];
+                    value >>= 3; // left shift to next three bits
+                }
+        }
+        pOctalValue[0] = ESCAPE;
+        pOctalValue[last+1] = NULLC;
+    }
+
+    return pOctalValue;
+}
 
 // ----------------------------------------------------------------------------
 // Compute the number of characters in an escape
@@ -29,8 +73,6 @@ static int skipEscape(char *String)
             else
                 break;
     }
-    else if (String[n] == NULLC)
-        it = 0;
     return it;
 }
 
@@ -42,6 +84,7 @@ static const char *showCharState(CharState theState)
     switch (theState)
     {
         default:
+        case Blank:     it = "Blank";   break;
         case Normal:    it = "Normal";  break;
         case Comment:   it = "Comment"; break;
         case Ignore:    it = "Ignore";  break;
@@ -59,6 +102,11 @@ static void nextCharState(char * &String, CharState &theState, int &skip)
     if (skip-- <= 0)
     {
         skip = 0;
+        if (theState == Blank)
+        {
+            if (!isspace(String[0]))
+                theState = Normal;
+        }
         if (theState == Normal)
         {
             switch (String[0])
@@ -85,6 +133,10 @@ static void nextCharState(char * &String, CharState &theState, int &skip)
                     default:
                         break;
                     }
+                    break;
+                case SPACE:
+                case TAB:
+                    theState = Blank;
                     break;
                 default:
                     break;
@@ -131,6 +183,25 @@ static void nextCharState(char * &String, CharState &theState, int &skip)
 }
 
 // ----------------------------------------------------------------------------
+// Check for non-printable characters, which we'll either quote or remove,
+// depending on whether they're in strings or not.
+static int NonPrintable(char c, int mode)
+{
+    int it = False;
+    unsigned char check = (unsigned char)c;
+
+    // remove chars below a space, but not if char is a TAB.
+    if (check < SPACE && check != TAB) {
+        it = True;
+    } else if (mode == 1) {
+        it = (check >= 127);                    /* non 7-bit ASCII? */
+    } else if (mode == 3) {
+        it = (check >= 127) && (check < 160);   /* ISO C1 character? */
+    }
+    return it;
+}
+
+// ----------------------------------------------------------------------------
 // Function expands tabs to spaces; the number of spaces to expand to is
 // dependent upon the tabSpaceSize parameter within user settings, and
 // tab column positions.
@@ -138,23 +209,34 @@ static void nextCharState(char * &String, CharState &theState, int &skip)
 // Parameters:
 //      pString     : Pointer to the string to process !
 //      tabLen      : How much a tab is worth in spaces.
-//      leftState   : character-state at left-end of string
-//      rightState  : character-state at right-end of string
+//      deleteChars : mode to select non-printing characters for removal/quoting
+//      quoteChars  : quote non-printing characters
+//      curState    : character-state at beginning (end) of string
+//      lineState   : character-states within string
 //
-// Return Values:
-//      char*       : Pointer to newly constructed string, return NULL
-//                    if memory allocation problems.
+//      curState and lineState are set as side-effects
 //
-char* ExpandTabs (char* pString, int tabLen, CharState &leftState, CharState &rightState)
+void ExpandTabs (char* &pString,
+    int tabLen,
+    int deleteChars,
+    Boolean quoteChars,
+    CharState &curState, char * &lineState)
 {
     int   col = 0;
     int   skip = 0;
     size_t last = 0;
     char* pSTab = pString;
     bool  expand = True;
+    bool  my_pString = False;
+    CharState oldState = curState;
+
+    lineState = new char[strlen (pString) + 1];
+    if (lineState == 0)
+        return;
+
+    lineState[0] = NullC;
 
     //TRACE((stderr, " ExpandTabs(%s)\n", pString))
-    leftState = rightState;                     // push the old state down
     while (*pSTab != NULLC)
     {
         col++;
@@ -165,8 +247,8 @@ char* ExpandTabs (char* pString, int tabLen, CharState &leftState, CharState &ri
         if (*pSTab == TAB                       // calculate tab positions !
          && expand
          && skip == 0
-         && rightState != SQuoted
-         && rightState != DQuoted)
+         && curState != SQuoted
+         && curState != DQuoted)
         {
             int tabAmount = 0;
 
@@ -181,12 +263,24 @@ char* ExpandTabs (char* pString, int tabLen, CharState &leftState, CharState &ri
             {
                 // create newString, remove tab !
                 char* pNewString = new char[strlen (pString) + tabAmount + 1];
+                char* pNewStates = new char[strlen (pString) + tabAmount + 1];
 
-                if (pNewString == NULL)
+                if (pNewString == NULL
+                 || pNewStates == NULL)
                 {
-                    delete pString;
-                    return NULL;
+                    if (my_pString)
+                    {
+                        delete pString;
+                        pString = 0;
+                    }
+                    delete lineState;
+                    return;
                 }
+                my_pString = True;
+
+                strcpy (pNewStates, lineState);
+                delete lineState;
+                lineState = pNewStates;
 
                 // copy first part
                 strcpy (pNewString, pString);
@@ -212,26 +306,77 @@ char* ExpandTabs (char* pString, int tabLen, CharState &leftState, CharState &ri
         {
             expand = False;
         }
+        else if (NonPrintable(*pSTab, deleteChars))
+        {
+            if (quoteChars
+             && (curState == SQuoted
+              || curState == DQuoted)) {
+                char* pOctal = ConvertCharToOctal(*pSTab);
+                char* pTemp = new char[strlen(pString)+strlen(pOctal)+1];
+                if (pOctal == 0 || pTemp == 0)
+                {
+                    delete pOctal;
+                    delete pTemp;
+                    return;
+                }
+                *pSTab = NULLC;
+                strcpy(pTemp, pString);
+                strcat(pTemp, pOctal);
+                strcat(pTemp, pSTab+1);
+                pSTab   = pTemp + (pSTab - pString);
+                pString = pTemp;
 
-        nextCharState(pSTab, rightState, skip);
+                pTemp = new char[strlen(pString)+strlen(pOctal)+1];
+                if (pTemp == 0)
+                {
+                    delete pOctal;
+                    delete pTemp;
+                    delete pString;
+                    pString = NULL;
+                    return;
+                }
+                strcpy(pTemp, lineState);
+                lineState = pTemp;
+
+                delete pOctal;
+            }
+            else    // simply remove the character
+            {
+                int n = 0;
+                while ((pSTab[n] = pSTab[n+1]) != NULLC)
+                    n++;
+            }
+            col--;
+            continue;   // re-interpret character
+        }
+
+        if (skip == 0)
+            oldState = curState;
+        nextCharState(pSTab, curState, skip);
+        lineState[col-1] = (curState == Normal)
+                && ((oldState == DQuoted)
+                 || (oldState == SQuoted)
+                 || (oldState == Comment))
+                   ? oldState
+                   : curState;
+        lineState[col] = NullC;
         pSTab++;
     }
 
-    if (rightState == Ignore)
-        rightState = Normal;
+    if (curState == Ignore)
+        curState = Normal;
 
     if (skip == 0
-     && (rightState == DQuoted
-      || rightState == SQuoted))
-        rightState = Normal;    // recover from syntax error
+     && (curState == DQuoted
+      || curState == SQuoted))
+        curState = Normal;    // recover from syntax error
 
     if (last < strlen(pString))
         pString[last] = NULLC;      // trim trailing blanks
 
-    //TRACE((stderr, " Expanded  (%s)\n", pString))
-    //TRACE((stderr, "FIXME %d/%d %s/%s\n", last, strlen(pString), showCharState(leftState), showCharState(rightState)))
-
-    return pString;
+    TRACE((stderr, " Expanded  (%s)\n", pString))
+    TRACE((stderr, " lineState (%s)\n", lineState))
+    TRACE((stderr, "FIXME %d/%d %s\n", last, strlen(pString), showCharState(curState)))
 }
 
 // ----------------------------------------------------------------------------
@@ -291,7 +436,7 @@ char* TabSpacing (int mode, int len, int spaceIndent)
                 return pOutSpc;   //##### return end product
             }
             else
-                    return NULL; // memory allocation failed
+                return NULL;    // memory allocation failed
         }
         else  // else a mix of spaces & tabs
         {
@@ -312,7 +457,7 @@ char* TabSpacing (int mode, int len, int spaceIndent)
         }
     }// bit 1 set
 
-    //##### Concatinate tabs & spaces
+    //##### Concatenate tabs & spaces
     if ( ((mode & 1) == 1) && ((mode & 2) == 2) )
     {
         char* pConCat = new char[(strlen (pOutTab) + strlen (pOutSpc) + 1)];
