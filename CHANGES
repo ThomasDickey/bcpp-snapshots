@@ -1,5 +1,15 @@
-$Id: CHANGES,v 6.4 2004/03/27 12:54:41 tom Exp $
+$Id: CHANGES,v 6.6 2004/06/19 10:31:57 tom Exp $
 ------------------------------------------------------------------------------
+
+19 Jun 2004
+	+ change copyright to BSD-style.
+	+ minor cleanup (indent, ANSI C) to add-on files.
+	+ modify run_test.sh to ensure that Cygwin will recognize a generated
+	  script as such (report by Igor Pechtchanski).
+	+ modify path of run_test.sh script in "make check" to allow this to
+	  be run outside the source directory (report by Igor Pechtchanski).
+	+ use $(DESTDIR) in makefile.in, for packaging (patch by Igor
+	  Pechtchanski).
 
 27 Mar 2004,	updated configure script, use AC_OBJEXT, AC_EXEEXT.
 		Fixes to build/work with OS/2 EMX.
