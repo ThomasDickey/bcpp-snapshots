@@ -1,6 +1,7 @@
 #ifndef _CONFIG_HEADER
 #define _CONFIG_HEADER
 
+// $Id: config.h,v 1.14 2003/04/23 20:10:15 tom Exp $
 // Program C(++) beautifier Written By Steven De Toni ACBC 11 10/94
 //
 // This file contains prototypes, constants, enum declarations for the 
@@ -13,18 +14,20 @@
 enum Boolean     {False = 0, True = -1};
 
 // Commonly-used characters that are awkward to represent
-enum ConfigChars {NULLC = '\0',
-                  TAB = '\t',
-                  LF = '\n',
-                  CR = '\r',
-                  SPACE = ' ',
-                  SEMICOLON = ';',
-                  POUNDC = '#',
-                  L_CURL = '{',
-                  R_CURL = '}',
-                  DQUOTE = '"',
-                  SQUOTE = '\'',
-                  ESCAPE = '\\'};
+const char NULLC = '\0';
+const char TAB = '\t';
+const char LF = '\n';
+const char CR = '\r';
+const char SPACE = ' ';
+const char SEMICOLON = ';';
+const char POUNDC = '#';
+const char L_CURL = '{';
+const char R_CURL = '}';
+const char L_PAREN = '(';
+const char R_PAREN = ')';
+const char DQUOTE = '"';
+const char SQUOTE = '\'';
+const char ESCAPE = '\\';
 
 // This structure is used to store the users settings that are read from a
 // configuration file.
@@ -41,6 +44,7 @@ struct Config
   Boolean quoteChars     ;  // change non-ASCII chars in quotes to octal notation
   int     deleteHighChars;  // 0  = no check         , 1 = delete high chars,
                             // 2  = don't delete graphics chars
+  Boolean topBraceLoc    ;  // True = place on new line, False = at end of code
   Boolean braceLoc       ;  // True = place on new line, False = at end of code
   Boolean output         ;  // Set this True for normal program output
   int     queueBuffer    ;  // Set the number if lines to store in memory at a time !

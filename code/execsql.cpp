@@ -1,5 +1,5 @@
 //******************************************************************************
-// Copyright 1996,1997,1999 by Thomas E. Dickey                                *
+// Copyright 1996-2002,2003 by Thomas E. Dickey                                *
 // All Rights Reserved.                                                        *
 //                                                                             *
 // Permission to use, copy, modify, and distribute this software and its       *
@@ -17,7 +17,7 @@
 // OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR   *
 // PERFORMANCE OF THIS SOFTWARE.                                               *
 //******************************************************************************
-// $Id: execsql.cpp,v 1.13 2002/05/18 17:46:37 tom Exp $
+// $Id: execsql.cpp,v 1.14 2003/04/22 17:21:59 tom Exp $
 // EXEC SQL parsing & indention
 
 #include <ctype.h>
@@ -314,5 +314,5 @@ SqlStruct::IndentSQL(OutputStruct *pOut)
         }
     }
 
-    delete pUprString;
+    delete[] pUprString;
 }

@@ -1,6 +1,8 @@
 #ifndef _CMDLINE_HEADER
 #define _CMDLINE_HEADER
 
+// $Id: cmdline.h,v 1.2 2003/04/24 00:24:11 tom Exp $
+
 #include "config.h"                 // Config structure
 
 // ******* Define Prototypes ********
@@ -13,7 +15,7 @@ void StrUpr (char* pUpCase);
 // Parameters:
 // char* argv[]     : Pointer to command line parameter pointer array
 //
-void PrintProgramHelp (char* argv[]);
+void PrintProgramHelp (void);
 
 // integer assignment
 int intAssign (int& cmdCount, int argc, char* argv[] );

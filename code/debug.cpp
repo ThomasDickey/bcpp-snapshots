@@ -1,5 +1,5 @@
 //******************************************************************************
-// Copyright 1996,1997,1999 by Thomas E. Dickey                                *
+// Copyright 1996-2002,2003 by Thomas E. Dickey                                *
 // All Rights Reserved.                                                        *
 //                                                                             *
 // Permission to use, copy, modify, and distribute this software and its       *
@@ -17,7 +17,7 @@
 // OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR   *
 // PERFORMANCE OF THIS SOFTWARE.                                               *
 //******************************************************************************
-// $Id: debug.cpp,v 1.13 2002/05/18 17:46:32 tom Exp $
+// $Id: debug.cpp,v 1.14 2003/04/22 18:42:33 tom Exp $
 // Debug/trace functions for BCPP
 
 #include <stdlib.h>
@@ -64,8 +64,9 @@ void traceInput(char *file, int line, InputStruct *pIn)
 
 void traceOutput(char *file, int line, OutputStruct *pOut)
 {
-    TRACE(("%s@%d, indent %d(%d), fill %d, OUT #%d:%s:%s:%s:\n",
+    TRACE(("%s@%d, indent %d(%d:%d), fill %d, OUT #%d:%s:%s:%s:\n",
         file, line,
+        pOut->bracesLevel,
         pOut->indentSpace,
         pOut->indentHangs,
         pOut->filler,

@@ -1,5 +1,5 @@
 //******************************************************************************
-// Copyright 1996,1997,1999 by Thomas E. Dickey                                *
+// Copyright 1996-2002,2003 by Thomas E. Dickey                                *
 // All Rights Reserved.                                                        *
 //                                                                             *
 // Permission to use, copy, modify, and distribute this software and its       *
@@ -17,7 +17,7 @@
 // OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR   *
 // PERFORMANCE OF THIS SOFTWARE.                                               *
 //******************************************************************************
-// $Id: tabs.cpp,v 1.21 2002/05/18 17:46:54 tom Exp $
+// $Id: tabs.cpp,v 1.22 2003/04/22 18:45:36 tom Exp $
 // Tab conversion & first-pass scanning
 
 #include <ctype.h>
@@ -299,16 +299,16 @@ void ExpandTabs (char* &pString,
                 {
                     if (my_pString)
                     {
-                        delete pString;
+                        delete[] pString;
                         pString = 0;
                     }
-                    delete lineState;
+                    delete[] lineState;
                     return;
                 }
                 my_pString = True;
 
                 strcpy (pNewStates, lineState);
-                delete lineState;
+                delete[] lineState;
                 lineState = pNewStates;
 
                 // copy first part
@@ -321,7 +321,7 @@ void ExpandTabs (char* &pString,
 
                 // add original trailing spaces
                 strcpy (pAddSpc, pSTab+1);
-                delete pString;                 // remove old string from memory
+                delete[] pString;               // remove old string from memory
                 pString = pNewString;
                 pSTab   = pString + col - 1;    // point to the first blank
                 //TRACE(("...%d:%s\n", col, pString))
@@ -344,8 +344,8 @@ void ExpandTabs (char* &pString,
                 char* pTemp = new char[strlen(pString)+strlen(pOctal)+1];
                 if (pOctal == 0 || pTemp == 0)
                 {
-                    delete pOctal;
-                    delete pTemp;
+                    delete[] pOctal;
+                    delete[] pTemp;
                     return;
                 }
                 *pSTab = NULLC;
@@ -354,24 +354,24 @@ void ExpandTabs (char* &pString,
                 strcat(pTemp, pSTab+1);
                 pSTab   = pTemp + (pSTab - pString);
 
-                delete pString;
+                delete[] pString;
                 pString = pTemp;
 
                 pTemp = new char[strlen(pString)+strlen(pOctal)+1];
                 if (pTemp == 0)
                 {
-                    delete pOctal;
-                    delete pTemp;
-                    delete pString;
+                    delete[] pOctal;
+                    delete[] pTemp;
+                    delete[] pString;
                     pString = NULL;
                     return;
                 }
                 strcpy(pTemp, lineState);
 
-                delete lineState;
+                delete[] lineState;
                 lineState = pTemp;
 
-                delete pOctal;
+                delete[] pOctal;
             }
             else    // simply remove the character
             {
@@ -529,14 +529,14 @@ char* TabSpacing (int mode, int col, int len, int spaceIndent)
         // #### Check memory allocation
         if (pConCat == NULL)
         {
-            delete pOutTab;
-            delete pOutSpc;
+            delete[] pOutTab;
+            delete[] pOutSpc;
             return NULL;
         }
         strcpy (pConCat, pOutTab);
         strcpy (pConCat + strlen (pConCat), pOutSpc);
-        delete pOutTab;
-        delete pOutSpc;
+        delete[] pOutTab;
+        delete[] pOutSpc;
         return pConCat;
     }
 

@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 1996,1997,1999 by Thomas E. Dickey                               *
+ * Copyright 1996-2002,2003 by Thomas E. Dickey                               *
  * All Rights Reserved.                                                       *
  *                                                                            *
  * Permission to use, copy, modify, and distribute this software and its      *
@@ -17,7 +17,7 @@
  * CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN        *
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.                   *
  ******************************************************************************/
-// $Id: bcpp.h,v 1.35 2002/11/23 17:41:42 tom Exp $
+// $Id: bcpp.h,v 1.36 2003/04/22 18:47:10 tom Exp $
 
 #ifndef _BCPP_HEADER
 #define _BCPP_HEADER
@@ -135,6 +135,7 @@ class OutputStruct : public ANYOBJECT
            int   thisToken;     // current token number
 #endif
            int   offset;        // offset within original line's text
+           int   bracesLevel;   // curly-brace level at beginning of line
            int   indentSpace;   // num of spaces
            int   indentHangs;   // num of indents for continuation
            bool  splitElseIf;   // special case for aligning else/if
@@ -157,6 +158,7 @@ class OutputStruct : public ANYOBJECT
                 pBrace =
                 pBFlag =
                 pComment = NULL;
+                bracesLevel =
                 indentSpace =
                 indentHangs =
                 filler =
@@ -191,11 +193,11 @@ class OutputStruct : public ANYOBJECT
            // Automate destruction
            inline ~OutputStruct (void)
            {
-                delete pCode;
-                delete pCFlag;
-                delete pBrace;
-                delete pBFlag;
-                delete pComment;
+                delete[] pCode;
+                delete[] pCFlag;
+                delete[] pBrace;
+                delete[] pBFlag;
+                delete[] pComment;
            }
 };
 
