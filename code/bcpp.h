@@ -17,7 +17,7 @@
  * CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN        *
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.                   *
  ******************************************************************************/
-// $Id: bcpp.h,v 1.36 2003/04/22 18:47:10 tom Exp $
+// $Id: bcpp.h,v 1.37 2004/10/25 23:17:46 tom Exp $
 
 #ifndef _BCPP_HEADER
 #define _BCPP_HEADER
@@ -301,8 +301,8 @@ class IndentStruct : public ANYOBJECT
 extern void trace (const char *format, ...);
 #ifdef DEBUG
 extern const char *traceDataType(DataTypes theType);
-extern void traceInput(char *file, int line, InputStruct *pIn);
-extern void traceOutput(char *file, int line, OutputStruct *pOut);
+extern void traceInput(const char *file, int line, InputStruct *pIn);
+extern void traceOutput(const char *file, int line, OutputStruct *pOut);
 #define TRACE_INPUT(pOut)  traceInput(__FILE__, __LINE__, pOut);
 #define TRACE_OUTPUT(pOut) traceOutput(__FILE__, __LINE__, pOut);
 #else

@@ -1,5 +1,12 @@
--- $Id: CHANGES,v 1.25 2003/11/04 01:45:55 tom Exp $
+-- $Id: CHANGES,v 1.27 2004/10/27 00:00:27 tom Exp $
 -- Thomas E. Dickey <dickey@invisible-island.net>
+
+2004/10/26
+	+ correct logic that tracks state of preprocessor lines that continue
+	  from one line to the next.  The additional lines were not marked
+	  as preprocessor lines (report by Edward Bishop).
+	+ update configure script, fixes a check that added some gcc warning
+	  options which are not recognized by g++.
 
 2003/11/03
 	+ correct one of the valgrind fixes from 2003/04/23 which used delete[]
