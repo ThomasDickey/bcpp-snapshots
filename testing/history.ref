@@ -2,12 +2,12 @@
 ----------------
     20     1    total lines/statements
 
-     9	lines had comments        45.0 %
+    10	lines had comments        50.0 %
      7	lines had history         35.0 %
-     4	comments are inline      -20.0 %
+     0	comments are inline        0.0 %
      2	lines were blank          10.0 %
      0	lines for preprocessor     0.0 %
-     6	lines containing code     30.0 %
+     1	lines containing code      5.0 %
     20	total lines              100.0 %
 
    243	comment-chars             44.2 %
