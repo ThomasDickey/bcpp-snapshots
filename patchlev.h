@@ -1,1 +1,2 @@
-#define PATCHLEVEL 7
+#define RELEASE 7
+#define PATCHLEVEL 8

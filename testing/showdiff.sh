@@ -1,5 +1,5 @@
 #!/bin/sh
-# $Id: showdiff.sh,v 7.0 1990/08/30 07:54:55 ste_cm Rel $
+# $Id: showdiff.sh,v 7.1 2002/11/23 01:07:21 tom Exp $
 #
 # Performs regression-test comparison for 'run_tests.sh'
 if test ! -f $2
@@ -10,5 +10,6 @@ then
 	echo '**	(ok)'
 else
 	echo '??	failed:'
-	diff $1 $2
+	# show the reference on the left
+	diff $2 $1 
 fi

@@ -17,7 +17,7 @@
    149	statement-chars           79.7 %
    187	total characters         100.0 %
 
-    46	tokens, average length 0.91
+     9	tokens, average length 4.67
 
   0.00	ratio of comment:code
      1	?:illegal characters found
