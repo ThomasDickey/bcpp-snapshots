@@ -1,10 +1,14 @@
-$Id: CHANGES,v 5.3 1995/03/11 17:12:40 tom Exp $
+$Id: CHANGES,v 6.0 1995/03/18 15:45:45 dickey Rel $
 ------------------------------------------------------------------------------
+
+6.0 posted to comp.sources.misc
+---
+
+18 Mar 1995,	added -p, -I, -L options.  Made -t option work properly on UNIX.
 11 Mar 1995,	use 'txtalloc()' to reduce calls on 'strcmp()', making this
 		faster.
 07 Mar 1995,	absorbed -a, -l options into -v to simplify use for library
 		scanning.
-12 Nov 1994,	use 'egress()' for better executable-tests
 28 Nov 1993,	adaptation to MS-DOS.
 22 Sep 1993,	gcc-warnings, memory leaks.
 17 Jul 1992,	corrected error parsing pathlist.

@@ -6,7 +6,7 @@
  * this copyright notice, and it must be included in any copy made.           *
  ******************************************************************************/
 #ifndef NO_IDENT
-static char *Id = "$Id: msdos.c,v 5.6 1995/03/13 00:23:48 tom Exp $";
+static char *Id = "$Id: msdos.c,v 6.0 1995/03/13 00:23:48 dickey Rel $";
 #endif
 
 /*

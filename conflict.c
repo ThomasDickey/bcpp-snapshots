@@ -6,7 +6,7 @@
  * this copyright notice, and it must be included in any copy made.           *
  ******************************************************************************/
 #ifndef	NO_IDENT
-static	char	Id[] = "$Header: /users/source/archives/conflict.vcs/RCS/conflict.c,v 5.28 1995/03/18 14:05:04 tom Exp $";
+static	char	Id[] = "$Header: /users/source/archives/conflict.vcs/RCS/conflict.c,v 6.0 1995/03/18 14:05:04 dickey Rel $";
 #endif
 
 /*

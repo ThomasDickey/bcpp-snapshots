@@ -6,7 +6,7 @@
  * this copyright notice, and it must be included in any copy made.           *
  ******************************************************************************/
 #ifndef	NO_IDENT
-static	char	Id[] = "$Id: txtalloc.c,v 5.3 1995/03/11 17:35:06 tom Exp $";
+static	char	Id[] = "$Id: txtalloc.c,v 6.0 1995/03/11 17:35:06 dickey Rel $";
 #endif
 
 /*

@@ -1,5 +1,5 @@
 #!/bin/sh
-# $Id: run_test.sh,v 5.2 1995/03/18 13:33:43 tom Exp $
+# $Id: run_test.sh,v 6.0 1995/03/18 13:33:43 dickey Rel $
 # Run a test to show that CONFLICT is working
 BIN=`pwd`
 PROG=$BIN/conflict

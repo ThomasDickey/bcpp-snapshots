@@ -6,7 +6,7 @@
  * this copyright notice, and it must be included in any copy made.           *
  ******************************************************************************/
 #ifndef NO_IDENT
-static char *Id = "$Id: unix.c,v 5.6 1995/03/15 00:12:22 tom Exp $";
+static char *Id = "$Id: unix.c,v 6.0 1995/03/15 00:12:22 dickey Rel $";
 #endif
 
 #include "conflict.h"
