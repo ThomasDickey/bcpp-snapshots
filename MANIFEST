@@ -1,4 +1,4 @@
-MANIFEST for conflict, version v6_0
+MANIFEST for conflict, version t990728
 --------------------------------------------------------------------------------
 MANIFEST                        this file
 CHANGES                         change-log for 'conflict'
@@ -12,6 +12,7 @@ conflict.h                      common include for 'conflict'
 conflict.lsm                    Linux Software Map description of 'conflict'
 install.sh                      install-script, from X11R5
 makefile.in                     template for UNIX makefile for 'conflict'
+makefile.wnt                    makefile for Visual C
 mkdirs.sh                       make directory-hierarchy (from X-windows)
 msdos.c                         MS-DOS support functions
 os2.c                           OS/2 support functions
@@ -19,3 +20,7 @@ patchlev.h                      current patch-level of 'conflict'
 run_test.sh                     UNIX test-script for 'conflict'
 txtalloc.c                      text-allocator
 unix.c                          UNIX support functions
+win32                           subdirectory
+win32/conflict.mak              Visual C project
+win32/dirent.c                  dirent replacement for win32
+win32/dirent.h                  dirent replacement for win32

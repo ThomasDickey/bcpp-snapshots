@@ -1,12 +1,12 @@
 /******************************************************************************
- * Copyright 1995 by Thomas E. Dickey.  All Rights Reserved.                  *
+ * Copyright 1995,1999 by Thomas E. Dickey.  All Rights Reserved.             *
  *                                                                            *
  * You may freely copy or redistribute this software, so long as there is no  *
  * profit made from its use, sale trade or reproduction. You may not change   *
  * this copyright notice, and it must be included in any copy made.           *
  ******************************************************************************/
 #ifndef	NO_IDENT
-static	char	Id[] = "$Id: txtalloc.c,v 6.0 1995/03/11 17:35:06 dickey Rel $";
+static	const char Id[] = "$Id: txtalloc.c,v 6.1 1999/07/28 23:21:18 tom Exp $";
 #endif
 
 /*
@@ -41,8 +41,7 @@ typedef	struct	_node	{
 static	TNODE	head;
 
 static
-TNODE *	new_TNODE(text)
-	char	*text;
+TNODE * new_TNODE(char *text)
 {
 	register TNODE	*p = TypeAllocN(TNODE, strlen(text));
 	(void)strcpy(KEY(p),text);
@@ -52,8 +51,7 @@ TNODE *	new_TNODE(text)
 	return (p);
 }
 
-char *	txtalloc(text)
-	char	*text;
+char * txtalloc(char *text)
 {
 				/* (A1:Initialize) */
 register
@@ -150,8 +148,7 @@ char	*value;
 /*
  * Dummy entry for consistency
  */
-void	txtfree(text)
-	char	*text;
+void txtfree(char *text)
 {
 	/* patch */
 }
@@ -159,8 +156,7 @@ void	txtfree(text)
 /******************************************************************************/
 #if NO_LEAKS || defined(TEST)
 static
-void	free_TNODE(p)
-	TNODE	*p;
+void free_TNODE(TNODE *p)
 {
 	if (p != 0) {
 		free_TNODE(p->llink);
@@ -169,7 +165,7 @@ void	free_TNODE(p)
 	}
 }
 
-void	free_txtalloc()
+void	free_txtalloc(void)
 {
 	free_TNODE(head.rlink);
 }
@@ -177,9 +173,7 @@ void	free_txtalloc()
 
 /******************************************************************************/
 #ifdef	TEST
-void	txtdump(p, level)
-	TNODE *	p;
-	int	level;
+void txtdump(TNODE * p, int level)
 {
 	register int	j;
 
@@ -192,9 +186,7 @@ void	txtdump(p, level)
 	}
 }
 
-int	main(argc, argv)
-	int	argc;
-	char	*argv[];
+int main(int argc, char *argv[])
 {
 	register int	j;
 	for (j = 1; j < argc; j++)
