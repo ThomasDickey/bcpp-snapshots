@@ -177,20 +177,20 @@ ANYOBJECT*   QueueList::peek (int numFromNext)
         int count = itemCount - numFromNext;
         LinkItem* pStartPos   = pEndPos;
 
-        // move down list until start has been reached
-        while (count > 0)
+        if (count >= 0)
         {
-              pStartPos = pStartPos->pLinkedItem;
-              count--;
-        }
+            // move down list until start has been reached
+            while (count > 0)
+            {
+                  pStartPos = pStartPos->pLinkedItem;
+                  count--;
+            }
 
-        if (pStartPos != NULL)
-            return pStartPos->pStoredItem;
-        else
-            return NULL;
+            if (pStartPos != NULL)
+                return pStartPos->pStoredItem;
+        }
     }
-    else
-          return NULL;
+    return NULL;
 }
 
 

@@ -1,9 +1,13 @@
-MANIFEST for bcpp, version t1999-01-02
+MANIFEST for bcpp, version t1999-01-04
 --------------------------------------------------------------------------------
 MANIFEST                        this file
 README                          top-level README for bcpp
+bcpp.cfg                        default configuration for bcpp
 bcppall.bat                     run bcpp for a whole directory
+indent.bat                      script for format all C/C++/Java(Script) files
+indent.cfg                      alternate configuration (larger queue)
 code                            subdirectory
+code/.vilerc                    vile settings
 code/anyobj.cpp                 the base class for all objects...
 code/anyobj.h                   interface of anyobj.cpp
 code/backup.cpp                 backup original file, restore if no change is made
@@ -12,6 +16,7 @@ code/baseq.h                    interface of baseq.cpp
 code/bcpp.cfg                   sample config-file for bcpp (used in testing also)
 code/bcpp.cpp                   main program (Beautify C++)
 code/bcpp.h                     common interface/defs for bcpp
+code/cb++                       sample unix script, used for regression testing
 code/cmdline.cpp                command-line options-parsing
 code/cmdline.h                  interface of cmdline.cpp
 code/config.cpp                 config-file reader
@@ -21,6 +26,7 @@ code/execsql.cpp                module to indent embedded SQL statements
 code/hanging.cpp                compute hanging-indent of multiline statements
 code/html.cpp                   test for HTML vs JavaScript
 code/makefile                   makefile for UNIX (g++)
+code/makefile.wnt               makefile for M$ Visual C++
 code/run-test                   test-script
 code/stacklis.cpp               container class that stores items in a linked list
 code/stacklis.h                 interface of stacklis.cpp
@@ -29,9 +35,11 @@ code/tabs.cpp                   tab expansion/conversion for BCPP
 code/verbose.cpp                all output to stdout or stderr
 txtdocs                         subdirectory
 txtdocs/hirachy.txt             text-version of class-hierarchy
+txtdocs/manual.txt              text-version of manual
 unix                            subdirectory
 unix/makefile                   original UNIX makefile
 unix/util                       subdirectory
 unix/util/convert.cc            msdos/unix crlf/lf converter
 wpdocs                          subdirectory
 wpdocs/hirachy.doc              document, in WP51 format
+wpdocs/manual.doc               document, in WP51 format

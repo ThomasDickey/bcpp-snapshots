@@ -17,7 +17,7 @@
 // OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR   *
 // PERFORMANCE OF THIS SOFTWARE.                                               *
 //******************************************************************************
-// $Id: strings.cpp,v 1.8 1999/01/01 17:05:38 tom Exp $
+// $Id: strings.cpp,v 1.9 1999/01/04 14:13:28 tom Exp $
 // strings.cpp
 
 #include <stdlib.h>
@@ -54,7 +54,8 @@ char *NewSubstring (const char *src, size_t len)
     char* dst =  new char[len + 1];
     if (dst != 0)
     {
-        strncpy(dst, src, len)[len] = NULLC;
+        strncpy(dst, src, len);
+        dst[len] = NULLC;
     }
     return dst;
 }

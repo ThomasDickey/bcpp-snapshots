@@ -17,7 +17,7 @@
 // OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR   *
 // PERFORMANCE OF THIS SOFTWARE.                                               *
 //******************************************************************************
-// $Id: verbose.cpp,v 1.4 1999/01/01 18:28:15 tom Exp $
+// $Id: verbose.cpp,v 1.5 1999/01/04 20:38:30 tom Exp $
 // verbose.cpp
 
 #include "bcpp.h"
@@ -26,6 +26,8 @@
 
 #if HAVE_UNISTD_H
 #include <unistd.h>
+#else
+#include <io.h>
 #endif
 
 #undef verbose      // in case we defined it to 'printf'
