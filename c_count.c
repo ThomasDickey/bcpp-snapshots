@@ -1,12 +1,11 @@
-#ifndef	NO_IDENT
-static	char	Id[] = "$Header: /users/source/archives/c_count.vcs/RCS/c_count.c,v 7.12 1995/05/20 23:43:24 tom Exp $";
-#endif
-
 /*
  * Title:	c_count.c
  * Author:	T.E.Dickey
  * Created:	04 Dec 1985
  * Modified:
+ *		18 Dec 1996, allow '$' in tokens.  Correct handling of C++
+ *			     comments (were always treated as inline because
+ *			     of incorrect state processing in inFile()).
  *		13 May 1995, split-off from td_lib.
  *		28 Jul 1994, show totals even for empty file.
  *		17 Jul 1994, renamed from 'lincnt', for clearer meaning.
@@ -61,6 +60,10 @@ static	char	Id[] = "$Header: /users/source/archives/c_count.vcs/RCS/c_count.c,v 
 
 #include "system.h"
 
+#ifndef	NO_IDENT
+static const char Id[] = "$Header: /users/source/archives/c_count.vcs/RCS/c_count.c,v 7.13 1996/12/19 01:17:10 tom Exp $";
+#endif
+
 #include <stdio.h>
 #include <ctype.h>
 
@@ -101,7 +104,7 @@ extern	char *optarg;
 
 #define PRINTF  (void)printf
 #define	DEBUG	if (debug) PRINTF
-#define	TOKEN(c)	((c) == '_' || isalnum(c))
+#define	TOKEN(c)	((c) == '_' || (c) == '$' || isalnum(c))
 
 static	int	inFile  ARGS((void));
 static	int	Comment ARGS((int cpp));
@@ -798,16 +801,21 @@ int	inFile (NO_ARGS)
 {
 	static	int	last_c;
 	static	int	is_blank;	/* true til we get nonblank on line */
-	static	int	had_note,
-			had_code;
+	static	int	had_note;
+	static	int	had_code;
+	static	int	cnt_code;
+	static	enum PSTATE bstate;
+
 register int c = fgetc(File);
 
 	if (One.chars_total == 0) {
+		bstate    = code;
 		old_unquo =
 		old_unasc =
 		old_uncmt = 0;
 		had_note  =
 		had_code  = FALSE;
+		cnt_code  = 0;
 		last_c    = EOS;
 		is_blank  = TRUE;
 	}
@@ -824,35 +832,56 @@ register int c = fgetc(File);
 			c = '?';		/* protect/flag this */
 			One.flags_unasc++;
 		}
+
 		if (verbose) {
 			c = putchar(c);
 		}
+
 		One.chars_total++;
-		if (c == '#' && is_blank)
+
+		if (c == '#' && is_blank) {
+			bstate = preprocessor;
 			pstate = preprocessor;
-		else if (c == '\n') {
+		} else if (c == '\n') {
+			if (cnt_code) {
+				had_code += (pstate != comment);
+				if (pstate == comment)
+					had_note = TRUE;
+				cnt_code = 0;
+			}
 			One.lines_total++;
-			if (is_blank)
+			if (is_blank) {
 				One.lines_blank++;
-			else {
-				if (pstate == preprocessor) {
+			} else {
+				if (pstate == preprocessor
+				 || bstate == preprocessor) {
 					One.lines_prepro++;
-					if (had_note)
+					if (had_note) {
 						One.lines_inline++;
+					}
 				} else if (had_code) {
 					One.lines_code++;
-					if (had_note)
+					if (had_note) {
 						One.lines_inline++;
-				} else if (had_note)
+					}
+				} else if (had_note) {
 					One.lines_notes++;
+				}
 				had_code =
 				had_note = FALSE;
 			}
 			is_blank = TRUE;
-			if (pstate == preprocessor && last_c != '\\')
+			if (pstate == preprocessor && last_c != '\\') {
+				bstate = code;
 				pstate = code;
+			}
 		}
+
 		if (isspace(c)) {
+			if (cnt_code) {
+				had_code += (pstate == code);
+				cnt_code = 0;
+			}
 			if (literal)
 				One.chars_code++;
 			else
@@ -861,6 +890,10 @@ register int c = fgetc(File);
 			is_blank = FALSE;
 			switch (pstate) {
 			case comment:
+				if (cnt_code) {
+					had_code += (cnt_code > 2);
+					cnt_code = 0;
+				}
 				had_note = TRUE;
 				if (isalnum(c))
 					One.chars_notes++;
@@ -871,7 +904,7 @@ register int c = fgetc(File);
 				One.chars_prepro++;
 				break;
 			default:
-				had_code = TRUE;
+				cnt_code++;
 				One.chars_code++;
 			}
 		}

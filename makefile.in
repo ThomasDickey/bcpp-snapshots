@@ -1,4 +1,4 @@
-# $Id: makefile.in,v 7.3 1995/05/14 21:42:55 tom Exp $
+# $Id: makefile.in,v 7.4 1996/12/20 00:13:53 tom Exp $
 # Makefile-template for 'c_count'
 
 THIS = c_count
@@ -19,6 +19,7 @@ INSTALL_DATA	= @INSTALL_DATA@
 LIBS		= @LIBS@
 CFLAGS		= @CFLAGS@
 LDFLAGS		=
+LINT		= lint
 
 prefix		= @prefix@
 exec_prefix	= @exec_prefix@
@@ -89,7 +90,7 @@ check: $(THIS)
 	cd testing; $(MAKE) run_test
 
 lint:
-	lint $(THIS).c
+	$(LINT) $(CPPFLAGS) $(THIS).c
 
 tags:
 	ctags $(THIS).c $(HDRS)

@@ -1,3 +1,11 @@
+revision 7.2
+	1996/12/19
+		allow '$' in identifiers.
+
+		correct state-parsing in 'inFile()' which determines the count
+		of lines having comments (there was more than one error).
+
+revision 7.1
 	1996/01/13
 		adjusted ifdef's to assume UNIX (and we're autoconfiguring).
 		
