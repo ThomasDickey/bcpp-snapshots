@@ -85,6 +85,7 @@ static const char *showCharState(CharState theState)
     {
         default:
         case Blank:     it = "Blank";   break;
+        case PreProc:   it = "PreProc"; break;
         case Normal:    it = "Normal";  break;
         case Comment:   it = "Comment"; break;
         case Ignore:    it = "Ignore";  break;
@@ -220,7 +221,7 @@ void ExpandTabs (char* &pString,
     int tabLen,
     int deleteChars,
     Boolean quoteChars,
-    CharState &curState, char * &lineState)
+    CharState &curState, char * &lineState, Boolean &codeOnLine)
 {
     int   col = 0;
     int   skip = 0;
@@ -228,6 +229,7 @@ void ExpandTabs (char* &pString,
     char* pSTab = pString;
     bool  expand = True;
     bool  my_pString = False;
+    bool  had_print = False;
     CharState oldState = curState;
 
     lineState = new char[strlen (pString) + 1];
@@ -241,12 +243,16 @@ void ExpandTabs (char* &pString,
     {
         col++;
 
+        if (isprint(*pSTab))
+            had_print = True;
+
         if (skip || !isspace(*pSTab))
             last = col + skip;
 
         if (*pSTab == TAB                       // calculate tab positions !
          && expand
          && skip == 0
+         && !(had_print && (curState == Ignore || curState == Comment))
          && curState != SQuoted
          && curState != DQuoted)
         {
@@ -256,7 +262,7 @@ void ExpandTabs (char* &pString,
             if (col == 1)
                 tabAmount = tabLen;
             else
-                tabAmount = (((col / tabLen)+1) * tabLen) - col + 1;
+                tabAmount = ((((col+tabLen-1) / tabLen)) * tabLen) - col + 1;
 
             //TRACE((stderr, "amount:%d, col:%d\n", tabAmount, col))
             if (tabAmount > 0)
@@ -324,6 +330,8 @@ void ExpandTabs (char* &pString,
                 strcat(pTemp, pOctal);
                 strcat(pTemp, pSTab+1);
                 pSTab   = pTemp + (pSTab - pString);
+
+                delete pString;
                 pString = pTemp;
 
                 pTemp = new char[strlen(pString)+strlen(pOctal)+1];
@@ -336,6 +344,8 @@ void ExpandTabs (char* &pString,
                     return;
                 }
                 strcpy(pTemp, lineState);
+
+                delete lineState;
                 lineState = pTemp;
 
                 delete pOctal;
@@ -347,24 +357,49 @@ void ExpandTabs (char* &pString,
                     n++;
             }
             col--;
+            //TRACE((stderr, "re-interpret col %d\n", col))
             continue;   // re-interpret character
         }
 
         if (skip == 0)
             oldState = curState;
         nextCharState(pSTab, curState, skip);
+
+        // Set the saved-state based on whether we're transitioning from
+        // something that's got quotes (which are part of it):
         lineState[col-1] = (curState == Normal)
                 && ((oldState == DQuoted)
                  || (oldState == SQuoted)
                  || (oldState == Comment))
                    ? oldState
                    : curState;
+
+        // Override the first '#' on a non-continued line to mark a
+        // preprocessor-control.
+        if (*pSTab == POUNDC
+         && !codeOnLine
+         && ispunct(curState))
+        {
+            lineState[col-1] = PreProc;
+        }
+        else if (ispunct(lineState[col-1]))
+        {
+            codeOnLine = True;
+        }
+
         lineState[col] = NullC;
+
         pSTab++;
     }
 
+    // Set up for the next time through this procedure
     if (curState == Ignore)
         curState = Normal;
+    else if (col == 0
+     || pString[col-1] != ESCAPE)
+    {
+        codeOnLine = False;
+    }
 
     if (skip == 0
      && (curState == DQuoted

@@ -13,6 +13,7 @@
 enum CharState {
     NullC   = 0,
     Blank   = ' ',      // whitespace not in other categories
+    PreProc = '#',      // preprocessor (first chunk, with '#')
     Normal  = '.',      // code
     DQuoted = '"',      // "string"
     SQuoted = '\'',     // 'c'
@@ -29,7 +30,7 @@ extern void ExpandTabs (char* &pString,
     int tabLen,
     int deleteChars,
     Boolean quoteChars,
-    CharState &curState, char * &lineState);
+    CharState &curState, char * &lineState, Boolean &codeOnLine);
 extern char* TabSpacing (int mode, int len, int spaceIndent);
 
 #endif // _BCPP_HEADER

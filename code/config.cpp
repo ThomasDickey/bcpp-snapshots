@@ -15,7 +15,7 @@
 // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 // Allocates memory for line in file, and places that the data in it.
 // pInFile = the file handle to use when reading the file !
-// EndOfFile variable is ued to test if the end of the file has been reached.
+// EndOfFile variable is used to test if the end of the file has been reached.
 //           When  this is true, the variable is changed to -1
 //
 // A string is returned with the contents the current line in the file,
@@ -39,7 +39,7 @@ char* ReadLine (FILE *pInFile, int& EndOfFile)
         testChar = fgetc (pInFile);
     }
 
-    // chack if at endoffile !
+    // check if at endoffile !
     if (testChar < 0)
     {
          lineLen++;
@@ -147,14 +147,14 @@ char* FindConfigWords (char* pConfigLine, ConfigWords& type)
 // This function is used to generate a generic error message.
 //
 // Parameters:
-// LineNo       : Line number where the error occured
+// LineNo       : Line number where the error occurred
 // errorCode    : Error type to output to the user
 // errorCount   : This variable is increment when this function is used
 // pMessage     : Use by programmer to add additional information about the error
 //
 //
 // Return Values:
-// errorCount   : This variable is used to show how many errors have occured!
+// errorCount   : This variable is used to show how many errors have occurred!
 //
 void ErrorMessage (int lineNo, int errorCode, int& errorCount, const char* pMessage)
 {
@@ -204,8 +204,8 @@ void ErrorMessage (int lineNo, int errorCode, int& errorCount, const char* pMess
 // type       : This variable defines the keyword next to expect within config line.
 // assignType : The variable is used to define what type of assignment to use,
 //              (i.e 1 = Boolean, 2 = Integer)
-// errorCount : Variable used to define how many error have occured. If any errors
-//              encounted within the function, then this var will be incremented.
+// errorCount : Variable used to define how many error have occurred. If any errors
+//              encountered within the function, then this var will be incremented.
 // PosInLine  : Defines a pointer to the starting location to read in data for
 //              assignment from config data line (string).
 // variable   : This defines the variables that's going to be altered, be boolean, or
@@ -213,8 +213,8 @@ void ErrorMessage (int lineNo, int errorCode, int& errorCount, const char* pMess
 //
 // Return Values:
 // errorCount : If any error occur within variable assignment, the a error
-//              message is displayed, and this vaiable is incremented.
-// variable   : If no errors have occured, then this variable will contain the value
+//              message is displayed, and this variable is incremented.
+// variable   : If no errors have occurred, then this variable will contain the value
 //              that was set by the user !
 //
 void ConfigAssignment (ConfigWords type, int assignType, int& errorCount, int& configError, char* pPosInLine, int& variable)
@@ -253,7 +253,7 @@ void ConfigAssignment (ConfigWords type, int assignType, int& errorCount, int& c
 
         case (2):
         {
-            // covert whats left in the string to an INTEGER !
+            // covert what's left in the string to an INTEGER !
             if (strpbrk(pPosInLine, "0123456789") != NULL)
                 variable = atoi (pPosInLine);
             else
