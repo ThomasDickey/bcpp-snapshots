@@ -1,3 +1,8 @@
+	1996/01/13
+		adjusted ifdef's to assume UNIX (and we're autoconfiguring).
+		
+		use ARGS on the non-UNIX wildcard support prototypes, to work
+		with K&R compiler.
 
 	1995/05/14
 		make this independent of TD_LIB includes and library
