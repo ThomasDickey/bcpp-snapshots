@@ -17,12 +17,10 @@
  * CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN        *
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.                   *
  ******************************************************************************/
-// $Id: bcpp.h,v 1.31 1999/01/02 16:15:38 tom Exp $
+// $Id: bcpp.h,v 1.32 1999/01/04 20:37:58 tom Exp $
 
 #ifndef _BCPP_HEADER
 #define _BCPP_HEADER
-
-#define HAVE_UNISTD_H 1
 
 #include "config.h"
 #include "anyobj.h"            // Use ANYOBJECT base class
@@ -39,7 +37,9 @@
 #define TRACE(p) /*nothing*/
 #endif
 
-#ifndef __GNUC__
+#ifdef __GNUC__
+#define HAVE_UNISTD_H 1
+#else
 #define bool int        // FIXME
 #endif
 

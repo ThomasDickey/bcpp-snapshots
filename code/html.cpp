@@ -17,7 +17,7 @@
 // OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR   *
 // PERFORMANCE OF THIS SOFTWARE.                                               *
 //******************************************************************************
-// $Id: html.cpp,v 1.1 1999/01/02 16:37:32 tom Exp $
+// $Id: html.cpp,v 1.2 1999/01/04 20:27:32 tom Exp $
 
 #include "bcpp.h"
 #include "cmdline.h"
@@ -61,11 +61,12 @@ bool
 HtmlStruct::Active(const char *pLineData)
 {
     bool match = False;
+    int n;
 
     switch (state)
     {
         case 0:
-            for (int n = 0; pLineData[n] != 0; n++) {
+            for (n = 0; pLineData[n] != 0; n++) {
                 if (!isspace(pLineData[n])) {
                     if (pLineData[n] == '<') {
                         state = 1;

@@ -67,8 +67,8 @@ char* ReadLine (FILE *pInFile, int& EndOfFile)
         } else if (ch == LF) {
             break;
         }
-        if (need + 1 > used) {
-            used = (used * 3) / 2;
+        if (need + 2 > used) {
+            used = ((need + 2) * 3) / 2;
             char *temp = new char [used];
             for (int n = 0; n < need; n++)
                 temp[n] = pLineBuffer[n];

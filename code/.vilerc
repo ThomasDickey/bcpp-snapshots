@@ -1,0 +1,7 @@
+source ~/.vilerc
+define-submode c notabinsert
+;set notabinsert
+set ts=4
+set sw=4
+set cts=4
+set csw=4
