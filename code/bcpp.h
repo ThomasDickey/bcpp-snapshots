@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 1996,1997 by Thomas E. Dickey <dickey@clark.net>                 *
+ * Copyright 1996,1997,1999 by Thomas E. Dickey <dickey@clark.net>            *
  * All Rights Reserved.                                                       *
  *                                                                            *
  * Permission to use, copy, modify, and distribute this software and its      *
@@ -17,11 +17,14 @@
  * CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN        *
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.                   *
  ******************************************************************************/
-// $Id: bcpp.h,v 1.25 1997/04/03 11:35:00 tom Exp $
+// $Id: bcpp.h,v 1.31 1999/01/02 16:15:38 tom Exp $
 
 #ifndef _BCPP_HEADER
 #define _BCPP_HEADER
 
+#define HAVE_UNISTD_H 1
+
+#include "config.h"
 #include "anyobj.h"            // Use ANYOBJECT base class
 #include "baseq.h"             // QueueList class to store Output structures
 #include "stacklis.h"          // StackList class to store indentStruct
@@ -31,7 +34,7 @@
 #define TABLESIZE(n) (sizeof(n)/sizeof(n[0]))
 
 #ifdef DEBUG
-#define TRACE(p) fprintf p;
+#define TRACE(p) trace p;
 #else
 #define TRACE(p) /*nothing*/
 #endif
@@ -218,6 +221,18 @@ class HangStruct : public ANYOBJECT
 };
 
 // ----------------------------------------------------------------------------
+class HtmlStruct : public ANYOBJECT
+{
+        int state;
+    public:
+        HtmlStruct(void)
+        {
+            state = 0;
+        }
+        bool Active(const char *pLineData);
+};
+
+// ----------------------------------------------------------------------------
 class SqlStruct : public ANYOBJECT
 {
         int state;
@@ -265,6 +280,7 @@ class IndentStruct : public ANYOBJECT
 
 //-----------------------------------------------------------------------------
 // debug.cpp
+extern void trace (const char *format, ...);
 #ifdef DEBUG
 extern const char *traceDataType(DataTypes theType);
 extern void traceInput(int line, InputStruct *pIn);
@@ -282,6 +298,10 @@ inline bool emptyString(const char *s)
 }
 
 //-----------------------------------------------------------------------------
+// backup.cpp
+extern int BackupFile (char*& oldFilename, char*& newFilename);
+extern void RestoreIfUnchanged(char *oldFilename, char *newFilename);
+
 // exec_sql.cpp
 extern void IndentSQL (OutputStruct *pOut, int& state);
 
@@ -306,5 +326,10 @@ extern void ExpandTabs (char* &pString,
     Boolean quoteChars,
     CharState &curState, char * &lineState, Boolean &codeOnLine);
 extern char* TabSpacing (int mode, int col, int len, int spaceIndent);
+
+// verbose.cpp
+extern bool prompt (const char *format, ...);
+extern void verbose (const char *format, ...);
+extern void warning (const char *format, ...);
 
 #endif // _BCPP_HEADER

@@ -1,16 +1,19 @@
-#ifndef _CONFIG_CODE
-#define _CONFIG_CODE
-
 // Program C(++) beautifier Written By Steven De Toni ACBC 11 11/94
 //
 // This program module contains routines to read data from a text file a 
 // line at a time, and able to read parameters from a configuration file.
 
-#include "config.h"         // Prototypes, struct, and enum declarations ...
 #include <stdlib.h>         // atol(),
 #include <string.h>         // strlen(), strstr(), strcpy(), strcmp(), strpbrk()
 #include <stdio.h>          // NULL constant, printf(), FILE, ftell(), fseek(), fprintf(), stderr
+
+#include "bcpp.h"
 #include "cmdline.h"        // StrUpr()
+
+enum ConfigWords {ANYT = 0, FSPC, UTAB, ISPC, IPRO, ISQL,
+                  NAQTOOCT, COMWC, COMNC, LCNC,
+                  LGRAPHC, ASCIIO, PBNLINE, PROGO, QBUF, BUF,
+                  EQUAL, YES, ON, NO, OFF};
 
 static const struct { ConfigWords code; const char *name; }
     ConfigData[] = {
@@ -37,7 +40,7 @@ static const struct { ConfigWords code; const char *name; }
     { OFF,      "OFF" }
     };
 
-static const size_t SizeofData = sizeof(ConfigData)/sizeof(ConfigData[0]);
+static const size_t SizeofData = TABLESIZE(ConfigData);
 
 // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 // Allocates memory for line in file, and places that the data in it.
@@ -50,61 +53,36 @@ static const size_t SizeofData = sizeof(ConfigData)/sizeof(ConfigData[0]);
 // when not needed !
 char* ReadLine (FILE *pInFile, int& EndOfFile)
 {
-    long int startOfLine, endOfLine;
+    const int nominal = 80;
+    int used = nominal;
+    int need = 0;
+    int ch;
+    char* pLineBuffer = new char [used];
 
-    int lineLen     = 0;
-    int testChar;
-
-    startOfLine = ftell (pInFile);
-
-    // find length
-    testChar = fgetc(pInFile);
-
-    while ( (testChar != LF) && (testChar > 0) ) // while not at end of file, or line feed
-    {
-        lineLen++;
-        testChar = fgetc (pInFile);
+    for(;;) {
+        ch = fgetc(pInFile);
+        if (ch < 0) {
+            EndOfFile = ch;
+            break;
+        } else if (ch == LF) {
+            break;
+        }
+        if (need + 1 > used) {
+            used = (used * 3) / 2;
+            char *temp = new char [used];
+            for (int n = 0; n < need; n++)
+                temp[n] = pLineBuffer[n];
+            delete pLineBuffer;
+            pLineBuffer = temp;
+        }
+        pLineBuffer[need++] = ch;
     }
-
-    // check if at endoffile !
-    if (testChar < 0)
-    {
-         lineLen++;
-         EndOfFile = testChar;
-    }
-
-    // allocate buffer memory!
-    char* pLineBuffer = new char [lineLen+1];
-
-    if (pLineBuffer == NULL)
-        return NULL;
-    else
-        pLineBuffer[lineLen] = NULLC;
-
-    // reset position in file!
-    endOfLine = ftell (pInFile);
-    fseek (pInFile, startOfLine, 0);
-
-    // place data into buffer!
-    int counter = lineLen;
-    lineLen = 0;
-
-    testChar = fgetc(pInFile);
-    while (counter > 0)
-    {
-        pLineBuffer[lineLen] = testChar;
-        lineLen++;
-        counter--;
-        testChar = fgetc(pInFile);
-    }
-
-    fseek (pInFile, endOfLine, 0);
-
+    pLineBuffer[need] = 0;
     return pLineBuffer;
 }
 
 
-// @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\
+// @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 // Lookup keyword in ConfigData[]
 const char *ConfigWordOf(ConfigWords code)
 {
@@ -114,7 +92,60 @@ const char *ConfigWordOf(ConfigWords code)
     return 0;
 }
 
-// @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\
+// @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+// This function is used to generate a generic error message.
+//
+// Parameters:
+// LineNo       : Line number where the error occurred
+// errorCode    : Error type to output to the user
+// errorCount   : This variable is increment when this function is used
+// pMessage     : Use by programmer to add additional information about the error
+//
+//
+// Return Values:
+// errorCount   : This variable is used to show how many errors have occurred!
+//
+static void ErrorMessage (int lineNo, int errorCode, int& errorCount, const char* pMessage = NULL)
+{
+
+    switch (errorCode)
+    {
+        case (1):
+        {
+            warning ("Syntax Error After Key Word ");
+            break;
+        }
+
+        case (2):
+        {
+            warning ("Range Error  !");
+            break;
+        }
+
+        case (3):
+        {
+            warning ("Expected Numeric Data !");
+            break;
+        }
+
+        case (4):
+        {
+            warning ("Can't Decipher");
+            break;
+        }
+
+    }
+
+    if (pMessage != NULL)
+       warning ("%s", pMessage);
+
+    warning (" At Line %d\n", lineNo);
+
+    errorCount++;
+}
+
+
+// @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 // Functions finds keywords within a line of data.
 //
 // Parameters:
@@ -137,7 +168,7 @@ const char *ConfigWordOf(ConfigWords code)
 // Char*: Returns a pointer in the string to the next starting location
 //        AFTER the keyword found. Or returns NULL if no keyword found!
 //
-char* FindConfigWords (char* pConfigLine, ConfigWords& type)
+static char* FindConfigWords (char* pConfigLine, ConfigWords& type)
 {
    char* pWordLoc = NULL;
 
@@ -181,59 +212,6 @@ char* FindConfigWords (char* pConfigLine, ConfigWords& type)
 
 
 // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-// This function is used to generate a generic error message.
-//
-// Parameters:
-// LineNo       : Line number where the error occurred
-// errorCode    : Error type to output to the user
-// errorCount   : This variable is increment when this function is used
-// pMessage     : Use by programmer to add additional information about the error
-//
-//
-// Return Values:
-// errorCount   : This variable is used to show how many errors have occurred!
-//
-void ErrorMessage (int lineNo, int errorCode, int& errorCount, const char* pMessage)
-{
-
-    switch (errorCode)
-    {
-        case (1):
-        {
-            fprintf (stderr, "Syntax Error After Key Word ");
-            break;
-        }
-
-        case (2):
-        {
-            fprintf (stderr, "Range Error  !");
-            break;
-        }
-
-        case (3):
-        {
-            fprintf (stderr, "Expected Numeric Data !");
-            break;
-        }
-
-        case (4):
-        {
-            fprintf (stderr, "Can't Decipher");
-            break;
-        }
-
-    }
-
-    if (pMessage != NULL)
-       fprintf (stderr, "%s", pMessage);
-
-    fprintf (stderr, " At Line %d\n", lineNo);
-
-    errorCount++;
-}
-
-
-// @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 // ConfigAssignment function is used to assigned Boolean, or unsigned integer
 // values from 0 - 5000 to variables that are passed to it.
 //
@@ -251,7 +229,7 @@ void ErrorMessage (int lineNo, int errorCode, int& errorCount, const char* pMess
 // variable   : If no errors have occurred, then this variable will contain the value
 //              that was set by the user !
 //
-void ConfigAssignment (int& errorCount, int& configError, char* pPosInLine, int& variable)
+static void ConfigAssignment (int& errorCount, int& configError, char* pPosInLine, int& variable)
 {
     // convert what's left in the string to an INTEGER !
     if (strpbrk(pPosInLine, "0123456789") != NULL)
@@ -264,7 +242,7 @@ void ConfigAssignment (int& errorCount, int& configError, char* pPosInLine, int&
         ErrorMessage (errorCount, 2, configError, " Valid Range = 0 - 5000");
 }
 
-void ConfigAssignment (int& errorCount, int& configError, char* pPosInLine, Boolean& variable)
+static void ConfigAssignment (int& errorCount, int& configError, char* pPosInLine, Boolean& variable)
 {
     ConfigWords type = ANYT;
 
@@ -289,6 +267,18 @@ void ConfigAssignment (int& errorCount, int& configError, char* pPosInLine, Bool
     } // switch
 }
 
+#define DecodeIt(value) \
+    { \
+        ConfigWords tesType = EQUAL; \
+        pPosInLine = FindConfigWords (pPosInLine, tesType); \
+    \
+        if (tesType != EQUAL) { \
+            ErrorMessage (lineCount, 1, configError, ConfigWordOf(type)); \
+            break; \
+        } else \
+            ConfigAssignment (lineCount, configError, pPosInLine, value); \
+    }
+
 // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 // This function is used to load the users configuration from a file.
 //
@@ -312,6 +302,7 @@ int SetConfig (FILE* pConfigFile, Config& userSettings)
   ConfigWords type                ;
   int         lineCount     = 0   ;
   int         configError   = 0   ;
+  Boolean     test;
 
   while (! noMoreConfig)
   {
@@ -328,249 +319,84 @@ int SetConfig (FILE* pConfigFile, Config& userSettings)
 
         switch (type)
         {
-
-             // ############################################################
-             case (FSPC): // Function_Spacing = (%d)
-             {
-                type =  EQUAL;
-                pPosInLine = FindConfigWords (pPosInLine, type);
-
-                if (type == EQUAL) // expect a "="
-                    ConfigAssignment (lineCount, configError, pPosInLine, userSettings.numOfLineFunc);
-                else
-                    ErrorMessage (lineCount, 1, configError, ConfigWordOf(FSPC));
-
+             case (FSPC):   // FUNCTION_SPACING = (%d)
+                DecodeIt (userSettings.numOfLineFunc);
                 break;
-             }// case (FSPC)
 
-             // ############################################################
-             case (UTAB): // use_tabs = {on, off, yes, no}
-             {
-                type =  EQUAL;
-                pPosInLine = FindConfigWords (pPosInLine, type);
-
-                if (type == EQUAL) // expect a "="
-                   ConfigAssignment (lineCount, configError, pPosInLine, userSettings.useTabs);
-                else
-                   ErrorMessage (lineCount, 1, configError, ConfigWordOf(UTAB));
-
+             case (UTAB):   // USE_TABS = {on, off, yes, no}
+                DecodeIt (userSettings.useTabs);
                 break;
-             }// case (UTAB)
 
-             // ############################################################
-             case (ISPC): // Indent_Spacing = (%d)
-             {
-                type =  EQUAL;
-                pPosInLine = FindConfigWords (pPosInLine, type);
-
-                if (type == EQUAL) // expect a "="
-                    ConfigAssignment (lineCount, configError, pPosInLine, userSettings.tabSpaceSize);
-                else
-                    ErrorMessage (lineCount, 1, configError, ConfigWordOf(ISPC));
-
+             case (ISPC):   // INDENT_SPACING = (%d)
+                DecodeIt (userSettings.tabSpaceSize);
                 break;
-             }// case (ISPC)
 
-             // ############################################################
-             case (IPRO): // Indent_Preprocessor = (%d)
-             {
-                type =  EQUAL;
-                pPosInLine = FindConfigWords (pPosInLine, type);
-
-                if (type == EQUAL) // expect a "="
-                    ConfigAssignment (lineCount, configError, pPosInLine, userSettings.indentPreP);
-                else
-                    ErrorMessage (lineCount, 1, configError, ConfigWordOf(IPRO));
-
+             case (IPRO):   // INDENT_PREPROCESSOR = (%d)
+                DecodeIt (userSettings.indentPreP);
                 break;
-             }// case (ISPC)
 
-             // ############################################################
-             case (ISQL): // Indent_Exec_Sql = (%d)
-             {
-                type =  EQUAL;
-                pPosInLine = FindConfigWords (pPosInLine, type);
-
-                if (type == EQUAL) // expect a "="
-                    ConfigAssignment (lineCount, configError, pPosInLine, userSettings.indent_sql);
-                else
-                    ErrorMessage (lineCount, 1, configError, ConfigWordOf(ISQL));
-
+             case (ISQL):   // INDENT_EXEC_SQL = (%d)
+                DecodeIt (userSettings.indent_sql);
                 break;
-             }// case (ISPC)
 
-             // ############################################################
              case (NAQTOOCT): // NONASCII_QUOTES_TO_OCTAL = {on, off, yes, no}
-             {
-                type =  EQUAL;
-                pPosInLine = FindConfigWords (pPosInLine, type);
-
-                if (type == EQUAL) // expect a "="
-                    ConfigAssignment (lineCount, configError, pPosInLine, userSettings.quoteChars);
-                else
-                    ErrorMessage (lineCount, 1, configError, ConfigWordOf(NAQTOOCT));
-
+                DecodeIt (userSettings.quoteChars);
                 break;
-             }// case (NAQTOOCT)
 
-             // ############################################################
-             case (COMWC): // Comments_With_Code = (%d)
-             {
-                type =  EQUAL;
-                pPosInLine = FindConfigWords (pPosInLine, type);
-
-                if (type == EQUAL) // expect a "="
-                    ConfigAssignment (lineCount, configError, pPosInLine, userSettings.posOfCommentsWC);
-                else
-                    ErrorMessage (lineCount, 1, configError, ConfigWordOf(COMWC));
-
+             case (COMWC):  // COMMENTS_WITH_CODE = (%d)
+                DecodeIt (userSettings.posOfCommentsWC);
                 break;
-             }// case (COMWC)
 
-             // ############################################################
-             case (COMNC): // Comments_With_NoCode = (%d)
-             {
-                type = EQUAL;
-                pPosInLine = FindConfigWords (pPosInLine, type);
-
-                if (type == EQUAL) // expect a "="
-                    ConfigAssignment (lineCount, configError, pPosInLine, userSettings.posOfCommentsNC);
-                else
-                    ErrorMessage (lineCount, 1, configError, ConfigWordOf(COMNC));
-
+             case (COMNC):  // COMMENTS_WITH_NOCODE = (%d)
+                DecodeIt (userSettings.posOfCommentsNC);
                 break;
-             }// case (COMNC)
              
-             //JZAS Start
-             // ############################################################
-             case (LCNC):     // leave_comments_nocode = {on, off, yes, no}
-             {
-                type = EQUAL;
-                pPosInLine = FindConfigWords (pPosInLine, type);
-
-                if (type == EQUAL) // expect a "="
-                    ConfigAssignment (lineCount, configError, pPosInLine, userSettings.leaveCommentsNC);
-                else
-                    ErrorMessage (lineCount, 1, configError, ConfigWordOf(BUF));
-
+             case (LCNC):   // LEAVE_COMMENTS_NOCODE = {on, off, yes, no}
+                DecodeIt (userSettings.leaveCommentsNC);
                 break;
-             }// case (LCNC)
-             //JZAS End
 
-
-             // ############################################################
              case (LGRAPHC): // LEAVE_GRAPHIC_CHARS = {on, off, yes, no}
-             {
-                type =  EQUAL;
-                pPosInLine = FindConfigWords (pPosInLine, type);
-
-                if (type == EQUAL) // expect a "="
-                {
-                    Boolean test = False;
-                    ConfigAssignment (lineCount, configError, pPosInLine, test);
-
-                    if (test == True)
-                        userSettings.deleteHighChars = 3; //   set bit 0, 1
-                    else
-                        userSettings.deleteHighChars = 0; // unset bit 0, 1
-                }
+                test = False;
+                DecodeIt (test);
+                if (test == True)
+                    userSettings.deleteHighChars = 3; //   set bit 0, 1
                 else
-                   ErrorMessage (lineCount, 1, configError, ConfigWordOf(LGRAPHC));
-
+                    userSettings.deleteHighChars = 0; // unset bit 0, 1
                 break;
-             }// case (LGRAPHC)
 
-             // ############################################################
              case (ASCIIO): // ASCII_CHARS_ONLY = {on, off, yes, no}
-             {
-                type =  EQUAL;
-                pPosInLine = FindConfigWords (pPosInLine, type);
-
-                if (type == EQUAL) // expect a "="
-                {
-                    Boolean test = False;
-                    ConfigAssignment (lineCount, configError, pPosInLine, test);
-
-                    if (test == True)
-                        userSettings.deleteHighChars = 1;   //   set bit 0
-                    else
-                        userSettings.deleteHighChars = 0;   // unset bit 0
-                }
+                test = False;
+                DecodeIt (test);
+                if (test == True)
+                    userSettings.deleteHighChars = 1;   //   set bit 0
                 else
-                   ErrorMessage (lineCount, 1, configError, ConfigWordOf(ASCIIO));
-
+                    userSettings.deleteHighChars = 0;   // unset bit 0
                 break;
-             }// case (ASCIIO)
 
-             // ############################################################
-             case (PBNLINE): // Braces On Newline = {on, off, yes, no}
-             {
-                type =  EQUAL;
-                pPosInLine = FindConfigWords (pPosInLine, type);
-
-                if (type == EQUAL) // expect a "="
-                    ConfigAssignment (lineCount, configError, pPosInLine, userSettings.braceLoc);
-                else
-                    ErrorMessage (lineCount, 1, configError, ConfigWordOf(PBNLINE));
-
+             case (PBNLINE): // PLACE_BRACE_ON_NEW_LINE = {on, off, yes, no}
+                DecodeIt (userSettings.braceLoc);
                 break;
-             }// case (PBNLINE)
 
-             // ############################################################
-             case (PROGO): // program_output = {on, off, yes, no}
-             {
-                type =  EQUAL;
-                pPosInLine = FindConfigWords (pPosInLine, type);
-
-                if (type == EQUAL) // expect a "="
-                    ConfigAssignment (lineCount, configError, pPosInLine, userSettings.output);
-                else
-                    ErrorMessage (lineCount, 1, configError, ConfigWordOf(PROGO));
-
+             case (PROGO): // PROGRAM_OUTPUT = {on, off, yes, no}
+                DecodeIt (userSettings.output);
                 break;
-             }// case (PROGO)
 
-             // ############################################################
              case (QBUF): // queue_buffer = (%d)
-             {
-                type =  EQUAL;
-                pPosInLine = FindConfigWords (pPosInLine, type);
-
-                if (type == EQUAL) // expect a "="
-                    ConfigAssignment (lineCount, configError, pPosInLine, userSettings.queueBuffer);
-                else
-                    ErrorMessage (lineCount, 1, configError, ConfigWordOf(QBUF));
-
-                // minimum needed is a 2 line buffer !
+                DecodeIt (userSettings.queueBuffer);
                 if (userSettings.queueBuffer < 2)
                       userSettings.queueBuffer = 2;
-
                 break;
-             }// case (QBUF)
 
-             // ############################################################
              case (BUF):     // backup_file = {on, off, yes, no}
-             {
-                type = EQUAL;
-                pPosInLine = FindConfigWords (pPosInLine, type);
-
-                if (type == EQUAL) // expect a "="
-                    ConfigAssignment (lineCount, configError, pPosInLine, userSettings.backUp);
-                else
-                    ErrorMessage (lineCount, 1, configError, ConfigWordOf(BUF));
-
+                DecodeIt (userSettings.backUp);
                 break;
-             }// case (BF)
 
              case (ANYT):
-                    break;
+                break;
 
-             case (EQUAL):
-             case (YES):
-             case (ON):
-             case (NO):
-             case (OFF):
-                    ErrorMessage (lineCount, 4, configError);
+             default:
+                ErrorMessage (lineCount, 4, configError);
+                break;
         }// switch
 
         delete pLineOfConfig;
@@ -579,4 +405,55 @@ int SetConfig (FILE* pConfigFile, Config& userSettings)
   return configError;
 }
 
-#endif
+// @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+// This function is used to show the users configuration.
+//
+// Parameters:
+// userSettings : Config structure that contains the user settings.
+//
+// Return Values:
+// int          : Returns the number of errors encountered when reading the
+//                configuration file.
+//
+int ShowConfig (Config& userSettings)
+{
+    const char* choices[2] = {"Yes", "No"};
+    int errorNum = 0;
+
+    verbose ("Function Line Spacing              : %d\n", userSettings.numOfLineFunc);
+    verbose ("Use Tabs In Indenting              : %s\n", choices[userSettings.useTabs+1]);
+    verbose ("Indent Spacing Length              : %d\n", userSettings.tabSpaceSize);
+    verbose ("Comments With Code                 : %d\n", userSettings.posOfCommentsWC);
+    if (userSettings.leaveCommentsNC != False)
+        verbose ("Comments With No Code              : Indented According To Code\n");
+    else
+        verbose ("Comments With No Code              : %d\n", userSettings.posOfCommentsNC);
+    verbose ("Remove Non-ASCII Chars             : ");
+
+    switch (userSettings.deleteHighChars)
+    {
+        case (0):
+            verbose ("No\n");
+            break;
+        case (1):
+            verbose ("Yes\n");
+            break;
+        case (3):
+            verbose ("Yes But Not Graphic Chars\n");
+            break;
+        default:
+            warning ("#### ERROR : Unexpected Value %d", userSettings.deleteHighChars);
+            errorNum++;
+    }
+
+    verbose ("Non-ASCII Chars In Quotes To Octal : %s\n", choices[userSettings.quoteChars+1]);
+    verbose ("Open Braces On New Line            : %s\n", choices[userSettings.braceLoc+1]);
+    verbose ("Program Output                     : %s\n", choices[userSettings.output+1]);
+    verbose ("Internal Queue Buffer Size         : %d\n", userSettings.queueBuffer);
+
+    if (errorNum > 0
+    && prompt("Do You Wish To Continue To Process Files "))
+        errorNum = 0;
+
+    return errorNum;
+}

@@ -1,5 +1,5 @@
 //******************************************************************************
-// Copyright 1996,1997 by Thomas E. Dickey <dickey@clark.net>                  *
+// Copyright 1996,1997,1999 by Thomas E. Dickey <dickey@clark.net>             *
 // All Rights Reserved.                                                        *
 //                                                                             *
 // Permission to use, copy, modify, and distribute this software and its       *
@@ -17,13 +17,21 @@
 // OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR   *
 // PERFORMANCE OF THIS SOFTWARE.                                               *
 //******************************************************************************
-// $Id: debug.cpp,v 1.9 1997/01/08 01:45:21 tom Exp $
+// $Id: debug.cpp,v 1.11 1999/01/01 17:03:09 tom Exp $
 // Debug/trace functions for BCPP
 
 #include <stdlib.h>
+#include <stdarg.h>
 
-#include "config.h"
 #include "bcpp.h"
+
+void trace(const char *format, ...)
+{
+    va_list ap;
+    va_start(ap, format);
+    vfprintf(stderr, format, ap);
+    va_end(ap);
+}
 
 #if defined(DEBUG) || defined(DEBUG2)
 const char *traceDataType(DataTypes theType)
@@ -45,18 +53,18 @@ const char *traceDataType(DataTypes theType)
 
 void traceInput(int line, InputStruct *pIn)
 {
-    TRACE((stderr, "@%d, %s%s (col:%d)\n",
+    TRACE(("@%d, %s%s (col:%d)\n",
         line,
         traceDataType(pIn->dataType),
         pIn->comWcode ? " comWcode" : "",
         pIn->offset))
-    if (pIn->pData  != 0) TRACE((stderr, "---- data:%s\n", pIn->pData))
-    if (pIn->pState != 0) TRACE((stderr, "---- flag:%s\n", pIn->pState))
+    if (pIn->pData  != 0) TRACE(("---- data:%s\n", pIn->pData))
+    if (pIn->pState != 0) TRACE(("---- flag:%s\n", pIn->pState))
 }
 
 void traceOutput(int line, OutputStruct *pOut)
 {
-    TRACE((stderr, "@%d, indent %d(%d), fill %d, OUT #%d:%s:%s:%s:\n",
+    TRACE(("@%d, indent %d(%d), fill %d, OUT #%d:%s:%s:%s:\n",
         line,
         pOut->indentSpace,
         pOut->indentHangs,
@@ -65,10 +73,10 @@ void traceOutput(int line, OutputStruct *pOut)
         pOut->pCode ? "code" : "",
         pOut->pBrace ? "brace" : "",
         pOut->pComment ? "comment" : ""))
-    if (pOut->pCode)    TRACE((stderr, "----- code:%s\n", pOut->pCode))
-    if (pOut->pCFlag)   TRACE((stderr, "---- state:%s\n", pOut->pCFlag))
-    if (pOut->pBrace)   TRACE((stderr, "---- brace:%s\n", pOut->pBrace))
-    if (pOut->pBFlag)   TRACE((stderr, "---- state:%s\n", pOut->pBFlag))
-    if (pOut->pComment) TRACE((stderr, "-- comment:%s\n", pOut->pComment))
+    if (pOut->pCode)    TRACE(("----- code:%s\n", pOut->pCode))
+    if (pOut->pCFlag)   TRACE(("---- state:%s\n", pOut->pCFlag))
+    if (pOut->pBrace)   TRACE(("---- brace:%s\n", pOut->pBrace))
+    if (pOut->pBFlag)   TRACE(("---- state:%s\n", pOut->pBFlag))
+    if (pOut->pComment) TRACE(("-- comment:%s\n", pOut->pComment))
 }
 #endif

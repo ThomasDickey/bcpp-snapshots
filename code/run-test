@@ -1,0 +1,21 @@
+#!/bin/sh
+# $Id: run-test,v 1.2 1999/01/02 00:07:57 tom Exp $
+if (make) ; then
+	if test $# != 0 ; then
+		rm -rf results
+		mkdir results
+		test -f output/.vilerc && copy output/.vilerc results/
+		for n in $*
+		do
+			N=`basename $n`
+			if test -f input/$N ; then
+				copy input/$N results/
+			fi
+		done
+		PATH=.:$PATH cb++ results/*
+		rm -f results/*~
+		diff -r results output
+	else
+		eval $0 input/*
+	fi
+fi

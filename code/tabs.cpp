@@ -1,5 +1,5 @@
 //******************************************************************************
-// Copyright 1996,1997 by Thomas E. Dickey <dickey@clark.net>                  *
+// Copyright 1996,1997,1999 by Thomas E. Dickey <dickey@clark.net>             *
 // All Rights Reserved.                                                        *
 //                                                                             *
 // Permission to use, copy, modify, and distribute this software and its       *
@@ -17,13 +17,12 @@
 // OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR   *
 // PERFORMANCE OF THIS SOFTWARE.                                               *
 //******************************************************************************
-// $Id: tabs.cpp,v 1.18 1997/01/07 23:55:22 tom Exp $
+// $Id: tabs.cpp,v 1.20 1999/01/01 17:05:45 tom Exp $
 // Tab conversion & first-pass scanning
 
 #include <ctype.h>
 #include <string.h>            // strlen(), strstr(), strchr(), strcpy(), strcmp()
 
-#include "config.h"
 #include "bcpp.h"
 
 // ----------------------------------------------------------------------------
@@ -262,7 +261,7 @@ void ExpandTabs (char* &pString,
 
     lineState[0] = NullC;
 
-    //TRACE((stderr, " ExpandTabs(%s)%s\n", pString, codeOnLine ? " code" : ""))
+    //TRACE((" ExpandTabs(%s)%s\n", pString, codeOnLine ? " code" : ""))
     while (*pSTab != NULLC)
     {
         col++;
@@ -288,7 +287,7 @@ void ExpandTabs (char* &pString,
             else
                 tabAmount = ((((col+tabLen-1) / tabLen)) * tabLen) - col + 1;
 
-            //TRACE((stderr, "amount:%d, col:%d, state:%s (%d)\n", tabAmount, col, showCharState(curState), had_print))
+            //TRACE(("amount:%d, col:%d, state:%s (%d)\n", tabAmount, col, showCharState(curState), had_print))
             if (tabAmount > 0)
             {
                 // create newString, remove tab !
@@ -325,7 +324,7 @@ void ExpandTabs (char* &pString,
                 delete pString;                 // remove old string from memory
                 pString = pNewString;
                 pSTab   = pString + col - 1;    // point to the first blank
-                //TRACE((stderr, "...%d:%s\n", col, pString))
+                //TRACE(("...%d:%s\n", col, pString))
             }
             else
                 *pSTab = SPACE;
@@ -381,7 +380,7 @@ void ExpandTabs (char* &pString,
                     n++;
             }
             col--;
-            //TRACE((stderr, "re-interpret col %d\n", col))
+            //TRACE(("re-interpret col %d\n", col))
             continue;   // re-interpret character
         }
 
@@ -436,9 +435,9 @@ void ExpandTabs (char* &pString,
         lineState[last] = NullC;
     }
 
-    TRACE((stderr, " Expanded  (%s)\n", pString))
-    TRACE((stderr, " lineState (%s)\n", lineState))
-    TRACE((stderr, "%s %d/%d %s\n", last > strlen(pString)+1 ? "FIXME" : "", last, strlen(pString), showCharState(curState)))
+    TRACE((" Expanded  (%s)\n", pString))
+    TRACE((" lineState (%s)\n", lineState))
+    TRACE(("%s %d/%d %s\n", last > strlen(pString)+1 ? "FIXME" : "", last, strlen(pString), showCharState(curState)))
 }
 
 // ----------------------------------------------------------------------------

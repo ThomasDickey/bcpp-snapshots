@@ -1,5 +1,5 @@
 //******************************************************************************
-// Copyright 1996,1997 by Thomas E. Dickey <dickey@clark.net>                  *
+// Copyright 1996,1997,1999 by Thomas E. Dickey <dickey@clark.net>             *
 // All Rights Reserved.                                                        *
 //                                                                             *
 // Permission to use, copy, modify, and distribute this software and its       *
@@ -17,14 +17,13 @@
 // OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR   *
 // PERFORMANCE OF THIS SOFTWARE.                                               *
 //******************************************************************************
-// $Id: hanging.cpp,v 1.10 1997/01/08 01:03:27 tom Exp $
+// $Id: hanging.cpp,v 1.13 1999/01/01 17:05:32 tom Exp $
 // Compute hanging-indent for most multiline statements.
 
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 
-#include "config.h"
 #include "bcpp.h"
 
 // Determine if the current OutputStruct should be indented for hanging
@@ -133,6 +132,8 @@ HangStruct::ScanState(const char *code, const char *state)
                             else
                                 indent = 1;
                             break;
+                        case ESCAPE:
+                            break;
                         default:
                             indent = 1;
                             break;
@@ -148,7 +149,7 @@ HangStruct::IndentHanging(OutputStruct *pOut)
 {
 #ifdef DEBUG2
     traceOutput(__LINE__, pOut);
-    TRACE((stderr, "state:%d/%d, parn:%d/%d, curl:%d, agg:%d/%d\n",
+    TRACE(("state:%d/%d, parn:%d/%d, curl:%d, agg:%d/%d\n",
         indent,
         stmt_level,
         until_parn,
@@ -170,7 +171,7 @@ HangStruct::IndentHanging(OutputStruct *pOut)
         pOut -> indentHangs = indent;
         if (stmt_level && !until_parn)
             pOut -> indentHangs += stmt_level;
-        TRACE((stderr, "HANG:%d\n", pOut -> indentHangs))
+        TRACE(("HANG:%d\n", pOut -> indentHangs))
     }
 
     if (pOut -> pType != PreP)

@@ -1,5 +1,5 @@
 //******************************************************************************
-// Copyright 1996,1997 by Thomas E. Dickey <dickey@clark.net>                  *
+// Copyright 1996,1997,1999 by Thomas E. Dickey <dickey@clark.net>             *
 // All Rights Reserved.                                                        *
 //                                                                             *
 // Permission to use, copy, modify, and distribute this software and its       *
@@ -17,13 +17,12 @@
 // OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR   *
 // PERFORMANCE OF THIS SOFTWARE.                                               *
 //******************************************************************************
-// $Id: execsql.cpp,v 1.9 1997/01/08 01:45:31 tom Exp $
+// $Id: execsql.cpp,v 1.12 1999/01/02 17:08:06 tom Exp $
 // EXEC SQL parsing & indention
 
 #include <ctype.h>
 #include <string.h>
 
-#include "config.h"
 #include "bcpp.h"
 #include "cmdline.h"        // StrUpr()
 
@@ -34,7 +33,7 @@ SqlStruct::NextWord(int start, OutputStruct *pOut)
     int n = start;
     bool reset = False;
 
-    TRACE((stderr, "next:%s\n", pOut -> pCode+start))
+    TRACE(("next:%s\n", pOut -> pCode+start))
     while (pOut -> pCode[n] != NULLC
       &&  (pOut -> pCFlag[n] != Normal || !isName(pOut -> pCode[n])))
     {
@@ -55,7 +54,7 @@ SqlStruct::NextWord(int start, OutputStruct *pOut)
          && pOut -> pCFlag[n-1] == Normal
          && pOut -> pCode[n-1] == SEMICOLON)
         {
-            //TRACE((stderr, "FIXME2:%s\n", pOut->pCode + n - 1))
+            //TRACE(("FIXME2:%s\n", pOut->pCode + n - 1))
             state = 0;
         }
     }
@@ -68,7 +67,7 @@ SqlStruct::SkipWord(int start, OutputStruct *pOut)
 {
     int n = start;
 
-    TRACE((stderr, "skip:%s\n", pOut -> pCode+start))
+    TRACE(("skip:%s\n", pOut -> pCode+start))
     // skip the current word
     while (pOut -> pCode[n] != NULLC
       &&  (ispunct(pOut -> pCFlag[n]) && isName(pOut -> pCode[n])))
@@ -195,10 +194,10 @@ SqlStruct::SqlVerb(const char *code)
         };
         for (size_t n = 0; n < TABLESIZE(table); n++)
         {
-                if (CompareKeyword(code, table[n]))
-                {
-                    return True;
-                }
+            if (CompareKeyword(code, table[n]))
+            {
+                return True;
+            }
         }
     }
     return False;
@@ -245,8 +244,8 @@ SqlStruct::IndentSQL(OutputStruct *pOut)
             return;
 
         StrUpr (strcpy(pUprString, pOut->pCode));
-        TRACE((stderr, "HERE:%s\n", pUprString))
-        TRACE((stderr, "FLAG:%s\n", pOut->pCFlag))
+        TRACE(("HERE:%s\n", pUprString))
+        TRACE(("FLAG:%s\n", pOut->pCFlag))
 
         for (int n = NextWord(0, pOut);
             pOut -> pCode[n] != NULLC;
@@ -281,11 +280,11 @@ SqlStruct::IndentSQL(OutputStruct *pOut)
                  && !strncmp(matched, "+S", 2))
                 {
                     state = 3;
-                    //TRACE((stderr, "FIXME:%s\n", pOut->pCode + n))
+                    //TRACE(("FIXME:%s\n", pOut->pCode + n))
                 }
                 matched[level = 0] = NULLC;
             }
-            TRACE((stderr, "TEST:%d:%d:%s:%s\n", state, level, matched, pUprString+n))
+            TRACE(("TEST:%d:%d:%s:%s\n", state, level, matched, pUprString+n))
             n = SkipWord(n, pOut);
             if (pOut -> pCode[n] == NULLC)
             {
@@ -302,7 +301,7 @@ SqlStruct::IndentSQL(OutputStruct *pOut)
             pOut -> indentHangs = 1;
             if ((state == 2 || state == 3) && !SqlVerb(pUprString))
                 pOut -> indentHangs = 2;
-            //TRACE((stderr, "FIXME-HANG:%d\n", pOut -> indentHangs))
+            //TRACE(("FIXME-HANG:%d\n", pOut -> indentHangs))
         }
         else
         if (state == 0
@@ -311,7 +310,7 @@ SqlStruct::IndentSQL(OutputStruct *pOut)
             pOut -> indentHangs = 1;
             if (!SqlVerb(pUprString))
                 pOut -> indentHangs = 2;
-            //TRACE((stderr, "FIXME-HANG2:%d\n", pOut -> indentHangs))
+            //TRACE(("FIXME-HANG2:%d\n", pOut -> indentHangs))
         }
     }
 
