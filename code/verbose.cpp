@@ -1,5 +1,5 @@
 //******************************************************************************
-// Copyright 1999 by Thomas E. Dickey <dickey@clark.net>                       *
+// Copyright 1999 by Thomas E. Dickey                                          *
 // All Rights Reserved.                                                        *
 //                                                                             *
 // Permission to use, copy, modify, and distribute this software and its       *
@@ -17,7 +17,7 @@
 // OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR   *
 // PERFORMANCE OF THIS SOFTWARE.                                               *
 //******************************************************************************
-// $Id: verbose.cpp,v 1.5 1999/01/04 20:38:30 tom Exp $
+// $Id: verbose.cpp,v 1.6 2002/05/18 17:46:58 tom Exp $
 // verbose.cpp
 
 #include "bcpp.h"

@@ -35,7 +35,7 @@ void PrintProgramHelp (char* argv[])
         "C(++) Beautifier     V1.8",
         "",
         "Program Was Written By Steven De Toni, December 1995",
-        "Modified/revised by Thomas E. Dickey <dickey@clark.net> 1996,1999",
+        "Modified/revised by Thomas E. Dickey 1996-1999,2002",
         "All Parts Of This Program Are Freely Distributable.",
         "",
         "Usage: bcpp [Parameters] [Input File Name] [Output File Name]",
@@ -43,8 +43,10 @@ void PrintProgramHelp (char* argv[])
         "Options:",
         "",
         "[-bcl] [-bnl] [-cc <num>] [-f <num>] [-fi <string>] [-fnc <string>]",
-        "[-fo <string>] [-h] [-i <num>] [-lg] [-na] [-nb] [-nc] [-nlcnc] [-no]",
-        "[-nq] [-qb] [-s] [-t] [-ya] [-yb] [-ylcnc] [-yo] [-yq]",
+        "[-fo <string>] [-h] [-i <num>] [-lg]",
+        "[-na] [-nb] [-nbbi] [-nbi] [-nc] [-nlcnc] [-no] [-nq]",
+        "[-qb] [-s] [-t]",
+        "[-ya] [-yb] [-ybbi] [-ybi] [-ylcnc] [-yo] [-yq]",
         "[<string>] [<string>]",
         "",
         "[] = Optional <> = Parameter Requirement",
@@ -75,6 +77,8 @@ void PrintProgramHelp (char* argv[])
             "Options beginning with -n or -y disable/enable functions:",
             "  a           : Remove non-ASCII chars",
             "  b           : Backup input file with .bac extension",
+            "  bbi         : Indent both braces of a block",
+            "  bi          : Indent trailing brace of block",
             "  lcnc        : Leave comments with NoCode",
             "  o           : Program output",
             "  q           : Change non-ASCII chars in quotes to octal",
@@ -164,6 +168,8 @@ int ProcessCommandLine (int argc, char* argv[], Config& settings,
             DecodeFlg ("LG",    settings.deleteHighChars, 3);
             DecodeFlg ("NA",    settings.deleteHighChars, 0);
             DecodeFlg ("NB",    settings.backUp,          False);
+            DecodeFlg ("NBBI",  settings.braceIndent2,    False);
+            DecodeFlg ("NBI",   settings.braceIndent,     False);
             DecodeFlg ("NLCNC", settings.leaveCommentsNC, False);
             DecodeFlg ("NO",    settings.output,          False);
             DecodeFlg ("NQ",    settings.quoteChars,      False);
@@ -171,6 +177,8 @@ int ProcessCommandLine (int argc, char* argv[], Config& settings,
             DecodeFlg ("T",     settings.useTabs,         True);
             DecodeFlg ("YA",    settings.deleteHighChars, 1);
             DecodeFlg ("YB",    settings.backUp,          True);
+            DecodeFlg ("YBBI",  settings.braceIndent2,    True);
+            DecodeFlg ("YBI",   settings.braceIndent,     True);
             DecodeFlg ("YLCNC", settings.leaveCommentsNC, True);
             DecodeFlg ("YO",    settings.output,          True);
             DecodeFlg ("YQ",    settings.quoteChars,      True);

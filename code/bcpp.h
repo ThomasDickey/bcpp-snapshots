@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 1996,1997,1999 by Thomas E. Dickey <dickey@clark.net>            *
+ * Copyright 1996,1997,1999 by Thomas E. Dickey                               *
  * All Rights Reserved.                                                       *
  *                                                                            *
  * Permission to use, copy, modify, and distribute this software and its      *
@@ -17,7 +17,7 @@
  * CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN        *
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.                   *
  ******************************************************************************/
-// $Id: bcpp.h,v 1.33 1999/08/10 23:04:32 tom Exp $
+// $Id: bcpp.h,v 1.34 2002/05/18 17:46:09 tom Exp $
 
 #ifndef _BCPP_HEADER
 #define _BCPP_HEADER

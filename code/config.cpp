@@ -12,7 +12,7 @@
 
 enum ConfigWords {ANYT = 0, FSPC, UTAB, ISPC, IPRO, ISQL,
                   NAQTOOCT, COMWC, COMNC, LCNC,
-                  LGRAPHC, ASCIIO, PBNLINE, PROGO, QBUF, BUF,
+                  LGRAPHC, ASCIIO, BI, BI2, PBNLINE, PROGO, QBUF, BUF,
                   EQUAL, YES, ON, NO, OFF};
 
 static const struct { ConfigWords code; const char *name; }
@@ -29,6 +29,8 @@ static const struct { ConfigWords code; const char *name; }
     { LCNC,     "LEAVE_COMMENTS_NOCODE" },
     { LGRAPHC,  "LEAVE_GRAPHIC_CHARS" },
     { ASCIIO,   "ASCII_CHARS_ONLY" },
+    { BI,       "BRACE_INDENT" },
+    { BI2,      "INDENT_BOTH_BRACES" },
     { PBNLINE,  "PLACE_BRACE_ON_NEW_LINE" },
     { PROGO,    "PROGRAM_OUTPUT" },
     { QBUF,     "QUEUE_BUFFER" },
@@ -371,6 +373,14 @@ int SetConfig (FILE* pConfigFile, Config& userSettings)
                     userSettings.deleteHighChars = 1;   //   set bit 0
                 else
                     userSettings.deleteHighChars = 0;   // unset bit 0
+                break;
+
+             case (BI): // BRACE_INDENT = {on, off, yes, no}
+                DecodeIt (userSettings.braceIndent);
+                break;
+
+             case (BI2): // INDENT_BOTH_BRACES = {on, off, yes, no}
+                DecodeIt (userSettings.braceIndent2);
                 break;
 
              case (PBNLINE): // PLACE_BRACE_ON_NEW_LINE = {on, off, yes, no}

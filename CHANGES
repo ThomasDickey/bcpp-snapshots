@@ -1,0 +1,379 @@
+-- $Id: CHANGES,v 1.20 2002/05/18 18:05:40 tom Exp $
+-- Thomas E. Dickey <dickey@invisible-island.net>
+
+2002/05/18
+	+ add indent_both_braces config-file option and corresponding
+	  command-line -nbbi, -ybbi options to allow user to indent both
+	  leading/trailing braces of a block by one level (adapted from patch
+	  by Brad Mettee <bmettee@clark.net>).
+
+	+ add brace_indent config-file option and corresponding command-line
+	  -nbi, -ybi options to allow user to indent the trailing brace of a
+	  block to align with its content rather than the beginning of the
+	  block (detailed request by Edwin Robert Tisdale
+	  <E.Robert.Tisdale@jpl.nasa.gov>)
+
+	+ correct isContinuation() by ignoring backslash characters within
+	  comments.  This makes it handle comment blocks such as 
+		 /*******\
+		  * BUG *
+		 \*******/
+	  (reported by Andreas Werner <werner@vircinity.com>).
+
+	+ add makefile.blc for Borland C (from Chris Elliott <cje2@york.ac.uk>).
+
+	+ remove references to obsolete email address <dickey@clark.net>
+
+	+ add CHANGES file, document the sets of changes I marked in RCS
+
+	+ add MANIFEST file.
+
+1999/08/10
+	+ makefile: do not link with -lg++ anymore
+
+	+ makefile:  change $D to "./", to make vile follow the compiler
+	  warnings more easily
+
+	+ add __FILE__ to traceOutput() calls
+
+	+ fixes to compile on SunOS 4.x, which needs the <string.h> stuff
+	  prototyped also, change interface of traceInput() and traceOutput()
+	  to add __FILE__
+
+	+ fix a case Jeff Gilliat pointed out - an inline C comment fragment
+	  resulted in commenting out the code on that line.
+
+	+ mods in IndentNonBraces() which serve to distinguish "public:" which
+	  is a class scope from "public" which is a Java type.  Otherwise we
+	  get odd indention for the latter case.
+
+	+ backup.cpp: had allocated one char too few for ".orig" suffix
+
+1999/01/21
+	+ rename the backup file to .orig, since "~" confuses WinNT's directory
+	  scanning, making it return the same file more than once.
+
+	+ open the output in binary mode, so we get ^J's rather than ^M^J's
+
+1999/01/04
+	+ kludge to ifdef for g++ versus M$ Visual C++
+
+	+ kludge to compile in case we have the misfortune to use gcc 2.8.1
+	  with Solaris's header files (some idiot decided to undef __STDC__ in
+	  g++ because they disapprove of using __STDC__ for ifdef'ing).
+
+	+ change defaults in bcpp.cfg to use_tabs=yes, and
+	  comments_with_code=33 (the original bpp.cfg is in top-level).
+
+	+ baseq.cpp:  fix so we do not try to peek into a negative index
+
+	+ add top-level bcpp.cfg, indent.bat, indent.cfg as part of port to
+	  win32.
+
+	+ add txtdocs/manual.txt to distribution, updated wpdocs/manual.doc
+
+1999/01/02
+	+ mods to "work" with tisca.h, which contains a number of comments
+	  within long multi-line comments.  This isn't quite right, since lines
+	  containing only a backslash are deleted, where they should be
+	  combined just like blank lines.
+
+	+ add run-test file (used with regression test-cases not part of the
+	  distribution).
+
+	+ implement html.cpp, to provide limited support for indenting
+	  JavaScript embedded in HTML files.
+
+	+ split-out backup.cpp to support renaming of the original file,
+	  preserving its modification-time, to allow recovery if the indent is
+	  not needed (makes no change), or otherwise should be discarded.
+
+	+ implement verbose.cpp, to support interactions such as stopping
+	  processing a set of files on an error.
+
+	+ change scattered printf's to call verbose(), and fprintf(stderr's to
+	  warning().
+
+	+ rewrote ReadLine so it doesn't use fseek/ftell (which is a porting
+	  problem).
+
+	+ config.cpp:  removed a lot of ugly/repetitious code
+
+	+ config.cpp:  moved ShowConfig here from bcpp.cpp
+
+	+ debug.cpp:  change trace() calls to not use stderr explicitly.
+
+1997/04/04
+	+ first draft of logic to reset indent-stack at the end of a multi-line
+	  preprocessor command.  also, fixed (?) a bug in splitting
+	  continuation-line (but there's more)
+
+	+ allow unrecognized preprocessor-lines to be indented
+
+	+ refine a change to allow for things like "else return;"
+
+	+ replaced a couple of strcmp calls by CompareKeyword to allow for
+	  matching both "else" and "else if" statements.
+
+	+ fixes for places where we split a line that has continuation-marker
+	  on the end.  while I was at it, trim redundant whitespace before the
+	  '\', to make it uniform.
+
+1997/01/07
+	+ tabs.cpp:  fix a place where I trimmed trailing blanks from data w/o
+	  trimming state, causing bogus results with baseobj.hh, due to overrun
+	  in later logic.
+
+	+ lots of spelling corrections.
+
+	+ fixes for stricter gcc warnings
+
+1996/12/24
+	+ update copyright notices.
+
+	+ refined adjustment of inline comments to work with hanging.cpp, which
+	  doesn't take that into account.
+
+	+ remove unused logic for adjustHangingComment, since I'm doing this in
+	  a different way.
+
+1996/12/17
+	+ execsql.cpp:  refined hanging-indents to account for statements other
+	  than the two block-styles we use
+
+	+ make SqlStruct a class
+
+1996/12/12
+	+ shift-adjust dangling else{} block
+
+	+ makefile:  record the debug-ifdefs
+
+	+ hanging.cpp:  make HangStruct class to get rid of static variables
+
+	+ bcpp.h:  made HangStruct class
+
+	+ change hang_state from an int to a class
+
+	+ made singleIndentLen obsolete via hanging.cpp
+
+1996/12/06
+	+ tabs.cpp:  mods to allow tabs in OutputStruct.filler
+
+	+ fix a few leaks
+
+	+ ensure that hanging comments remain hanging when re-indenting.
+
+	+ use tabs for OutputStruct.filler
+
+1996/12/05
+	+ tabs.cpp:  correct leading-whitespace conversion (space is printable
+	  ;-)
+
+	+ hanging.cpp:  remove redundant reset of hang_state
+
+	+ debug.cpp:  SunOS 4.x needs stdlib.h for size_t
+
+	+ add InputStruct.offset
+
+	+ add OutputStruct.splitElseIf
+
+	+ remove IndentStruct.firstPass, because hanging.cpp does it better
+
+	+ mods to preserve code-fragment's offset to use in shifting
+	  block-indented C-style comments
+
+	+ fixes for offset adjustment due to stripping whitespace from
+	  fragments in DecodeLine
+
+	+ first cut of logic to pass offset of code-fragments into InputStruct
+	  (to use for categorizing hanging comments)
+
+	+ revised logic for split else/if statement using flag 'splitElseIf'. 
+	  this fixes the problem of indenting the code undef 'if'.
+
+	+ mods to make TestLineHasCode look at the parse-state (which is more
+	  reliable)
+
+	+ remove IndentStruct.firstPass logic, since hanging.cpp does it better
+
+	+ add pBFlag to OutputStruct to use in hanging.cpp
+
+1996/11/15
+	+ tabs.cpp:  correct off-by-one in return from skipEscape() that ate
+	  trailing quote.
+
+	+ bcpp.h:  rename OutputStruct.pState to OutputStruct.pCFlag
+
+	+ bcpp.h:  add OutputStruct.pBFlag
+
+	+ use OutputStruct.indentHangs
+
+	+ split-out hanging.cpp
+
+	+ hanging.cpp:  add 'do_aggreg' flag
+
+	+ hanging.cpp:  use new member of OutputStruct, indentHangs to allow
+	  merge with info from execsql.cpp
+
+1996/11/08
+	+ move emptyString to bcpp.h
+
+	+ pass-in Config struct to IndentSQL, making it pass by ref everywhere
+
+	+ move some string-parsing to strings.cpp, to re-use in execsql.cpp
+
+	+ move debug/trace code to debug.cpp
+
+	+ move input/output/indent definitions to bcpp.h
+
+	+ align successive else/if
+
+	+ don't set interfunction-spacing for lines that happen to have R_CURL,
+	  if there's more on the line.
+
+	+ add indent_exec_sql to bcpp.cfg
+
+	+ execsql.cpp - quick hack to indent non-keyword stuff extra
+
+	+ move some functions to strings.cpp from bcpp.cpp, for use in
+	  execsql.cpp
+
+1996/11/06
+	+ restructured keyword-lookup to add 3rd type (blockLine).  use this to
+	  fix case (successive lines) with "while", "switch" -- the
+	  curly-braces for "switch" weren't indented under "switch".
+
+	+ also, dropped special logic for singleIndentLen, making it the same
+	  as a standard indent (was too ugly).
+
+1996/11/05
+	+ propagate parse-state via InputStruct to OutputStruct.
+
+	+ correct potential indention of continued-string fragments.
+
+1996/11/04
+	+ moved string-table to config.cpp
+
+	+ fix uninitialized-memory-ref (Purify)
+
+	+ unused parameter.
+
+	+ add indent_preprocessor
+
+	+ simplify config.cpp a little using overloading
+
+	+ corrected some minor bugs affecting indention
+
+	+ add "#else" to typeOfPreP(), along with all other standard
+	  directives.
+
+	+ use enum rather than int for 'attrib' types.  change name of one
+	  'attrib' type to make it easier to maintain.  fixes for TRACE.
+
+	+ first cut of indent_preprocessor option
+
+	+ modify so that both comma and semicolon are treated specially after
+	  '}', to make data lists work properly
+
+	+ correct a couple of special cases with multi-indent
+
+1996/10/31
+	+ fixes for memory leaks
+
+	+ corrections to tab computation
+
+	+ add special state for '#' pre-processor lines
+
+	+ makefile - move some symbols to accommodate non-g++
+
+	+ add POUNDC
+
+	+ mods to track preprocessor-lines
+
+	+ reduce ConstructLine to a single-level switch, rather than the nested
+	  one that will get in the way of mods for execsql
+
+	+ refined logic in dontHangComment(), fixing a case I missed before.
+
+	+ correct a logical-reduction for matching against PreP types
+
+	+ suppress inter-function spacing before "#endif"
+
+	+ add pType to OutputStruct so I can tag them as PreP when needed
+
+	+ fix while-loop that was expressed as for-loop with break
+
+	+ undid unnecessary if-level in ConstructLine
+
+	+ restore leading tabs in comments if we're expanding tabs
+
+	+ moved the non-printing character conversion to tabs.cpp
+
+1996/10/20
+	+ moved delete for lineState into  bcpp.cpp
+
+	+ make pString in/out for ExpandTabs
+
+	+ modify ExpandTabs to maintain a string of CharState values
+
+	+ corrected state: allow tab-expansion in // comments
+
+	+ add strings.cpp
+
+	+ make pString in/out for ExpandTabs
+
+	+ fixes for include-order (bcpp.h should be last)
+
+	+ reduce FindStartofComment and FindEndofComment to return index
+	  instead of pointers
+
+	+ revised FindPunctuation so it returns an index rather than a pointer,
+	  and uses the pLineState info so that we can easily discard quoted
+	  punctuation (which didn't work for a complicated string, e.g.,
+	  "'\\0','\\0'}").
+
+	+ changed allocation scheme of lineState
+
+	+ drop CComments param of DecodeLine, since pLineState contains proper
+	  info
+
+	+ fixes for blank-lines:  ensure that we don't emit trailing
+	  blank-lines in a file, that except for inter-function blanks, we
+	  reduce runs of blank lines to a single blank, and that there's no
+	  lines (even comments) that come out with trailing whitespace.
+
+	+ simplify allocation/deallocation in DecodeLine by leaving pLineData
+	  alone.
+
+	+ a couple of Purify-fixes
+
+	+ modify ExpandTabs to maintain a string of CharState values; use this
+	  to retain parsing state so I can correct blank-trimming (so that
+	  continuation lines of a string aren't trimmed!).
+
+1996/10/12
+	+ split-out bcpp.h and tabs.cpp
+
+	+ moved tab-expansion (and tab-spacing) into separate file, first to
+	  fix an error in tab-expansion (wrong fill amount), then to allow
+	  rewrite to capture left/right CharState, to prevent quoted tabs from
+	  being expanded.  Also, moved L_CURL, R_CURL, DQUOTE, SQUOTE into
+	  config.h, making capitalization consistent.
+
+	+ fixes for multi-line C comments
+
+	+ implement shiftToMatchSingleIndent, peekIndexOfBrace,
+	  chainedSingleIndent
+
+	+ better logic in resetSingleIndent(), to reset all pending
+	  single-indents
+
+	+ ifdef'd trace code so I don't have to uncomment it added clause in
+	  IndentNonBraceCode to (try to) reset singleIndentLen immediately
+	  after "{" -- works in one place but not another
+
+	+ eliminate single-char constant-strings to use strchr instead of
+	  strstr.  use FindPunctuation to simplify some logic
+
+	+ new function CompareKeyword fixes parse ambiguity with strstr allow
+	  combination of tabs and spaces.
