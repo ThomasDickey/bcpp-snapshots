@@ -1,11 +1,11 @@
 .\"*****************************************************************************
-.\" Copyright 1995 by Thomas E. Dickey.  All Rights Reserved.                  *
+.\" Copyright 1995,2002 by Thomas E. Dickey.  All Rights Reserved.             *
 .\"                                                                            *
 .\" You may freely copy or redistribute this software, so long as there is no  *
 .\" profit made from its use, sale trade or reproduction. You may not change   *
 .\" this copyright notice, and it must be included in any copy made.           *
 .\"*****************************************************************************
-.\" $Id: conflict.1,v 6.0 1995/03/18 01:54:28 dickey Rel $
+.\" $Id: conflict.1,v 6.1 2002/12/30 00:38:58 tom Exp $
 .de DS
 .RS
 .nf
@@ -23,7 +23,7 @@
 \fBconflict\fR \- filename conflict listing
 .
 .SH USAGE
-\fBconflict\fI [options] [file-specifications]
+\fBconflict\fP\fI [options] [file-specifications]\fP
 .
 .SH SYNOPSIS
 \fBConflict\fR displays conflicting filenames in your execution path.
@@ -96,6 +96,10 @@ summary, showing executable file (with its full path) as it is found).
 .RE
 .
 .TP
+.B \-V
+print the version, exit.
+.
+.TP
 .B \-w
 look for writable files
 .
@@ -157,4 +161,4 @@ show symbol conflicts from object files and libraries.
 csh (1) for a discussion of \fIwhich\fR.
 .
 .SH AUTHOR
-Thomas Dickey (dickey@clark.net)
+Thomas Dickey

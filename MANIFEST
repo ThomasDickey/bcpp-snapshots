@@ -1,22 +1,21 @@
-MANIFEST for conflict, version t990728
+MANIFEST for conflict, version t20021229
 --------------------------------------------------------------------------------
 MANIFEST                        this file
 CHANGES                         change-log for 'conflict'
 COPYING                         collective copyright notice for 'conflict'
 README                          brief description of 'conflict'
+aclocal.m4                      autoconf macros for 'conflict'
 config_h.in                     template for config.h
 configure.in                    template for configure-script
 conflict.1                      UNIX manual-page for 'conflict'
 conflict.c                      'conflict' main program
 conflict.h                      common include for 'conflict'
-conflict.lsm                    Linux Software Map description of 'conflict'
 install.sh                      install-script, from X11R5
 makefile.in                     template for UNIX makefile for 'conflict'
 makefile.wnt                    makefile for Visual C
 mkdirs.sh                       make directory-hierarchy (from X-windows)
 msdos.c                         MS-DOS support functions
 os2.c                           OS/2 support functions
-patchlev.h                      current patch-level of 'conflict'
 run_test.sh                     UNIX test-script for 'conflict'
 txtalloc.c                      text-allocator
 unix.c                          UNIX support functions
