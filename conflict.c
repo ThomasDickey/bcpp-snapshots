@@ -19,7 +19,7 @@
  ******************************************************************************/
 
 #ifndef	NO_IDENT
-static const char Id[] = "$Header: /users/source/archives/conflict.vcs/RCS/conflict.c,v 6.10 2004/06/20 23:38:49 tom Exp $";
+static const char Id[] = "$Header: /users/source/archives/conflict.vcs/RCS/conflict.c,v 6.12 2004/09/02 00:46:40 tom Exp $";
 #endif
 
 /*
@@ -44,7 +44,7 @@ static const char Id[] = "$Header: /users/source/archives/conflict.vcs/RCS/confl
 
 static INPATH *inpath;
 static DIRS *dirs;
-static char *env_name;		/* e.g., "PATH" */
+static const char *env_name;	/* e.g., "PATH" */
 static char *pathlist;		/* e.g., ".:/bin:/usr/bin" */
 static char **FileTypes;
 static char *dot;
@@ -55,8 +55,8 @@ static int acc_mask;		/* permissions we're looking for */
 static int p_opt;		/* print pathnames (not a table) */
 static int v_opt;		/* verbose (repeat for different levels) */
 static int do_blips;
-static char *w_opt = "";	/* pads listing */
-static char *w_opt_text = "--------";
+static const char *w_opt = "";	/* pads listing */
+static const char *w_opt_text = "--------";
 
 #if SYS_MSDOS || SYS_OS2 || SYS_WIN32 || SYS_OS2_EMX
 #define DOS_upper(s) strupr(s)
@@ -249,7 +249,7 @@ TypesOf(size_t len, INPATH * ip)
     static char *result;
 
     if (result == 0)
-	result = malloc((num_types * 4) + 1);
+	result = (char *) malloc((num_types * 4) + 1);
 #endif
 
     for (j = mask = 0; j < len; j++)
@@ -396,6 +396,18 @@ static char *
 ToCompare(char *a)
 {
     char buffer[MAXPATHLEN];
+#if SYS_CYGWIN
+    static int strict_case = 0;
+    static int first = 1;
+    if (first) {
+	char *env = getenv("CYGWIN");
+	if (env != 0 && strstr(env, "check_case:strict") != 0)
+	    strict_case = 1;
+	first = 0;
+    }
+    if (strict_case)
+	return a;
+#endif
     strncpy(buffer, a, sizeof(buffer))[sizeof(buffer) - 1] = '\0';
     return MakeString(strupr(buffer));
 }
@@ -538,10 +550,10 @@ AddToPath(char *path)
 
     if (pathlist != 0) {
 	size_t have = strlen(pathlist);
-	pathlist = realloc(pathlist, have + need + 1);
+	pathlist = (char *) realloc(pathlist, have + need + 1);
 	(void) sprintf(pathlist + have, "%c%s", PATHLIST_SEP, path);
     } else {
-	pathlist = malloc(need);
+	pathlist = (char *) malloc(need);
 	(void) strcpy(pathlist, path);
     }
 }
@@ -549,7 +561,7 @@ AddToPath(char *path)
 static void
 usage(void)
 {
-    static char *tbl[] =
+    static const char *tbl[] =
     {
 	"Usage: conflict [options] [list_of_files]"
 	,""
@@ -581,7 +593,7 @@ usage(void)
 }
 
 void
-failed(char *s)
+failed(const char *s)
 {
     perror(s);
     exit(EXIT_FAILURE);

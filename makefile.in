@@ -1,8 +1,8 @@
-# $Id: makefile.in,v 6.14 2004/06/21 00:39:11 tom Exp $
+# $Id: makefile.in,v 6.16 2004/09/02 00:44:00 tom Exp $
 # Makefile-template for 'conflict'
 
 THIS		= conflict
-RELEASE		= t20040620
+RELEASE		= t20040901
 
 #### Start of system configuration section. ####
 
@@ -34,7 +34,7 @@ o		= .@OBJEXT@
 
 SHELL		= /bin/sh
 
-CPPFLAGS	= -I. -I$(srcdir) -DHAVE_CONFIG_H -DRELEASE=\"$(RELEASE)\"
+CPPFLAGS	= -I. -I$(srcdir) -DHAVE_CONFIG_H -DRELEASE=\"$(RELEASE)\" @EXTRA_CPPFLAGS@
 
 .c$o:
 	$(CC) -c $(CPPFLAGS) $(CFLAGS) $<

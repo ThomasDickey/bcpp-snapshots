@@ -1,4 +1,4 @@
-/* $Id: conflict.h,v 6.6 2004/06/20 22:48:13 tom Exp $
+/* $Id: conflict.h,v 6.7 2004/09/02 00:45:32 tom Exp $
  *
  * Common/configurable definitions and types for 'conflict'.
  */
@@ -289,7 +289,7 @@ typedef struct {
  * Prototypes for functions defined in this program:
  */
 extern int main(int argc, char *argv[]);
-extern void failed(char *s);
+extern void failed(const char *s);
 extern char *fleaf(char *name);
 extern char *ftype(char *name);
 extern void blip(int c);
