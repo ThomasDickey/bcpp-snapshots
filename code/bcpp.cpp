@@ -1015,7 +1015,7 @@ int ConstructLine (
     int& indentStack,
     bool& pendingElse,
     HangStruct& hang_state,
-    int& sql_state,
+    SqlStruct& sql_state,
     QueueList* pInputQueue,
     QueueList* pOutputQueue,
     const Config& userS)
@@ -1216,7 +1216,7 @@ int ConstructLine (
         hang_state.IndentHanging(pOut);
 
         if (userS.indent_sql)
-            IndentSQL(pOut, sql_state);
+            sql_state.IndentSQL(pOut);
 
         pOutputQueue -> putLast (pOut);
 
@@ -1363,19 +1363,6 @@ inline bool OutputContainsCode(OutputStruct *pOut)
     return (pOut -> pCode != NULL || pOut -> pBrace != NULL);
 }
 
-// Check a comment-only line to see if it immediately follows a line of code
-// with inline comment.  If so, "hang" it by indenting to the same level as
-// other comments.
-bool adjustHangingComment(QueueList *pLines)
-{
-// pNewItem   -> filler      = userS.posOfCommentsWC;
-    TRACE((stderr, "adjustHangingComment:%d\n", pLines -> status()))
-    TRACE_OUTPUT((OutputStruct*) pLines -> peek (1))
-    TRACE_OUTPUT((OutputStruct*) pLines -> peek (2))
-    TRACE_OUTPUT((OutputStruct*) pLines -> peek (3))
-    return False;
-}
-
 // ----------------------------------------------------------------------------
 // Function is used to indent single indented code such is found in if, while,
 // else statements. Also handles case like statements within switchs'.
@@ -1474,9 +1461,7 @@ QueueList* IndentNonBraceCode (QueueList* pLines, StackList* pIMode, const Confi
                     }
                     else if (pAlterLine -> pComment != NULL)
                     {
-                        // FIXME: test for hanging comment
-                        if (!adjustHangingComment(pLines)
-                         && pAlterLine -> filler == 0)
+                        if (pAlterLine -> filler == 0)
                             pAlterLine -> indentSpace += userS.tabSpaceSize;
                     }
                     TRACE_OUTPUT(pAlterLine)
@@ -2108,6 +2093,7 @@ QueueList* OutputToOutFile (FILE* pOutFile, QueueList* pLines, StackList* pIMode
                 if (pOut -> filler > leading)
                     leading = 0;
             }
+
             pIndentation = TabSpacing (fillMode,  0, leading, userS.tabSpaceSize);
             pFiller      = TabSpacing (fillMode, mark, pOut -> filler, userS.tabSpaceSize);
 
@@ -2238,7 +2224,7 @@ int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
     bool                pendingElse  = False;
     int                 prepStack    = 0;
     HangStruct          hang_state;
-    int                 sql_state    = 0;
+    SqlStruct           sql_state;
 
     // Check memory allocated !
     if (((pOutputQueue == NULL) || (pIMode == NULL)) || (pInputQueue == NULL))
