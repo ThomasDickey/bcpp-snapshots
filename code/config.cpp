@@ -19,6 +19,7 @@ static const struct { ConfigWords code; const char *name; }
     { UTAB,     "USE_TABS" },
     { ISPC,     "INDENT_SPACING" },
     { IPRO,     "INDENT_PREPROCESSOR" },
+    { ISQL,     "INDENT_EXEC_SQL" },
     { NAQTOOCT, "NONASCII_QUOTES_TO_OCTAL" },
     { COMWC,    "COMMENTS_WITH_CODE" },
     { COMNC,    "COMMENTS_WITH_NOCODE" },
@@ -167,7 +168,7 @@ char* FindConfigWords (char* pConfigLine, ConfigWords& type)
 
          if (pWordLoc != NULL)
          {
-                type = (ConfigWords) typeCount;
+                type = ConfigData[typeCount].code;
                 // advance to next word !
                 pWordLoc += strlen (name);
                 return pWordLoc;
@@ -380,6 +381,20 @@ int SetConfig (FILE* pConfigFile, Config& userSettings)
                     ConfigAssignment (lineCount, configError, pPosInLine, userSettings.indentPreP);
                 else
                     ErrorMessage (lineCount, 1, configError, ConfigWordOf(IPRO));
+
+                break;
+             }// case (ISPC)
+
+             // ############################################################
+             case (ISQL): // Indent_Exec_Sql = (%d)
+             {
+                type =  EQUAL;
+                pPosInLine = FindConfigWords (pPosInLine, type);
+
+                if (type == EQUAL) // expect a "="
+                    ConfigAssignment (lineCount, configError, pPosInLine, userSettings.indent_sql);
+                else
+                    ErrorMessage (lineCount, 1, configError, ConfigWordOf(ISQL));
 
                 break;
              }// case (ISPC)

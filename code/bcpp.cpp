@@ -155,17 +155,12 @@
 #include <string.h>            // strlen(), strstr(), strchr(), strcpy(), strcmp()
 #include <ctype.h>             // character-types
 
-#include "anyobj.h"            // Use ANYOBJECT base class
-#include "baseq.h"             // QueueList class to store Output structures
-#include "stacklis.h"          // StackList class to store indentStruct
 #include "cmdline.h"           // ProcessCommandLine()
 #include "config.h"            // SetConfig()
 
 #include "bcpp.h"
 
 // ----------------------------------------------------------------------------
-
-enum indentAttr { noIndent=0, oneLine=1, multiLine=2, blockLine=3 };
 
 const struct {
     char *name;
@@ -185,113 +180,11 @@ const struct {
     { "while",      blockLine },
 };
 
-enum  DataTypes { CCom = 1,   CppCom = 2, Code  = 3,
-                  OBrace = 4, CBrace = 5, PreP = 6, ELine = 7
-                };
-
-// ----------------------------------------------------------------------------
-
-// ----------------------------------------------------------------------------
-// This structure is used to store line data that is de-constructed from the
-// user's input file.
-class InputStruct : public ANYOBJECT
-{
-    public:
-
-        DataTypes dataType;   // i.e "/*" or "*/"                  (1)
-                              //     "//"                          (2)
-                              //     Code (a = 5; , if (a == b) .. (3)
-                              //     "{"                           (4)
-                              //     "}"                           (5)
-                              //     #define                       (6)
-                              //     SPACES (nothing, blank line)  (7)
-
-        Boolean comWcode;
-                              //       -1 : True,  comment with code (for comment dataType)
-                              //        0 : False, comment with no Code
-
-        char* pData;          // pointer to queue data !
-        char* pState;         // pointer to corresponding parse-state
-
-        inline InputStruct (DataTypes theType)
-        {
-            dataType = theType;
-            comWcode = False;
-            pState = 0;       // only non-null for code
-        }
-};
-
 #ifdef DEBUG
-int   totalTokens;            // token count, for debugging
+extern int   totalTokens;            // token count, for debugging
 #endif
 
 // ----------------------------------------------------------------------------
-// The output structure is used to hold an entire output line. The structure is
-// expanded with it's real tabs/spaces within the output function of the program.
-class OutputStruct : public ANYOBJECT
-{
-    private:
-    public:
-           DataTypes pType;
-#ifdef DEBUG
-           int   thisToken;    // current token number
-#endif
-           int   indentSpace;  // num of spaces
-           char* pCode;
-           char* pState;
-           char* pBrace;       // "}" or "{"
-           int   filler;       // num of spaces
-           char* pComment;
-
-           // Constructor
-           // Automate initalisation
-           inline  OutputStruct  (DataTypes theType)
-           {
-                pType          = theType;
-#ifdef DEBUG
-                thisToken      = totalTokens++;
-#endif
-                pCode = pState = pBrace = pComment = NULL;
-                indentSpace    = filler   = 0;
-           }
-
-           // Destructor
-           // Automate destruction
-           inline ~OutputStruct (void)
-           {
-                delete pCode;
-                delete pState;
-                delete pBrace;
-                delete pComment;
-           }
-};
-
-// This structure is used to hold indent data on non-brace code.
-// This includes case statements, single line if's, while's, for statements...
-class IndentStruct : public ANYOBJECT
-{
-    public:
-           // attribute values ...
-           // value 1 = indent code one position, until a ';' is found !
-           //       2 = end on close brace, and at a position "pos"
-           indentAttr    attrib;
-           int           pos;
-
-           // Indent double the amount for multiline single if, while ...
-           // statements.
-           int           singleIndentLen;
-           Boolean       firstPass; // user to determine if more than a single line
-                                    // if, while... statement.
-
-    // constructor
-    inline IndentStruct (void)
-    {
-        attrib          = noIndent;
-        pos             = 0;
-        singleIndentLen = 0; // number of spaces to indent !
-        firstPass       = False;
-    }
-};
 
 inline char *endOf(char *s)
 {
@@ -301,11 +194,6 @@ inline char *endOf(char *s)
 inline char lastChar(char *s)
 {
    return ((s != NULL) && (*s != NULLC)) ? *(endOf(s)-1) : (char)NULLC;
-}
-
-inline bool isName(char c)
-{
-   return isalnum(c) || (c == '_') || (c == '$');
 }
 
 static Boolean IsStartOfComment(char *pLineData, char *pLineState)
@@ -318,92 +206,21 @@ static Boolean IsStartOfComment(char *pLineData, char *pLineState)
     return False;
 }
 
-inline bool emptyString(char *s)
-{
-    return s == 0 || *s == 0;
-}
-
 inline void ShiftLeft(char *s, int len)
 {
     strcpy (s, s + len);
-}
-
-inline const char *SkipBlanks(const char *s)
-{
-    while (isspace(*s))
-        s++;
-    return s;
-}
-
-bool CompareKeyword(const char *tst, const char *ref)
-{
-   int n;
-   for (n = 0; ref[n] != NULLC; n++)
-      if (tst[n] != ref[n])
-         return false;
-   TRACE((stderr, "Match (%s,%s)\n", tst, ref))
-   return !isName(tst[n]);
 }
 
 int LookupKeyword(char *tst)
 {
     size_t n;
     if (!emptyString(tst)) {
-        for (n = 0; n < sizeof(pIndentWords)/sizeof(pIndentWords[0]); n++)
+        for (n = 0; n < TABLESIZE(pIndentWords); n++)
             if (CompareKeyword(tst, pIndentWords[n].name))
                 return n;
     }
     return -1;
 }
-
-#ifdef DEBUG
-static char *traceDataType(DataTypes theType)
-{
-    char *it;
-    switch (theType)
-    {
-        case CCom:   it = "CCom";   break;
-        case CppCom: it = "CppCom"; break;
-        case Code:   it = "Code";   break;
-        case OBrace: it = "OBrace"; break;
-        case CBrace: it = "CBrace"; break;
-        case PreP:   it = "PreP";   break;
-        default:
-        case ELine:  it = "ELine";  break;
-    }
-    return it;
-}
-
-static void traceInput(int line, InputStruct *pIn)
-{
-    TRACE((stderr, "@%d, %s%s:%s\n",
-        line,
-        traceDataType(pIn->dataType),
-        pIn->comWcode ? " comWcode" : "",
-        pIn->pData))
-}
-
-static void traceOutput(int line, OutputStruct *pOut)
-{
-    TRACE((stderr, "@%d, indent %d, fill %d, OUT #%d:%s:%s:%s:\n",
-        line,
-        pOut->indentSpace,
-        pOut->filler,
-        pOut->thisToken,
-        pOut->pCode ? "code" : "",
-        pOut->pBrace ? "brace" : "",
-        pOut->pComment ? "comment" : ""))
-    if (pOut->pCode)    TRACE((stderr, "----- code:%s\n", pOut->pCode))
-    if (pOut->pState)   TRACE((stderr, "---- state:%s\n", pOut->pState))
-    if (pOut->pBrace)   TRACE((stderr, "---- brace:%s\n", pOut->pBrace))
-    if (pOut->pComment) TRACE((stderr, "-- comment:%s\n", pOut->pComment))
-}
-#define TRACE_INPUT(pOut)  traceInput(__LINE__, pOut);
-#define TRACE_OUTPUT(pOut) traceOutput(__LINE__, pOut);
-#else
-#define TRACE_INPUT(pOut)  /* nothing */
-#define TRACE_OUTPUT(pOut) /* nothing */
-#endif
 
 // ----------------------------------------------------------------------------
 // Function removes leading, trailing, both leading/trailing characters
@@ -1134,7 +951,7 @@ int typeOfPreP(InputStruct *pItem)
     if (*s == POUNDC)
     {
         s = SkipBlanks(s+1);
-        for (size_t i = 0; i < sizeof(table)/sizeof(table[0]); i++) {
+        for (size_t i = 0; i < TABLESIZE(table); i++) {
             if (CompareKeyword(s, table[i].keyword))
                 return table[i].code;
         }
@@ -1188,9 +1005,10 @@ int ConstructLine (
     int &prepStack,
     int& indentStack,
     bool& pendingElse,
+    int& sql_state,
     QueueList* pInputQueue,
     QueueList* pOutputQueue,
-    Config userS)
+    const Config& userS)
 {
     InputStruct* pTestType = NULL;
     char *pendingComment = NULL;
@@ -1373,6 +1191,11 @@ int ConstructLine (
         if (pOut -> pCode == 0)
             delete pTestType -> pState;
 
+        if (userS.indent_sql)
+        {
+            IndentSQL(pOut, userS, sql_state);
+        }
+
         pOutputQueue -> putLast (pOut);
 
         delete pTestType; // ##### Remove structure from memory, not its data
@@ -1528,7 +1351,7 @@ bool adjustHangingComment(QueueList *pLines)
 // QueueList*    : Pointer to the output queue (may have been reconstructed),
 //                 returns NULL if failed to allocate memory
 //
-QueueList* IndentNonBraceCode (QueueList* pLines, StackList* pIMode, Config& userS, bool top)
+QueueList* IndentNonBraceCode (QueueList* pLines, StackList* pIMode, const Config& userS, bool top)
 {
     // if there are items to check !
     if ((pLines != NULL) && (pLines -> status () <= 0))
@@ -1758,7 +1581,7 @@ QueueList* IndentNonBraceCode (QueueList* pLines, StackList* pIMode, Config& use
 // QueueList*    : Pointer to the output queue (may have been reconstructed),
 //                 returns NULL if failed to allocate memory
 //
-QueueList* IndentNonBraces (StackList* pIMode, QueueList* pLines, Config userS)
+QueueList* IndentNonBraces (StackList* pIMode, QueueList* pLines, const Config& userS)
 {
     const int minLimit = 2;             // used in searching output queue
                                         // for open braces
@@ -1900,7 +1723,7 @@ QueueList* IndentNonBraces (StackList* pIMode, QueueList* pLines, Config userS)
 // QueueList* : Returns a pointer to a newly constructed OutputStructure
 //              queue.
 //
-QueueList* ReformatBraces (QueueList* pLines, Config userS)
+QueueList* ReformatBraces (QueueList* pLines, const Config& userS)
 {
     QueueList*    pNewLines     = new QueueList();
 
@@ -2363,6 +2186,7 @@ int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
     bool                indentPreP   = False;
     bool                pendingElse  = False;
     int                 prepStack    = 0;
+    int                 sql_state    = 0;
 
     // Check memory allocated !
     if (((pOutputQueue == NULL) || (pIMode == NULL)) || (pInputQueue == NULL))
@@ -2428,6 +2252,7 @@ int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
                             prepStack,
                             indentStack,
                             pendingElse,
+                            sql_state,
                             pInputQueue,
                             pOutputQueue,
                             userS);

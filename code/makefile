@@ -2,19 +2,21 @@
 
 D		=../code/
 
-C++		=gcc
+CXX		=gcc
 CPPFLAGS	=-I$(D) -O2 -Wall
-C++FLAGS	= -x c++ $(CPPFLAGS)
+CXXFLAGS	= -x c++ $(CPPFLAGS)
 
 .SUFFIXES:	.cpp .o
 
 .cpp.o:
-	$(C++) $(C++FLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 BCPP.o	= \
         $(D)bcpp.o \
         $(D)anyobj.o \
         $(D)baseq.o \
+        $(D)debug.o \
+        $(D)execsql.o \
         $(D)stacklis.o \
         $(D)cmdline.o \
         $(D)config.o \
@@ -22,12 +24,14 @@ BCPP.o	= \
         $(D)tabs.o
 
 bcpp:		$(BCPP.o)
-	$(C++) $(BCPP.o) -o $@ -lg++
+	$(CXX) $(BCPP.o) -o $@ -lg++
 
 clean::
-	rm -f $(BCPP.o) bcpp *~ *# *.bak
+	rm -f *.o bcpp *~ *# *.bak
 
 $(BCPP.o) : config.h
 
 $(D)bcpp.o \
+$(D)debug.o \
+$(D)execsql.o \
 $(D)tabs.o : bcpp.h

@@ -1,4 +1,4 @@
-MANIFEST for bcpp, version t1996-11-06
+MANIFEST for bcpp, version t1996-11-08
 --------------------------------------------------------------------------------
 MANIFEST                        this file
 README                          top-level README for bcpp
@@ -15,6 +15,8 @@ code/cmdline.cpp                command-line options-parsing
 code/cmdline.h                  interface of cmdline.cpp
 code/config.cpp                 config-file reader
 code/config.h                   interface of config.cpp
+code/debug.cpp                  debug/trace functions for BCPP
+code/execsql.cpp                module to indent embedded SQL statements
 code/makefile                   makefile for UNIX (g++)
 code/stacklis.cpp               container class that stores items in a linked list
 code/stacklis.h                 interface of stacklis.cpp

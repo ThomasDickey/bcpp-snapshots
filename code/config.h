@@ -12,7 +12,7 @@
 
 enum Boolean     {False = 0, True = -1};
 
-enum ConfigWords {ANYT = 0, FSPC, UTAB, ISPC, IPRO,
+enum ConfigWords {ANYT = 0, FSPC, UTAB, ISPC, IPRO, ISQL,
                   NAQTOOCT, COMWC, COMNC, LCNC,
                   LGRAPHC, ASCIIO, PBNLINE, PROGO, QBUF, BUF,
                   EQUAL, YES, ON, NO, OFF};
@@ -51,6 +51,7 @@ struct Config
   int     queueBuffer    ;  // Set the number if lines to store in memory at a time !
   Boolean backUp         ;  // backup the original file, have output file become input file name !
   Boolean indentPreP     ;  // indent preprocessor controls to match code
+  Boolean indent_sql     ;  // indent embedded SQL statements
 };
 
 
