@@ -156,6 +156,43 @@ class OutputStruct : public ANYOBJECT
 };
 
 // ----------------------------------------------------------------------------
+class HangStruct : public ANYOBJECT
+{
+    private:
+        int  stmt_level;     // statement-level (from oneLine=0)
+
+        int  until_parn;     // suppress hang until right-parenthesis
+        int  parn_level;     // parentheses-level
+
+        int  until_curl;     // suppress hang until R_CURL
+        int  curl_level;     // curly-brace-level
+
+        int  in_aggreg;      // in aggregate, curly-brace-level
+        bool do_aggreg;
+
+    public:
+        int  indent;
+
+        HangStruct()
+        {
+            stmt_level = 0;
+            until_parn = 0;
+            parn_level = 0;
+            until_curl = 0;
+            curl_level = 0;
+            in_aggreg  = 0;
+            do_aggreg  = False;
+
+            indent = 0;
+        }
+
+        void IndentHanging (OutputStruct *pOut);
+
+    private:
+        void ScanState(const char *code, const char *state);
+};
+
+// ----------------------------------------------------------------------------
 // This structure is used to hold indent data on non-brace code.
 // This includes case statements, single line if's, while's, for statements...
 class IndentStruct : public ANYOBJECT
@@ -172,7 +209,7 @@ class IndentStruct : public ANYOBJECT
            int           singleIndentLen;
 
     // constructor
-    inline IndentStruct (void)
+    IndentStruct (void)
     {
         attrib          = noIndent;
         pos             = 0;
@@ -203,7 +240,7 @@ inline bool emptyString(const char *s)
 extern void IndentSQL (OutputStruct *pOut, int& state);
 
 // hanging.cpp
-extern void IndentHanging (OutputStruct *pOut, int& state);
+extern void IndentHanging (OutputStruct *pOut, HangStruct& state);
 
 // FIXME
 extern int LookupKeyword(const char *tst);

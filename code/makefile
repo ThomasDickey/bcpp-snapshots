@@ -3,7 +3,7 @@
 D		=../code/
 
 CXX		=gcc
-CPPFLAGS	=-I$(D) -O2 -Wall
+CPPFLAGS	=-I$(D) -O2 -Wall #-DDEBUG -DDEBUG2
 CXXFLAGS	= -x c++ $(CPPFLAGS)
 
 .SUFFIXES:	.cpp .o

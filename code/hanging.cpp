@@ -1,3 +1,4 @@
+// $Id: hanging.cpp,v 1.8 1996/12/10 01:27:02 tom Exp $
 // Compute hanging-indent for most multiline statements.
 
 #include <stdlib.h>
@@ -13,16 +14,8 @@
 //      a.  we encounter curly-braces (which have their own rules)
 //      b.  we encounter a keyword that has its own indention rules
 
-static int  until_parn;     // suppress hang until right-parenthesis
-static int  parn_level;     // parentheses-level
-
-static int  until_curl;     // suppress hang until R_CURL
-static int  curl_level;     // curly-brace-level
-
-static int  in_aggreg;      // in aggregate, curly-brace-level
-static bool do_aggreg = False;
-
-static void ScanState(const char *code, const char *state, int& hang_state)
+void
+HangStruct::ScanState(const char *code, const char *state)
 {
     if (code != 0)
     {
@@ -39,9 +32,13 @@ static void ScanState(const char *code, const char *state, int& hang_state)
                     do_aggreg = False;
                     if (findWord >= 0)
                     {
-                        hang_state = 0;
+                        indent = 0;
                         until_parn = 1;
                         n += strlen(pIndentWords[findWord].name) - 1;
+                        if (pIndentWords[findWord].code == oneLine)
+                            stmt_level++;
+                        else
+                            stmt_level = 0;
                     }
                     else
                     {
@@ -50,7 +47,7 @@ static void ScanState(const char *code, const char *state, int& hang_state)
 
                         if (parn_level == 0)
                             until_parn = 0;
-                        hang_state = 1;
+                        indent = 1;
                         while (isName(code[n]))
                             n++;
                         n--;
@@ -69,24 +66,36 @@ static void ScanState(const char *code, const char *state, int& hang_state)
                             break;
                         case L_CURL:
                             curl_level++;
-                            hang_state = 0;
+                            indent = 0;
+                            stmt_level = 0;
                             until_parn = 0;
                             if (do_aggreg)
                                 in_aggreg = curl_level;
                             break;
                         case R_CURL:
                             curl_level--;
-                            hang_state = 0;
+                            indent = 0;
+                            stmt_level = 0;
                             until_curl = 0;
                             break;
                         case ':':
-                            hang_state = 0;
-                            until_parn = 0;
+                            // "::" means something different entirely
+                            if (code[n+1] == ':')
+                            {
+                                n++;
+                            }
+                            else
+                            {
+                                indent = 0;
+                                stmt_level = 0;
+                                until_parn = 0;
+                            }
                             break;
                         case SEMICOLON:
                             if (parn_level == 0)
                             {
-                                hang_state = 0;
+                                indent = 0;
+                                stmt_level = 0;
                                 until_parn = 0;
                                 until_curl = 0;
                                 if (in_aggreg > curl_level)
@@ -95,17 +104,17 @@ static void ScanState(const char *code, const char *state, int& hang_state)
                             break;
                         case '(':
                             parn_level++;
-                            hang_state = 1;
+                            indent = 1;
                             break;
                         case ')':
                             parn_level--;
                             if (until_parn && !parn_level)
-                                hang_state = 0;
+                                indent = 0;
                             else
-                                hang_state = 1;
+                                indent = 1;
                             break;
                         default:
-                            hang_state = 1;
+                            indent = 1;
                             break;
                     }
                 }
@@ -114,29 +123,39 @@ static void ScanState(const char *code, const char *state, int& hang_state)
     }
 }
 
-void IndentHanging(OutputStruct *pOut, int& hang_state)
+void
+HangStruct::IndentHanging(OutputStruct *pOut)
 {
 #ifdef DEBUG2
     traceOutput(__LINE__, pOut);
-    TRACE((stderr, "state:%d, parn:%d/%d, curl:%d, agg:%d/%d\n", hang_state, until_parn, parn_level, curl_level, do_aggreg, in_aggreg))
+    TRACE((stderr, "state:%d/%d, parn:%d/%d, curl:%d, agg:%d/%d\n",
+        indent,
+        stmt_level,
+        until_parn,
+        parn_level,
+        curl_level,
+        do_aggreg,
+        in_aggreg))
 #endif
 
-    if (hang_state != 0
+    if (indent != 0
      && curl_level != 0
-     && until_parn == 0
+     && (until_parn == 0 || parn_level != 0)
      && until_curl == 0
      && in_aggreg < curl_level
      && !emptyString(pOut -> pCode)
      && !emptyString(pOut -> pCFlag)
      && (pOut -> pCFlag[0] == Normal || !ContinuedQuote(pOut)))
     {
-        TRACE((stderr, "HERE\n"))
-        pOut -> indentHangs = 1;
+        pOut -> indentHangs = indent;
+        if (stmt_level && !until_parn)
+            pOut -> indentHangs += stmt_level;
+        TRACE((stderr, "HANG:%d\n", pOut -> indentHangs))
     }
 
     if (pOut -> pType != PreP)
     {
-        ScanState(pOut -> pCode,  pOut -> pCFlag, hang_state);
-        ScanState(pOut -> pBrace, pOut -> pBFlag, hang_state);
+        ScanState(pOut -> pCode,  pOut -> pCFlag);
+        ScanState(pOut -> pBrace, pOut -> pBFlag);
     }
 }
