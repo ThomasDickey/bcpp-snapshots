@@ -1,4 +1,4 @@
-# $Id: makefile.in,v 5.12 1995/03/18 15:27:08 tom Exp $
+# $Id: makefile.in,v 6.0 1995/03/18 15:27:08 dickey Rel $
 # Makefile-template for 'conflict'
 
 THIS = conflict

@@ -1,4 +1,4 @@
-/* $Id: conflict.h,v 5.14 1995/03/18 14:00:34 tom Exp $
+/* $Id: conflict.h,v 6.0 1995/03/18 14:00:34 dickey Rel $
  *
  * Common/configurable definitions and types for 'conflict'.
  */
