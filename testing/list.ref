@@ -23,3 +23,7 @@
      3	?:illegal characters found
      2	":lines with unterminated quotes
 
+     3	top-level blocks/statements
+     2	maximum blocklevel
+  1.67	ratio of blocklevel:code
+

@@ -1,4 +1,4 @@
-.\" $Id: c_count.1,v 7.2 1995/05/14 00:58:08 tom Exp $
+.\" $Id: c_count.1,v 7.3 1997/10/05 21:13:53 tom Exp $
 .de EX
 .RS
 .nf
@@ -72,6 +72,9 @@ file contains illegal characters
 .TP
 .B *
 file contains unterminated or nested comments.
+.TP
+.B +
+file contains unterminated curly-braces.
 .PP
 Unbalanced quotes may be legal.
 The C preprocessor permits you to
@@ -88,6 +91,12 @@ unbalanced quote marks.
 .
 .SH OPTIONS
 Command line options of \fBc_count\fR are:
+.TP
+.B \-b
+display block-level statistics.
+The total number of top-level blocks (or statements),
+the maximum blocklevel, counting the top as 1,
+and the weighted average blocklevel for code.
 .TP
 .B \-c
 display character-level statistics.
@@ -152,36 +161,47 @@ itself from the standard input.
 .PP
 Following is an example of the use of \fBc_count\fR, showing
 the detailed types of information which it reports.
+The percentages add up to 100%, since overlapping data are discounted.
 .EX
-bsd(5) c_count */*.[ch]
-   927   352   |src/c_count.c
-     5     0?" |test/test1.c
-     6     2?  |test/test2.c
-    20     1   |test/test3.c
+~/src/count (5) c_count *.[ch] */*.[ch]
+  1165   418   |c_count.c
+    17     0   |config.h
+     1     0   |patchlev.h
+   103     3   |system.h
+    87    33   |porting/getopt.c
+     8     4   |porting/getopt.h
+   107    31   |porting/wildcard.c
+     5     0?" |testing/test1.c
+     6     2?  |testing/test2.c
+    20     1   |testing/test3.c
 ----------------
-   958   355?"  total lines/statements
+  1519   492?"  total lines/statements
 
-   121	lines had comments        12.6 %
-    48	lines had history          5.0 %
-    36	comments are inline       -3.8 %
-    73	lines were blank           7.6 %
-    22	lines for preprocessor     2.3 %
-   730	lines containing code     76.2 %
-   958	total lines              100.0 %
+   228	lines had comments        15.0 %
+     7	lines had history          0.5 %
+    45	comments are inline       -3.0 %
+   142	lines were blank           9.3 %
+   170	lines for preprocessor    11.2 %
+  1017	lines containing code     67.0 %
+  1519	total lines              100.0 %
 
-  3475	comment-chars             15.7 %
-  1021	history-chars              4.6 %
-  1003	nontext-comment-chars      4.5 %
-  4731	whitespace-chars          21.3 %
-   322	preprocessor-chars         1.5 %
- 11644	statement-chars           52.5 %
- 22196	total characters         100.0 %
+  6355	comment-chars             18.1 %
+   105	history-chars              0.3 %
+  1277	nontext-comment-chars      3.6 %
+  7427	whitespace-chars          21.2 %
+  2882	preprocessor-chars         8.2 %
+ 16984	statement-chars           48.5 %
+ 35030	total characters         100.0 %
 
-  1541	tokens, average length 4.91
+  2698	tokens, average length 4.99
 
-  0.29	ratio of comment:code
+  0.32	ratio of comment:code
      3	?:illegal characters found
      2	":lines with unterminated quotes
+
+    70	top-level blocks/statements
+     7	maximum blocklevel
+  2.67	ratio of blocklevel:code
 .EE
 .PP
 If you use the "\fB\-p\fR" option,

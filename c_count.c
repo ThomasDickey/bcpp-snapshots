@@ -3,6 +3,7 @@
  * Author:	T.E.Dickey
  * Created:	04 Dec 1985
  * Modified:
+ *		04 Oct 1997, add top-level block and blocklevel counts.
  *		25 Apr 1997, correct missing transition in comment-parsing
  *			     state that caused incorrect line-count.  Modify
  *			     display of line/statement #'s to be more readable.
@@ -64,7 +65,7 @@
 #include "system.h"
 
 #ifndef	NO_IDENT
-static const char Id[] = "$Header: /users/source/archives/c_count.vcs/RCS/c_count.c,v 7.15 1997/04/26 15:21:35 tom Exp $";
+static const char Id[] = "$Header: /users/source/archives/c_count.vcs/RCS/c_count.c,v 7.17 1997/10/05 20:50:31 tom Exp $";
 #endif
 
 #include <stdio.h>
@@ -108,6 +109,7 @@ extern	char *optarg;
 #define PRINTF  (void)printf
 #define	DEBUG	if (debug) PRINTF
 #define	TOKEN(c)	((c) == '_' || (c) == '$' || isalnum(c))
+#define LVL_WEIGHT(n) if (opt_blok) One.lvl_weights += (n) * (One.nesting_lvl+1)
 
 static	int	inFile  ARGS((void));
 static	int	Comment ARGS((int cpp));
@@ -136,9 +138,14 @@ typedef	struct	{
 			lines_prepro;
 		long	flags_unquo,
 			flags_uncmt,
-			flags_unasc;
+			flags_unasc,
+			flags_unlvl;
 		long	stmts_total;
 		long	stmts_latch;
+		long	nesting_lvl;	/* {} nesting level */
+		long	top_lvl_blk;	/* top-level blocks */
+		long	max_blk_lvl;	/* maximum {} level */
+		long	lvl_weights;	/* count(code * (level+1)) */
 		long	words_total,	/* # of tokens */
 			words_length;	/* total length of tokens */
 	} STATS;
@@ -148,6 +155,7 @@ static	STATS	All, One;	/* total, per-file stats */
 static	long	old_stmts,
 		old_unquo,
 		old_unasc,
+		old_unlvl,
 		old_uncmt;
 
 enum	PSTATE	{code, comment, preprocessor};
@@ -158,6 +166,7 @@ static	int	verbose	= FALSE,/* TRUE iff we echo file, as processed */
 		jargon	= FALSE,
 		per_file= FALSE,
 		debug	= FALSE,
+		opt_blok,
 		opt_line,
 		opt_char,
 		opt_name,
@@ -330,6 +339,27 @@ void	summarize_stats(
 	show_a_flag("?:illegal characters found",	p->flags_unasc);
 	show_a_flag("\":lines with unterminated quotes",p->flags_unquo);
 	show_a_flag("*:unterminated/nested comments",	p->flags_uncmt);
+	show_a_flag("+:unterminated blocks",		p->flags_unlvl);
+}
+
+static
+void	summarize_bloks(
+	_ARG(STATS *,	p))
+	_DCL(STATS *,	p)
+{
+	new_summary();
+	if (spreadsheet) {
+		PRINTF("%ld%s%ld%s",
+			p->top_lvl_blk, comma,
+			p->max_blk_lvl, comma);
+		ratio("blocklevel:code", p->lvl_weights, p->chars_code);
+		return;
+	}
+	PRINTF("%6ld\ttop-level blocks/statements\n",
+			p->top_lvl_blk);
+	PRINTF("%6ld\tmaximum blocklevel\n",
+			p->max_blk_lvl + 1);
+	ratio("blocklevel:code", p->lvl_weights, p->chars_code);
 }
 
 static
@@ -341,6 +371,7 @@ void	show_totals(
 	if (opt_char)	summarize_chars(p);
 	if (opt_name)	summarize_names(p);
 	if (opt_stat)	summarize_stats(p);
+	if (opt_blok)	summarize_bloks(p);
 }
 
 static
@@ -353,6 +384,9 @@ void	summarize(
 	_DCL(int,	mark)
 	_DCL(int,	name)
 {
+	char errors[8];
+	int c = 0;
+
 	newsum = FALSE;
 	if (spreadsheet) {
 		PRINTF ("%ld%s%ld%s",
@@ -366,14 +400,22 @@ void	summarize(
 		} else {
 			PRINTF ("%5s", " ");
 		}
-		PRINTF ("%c%c%c%c",
-			(p->flags_unasc != old_unasc ? '?' : ' '),
-			(p->flags_unquo != old_unquo ? '"' : ' '),
-			(p->flags_uncmt != old_uncmt ? '*' : ' '),
+		if (p->flags_unasc != old_unasc)
+			errors[c++] = '?';
+		if (p->flags_unquo != old_unquo)
+			errors[c++] = '"';
+		if (p->flags_uncmt != old_uncmt)
+			errors[c++] = '*';
+		if (p->flags_unlvl != old_unlvl)
+			errors[c++] = '+';
+		errors[c] = EOS;
+		PRINTF ("%-3.3s%c",
+			errors,
 			(mark  ? '|' : ' '));
 	}
 	old_unasc = p->flags_unasc;
 	old_uncmt = p->flags_uncmt;
+	old_unlvl = p->flags_unlvl;
 	old_unquo = p->flags_unquo;
 	old_stmts = p->stmts_total;
 }
@@ -416,6 +458,14 @@ void	add_totals (NO_ARGS)
 
 	ADD(words_total);
 	ADD(words_length);
+
+	ADD(top_lvl_blk);
+	ADD(lvl_weights);
+
+	if (All.max_blk_lvl < One.max_blk_lvl)
+		All.max_blk_lvl = One.max_blk_lvl;
+	One.max_blk_lvl = 0;
+
 	files_total++;
 }
 
@@ -490,6 +540,7 @@ void	doFile (
 	_DCL(char *,	name)
 {
 	register int c;
+	int topblock = FALSE;
 
 #if !SYS_UNIX
 	if (has_wildcard(name)) {		/* expand wildcards? */
@@ -532,10 +583,47 @@ void	doFile (
 		case '\'':
 			c = String(c);
 			break;
+		case '{':
+			if (pstate == code) {
+				One.nesting_lvl++;
+				if (One.nesting_lvl >
+				    One.max_blk_lvl)
+				One.max_blk_lvl = One.nesting_lvl;
+			}
+			c = Token(c);
+			break;
+		case '}':
+			if (pstate == code) {
+				One.nesting_lvl--;
+				if (One.nesting_lvl == 0)
+					topblock = TRUE;
+			}
+			c = Token(c);
+			break;
 		case ';':
 			One.stmts_total++;
-		default:
+			if (pstate == code) {
+				if (One.nesting_lvl == 0) {
+					One.top_lvl_blk++;
+				}
+				topblock = FALSE;
+			}
 			c = Token(c);
+			break;
+		case ',':
+			topblock = FALSE;
+			c = Token(c);
+			break;
+		default:
+			if (pstate == code) {
+				if (One.nesting_lvl == 0
+				 && topblock) {
+					One.top_lvl_blk++;
+				}
+				topblock = FALSE;
+			}
+			c = Token(c);
+			break;
 		}
 	}
 	(void)Token(EOS);
@@ -773,10 +861,12 @@ int	Comment (
 	auto	int	d = 0;
 	auto	enum	PSTATE	save_st = pstate;
 
-	if (pstate == code)
+	if (pstate == code) {
 		One.chars_code -= 2;
-	else
+		LVL_WEIGHT(-2);
+	} else {
 		One.chars_prepro -= 2;
+	}
 	One.chars_ignore += 2;		/* ignore the comment-delimiter */
 
 	pstate = comment;
@@ -826,6 +916,7 @@ register int c = fgetc(File);
 	if (One.chars_total == 0) {
 		bstate    = code;
 		old_unquo =
+		old_unlvl =
 		old_unasc =
 		old_uncmt = 0;
 		had_note  =
@@ -897,10 +988,12 @@ register int c = fgetc(File);
 				had_code += (pstate == code);
 				cnt_code = 0;
 			}
-			if (literal)
+			if (literal) {
 				One.chars_code++;
-			else
+				LVL_WEIGHT(1);
+			} else {
 				One.chars_blank++;
+			}
 		} else {
 			is_blank = FALSE;
 			switch (pstate) {
@@ -921,6 +1014,7 @@ register int c = fgetc(File);
 			default:
 				cnt_code++;
 				One.chars_code++;
+				LVL_WEIGHT(1);
 			}
 		}
 	}
@@ -939,6 +1033,7 @@ void	usage(NO_ARGS)
 ,"standard input."
 ,""
 ,"Options:"
+," -b        block-statistics"
 ," -c        character-statistics"
 ," -d        debug (shows tokens as they are parsed)"
 ," -i        identifier-statistics"
@@ -974,8 +1069,9 @@ int	main (
 	auto	int	opt_all = -1;
 
 	quotvec = typeCalloc(char *, (size_t)argc);
-	while ((j = getopt(argc,argv,"cdijlo:pq:stv")) != EOF) switch(j) {
+	while ((j = getopt(argc,argv,"bcdijlo:pq:stv")) != EOF) switch(j) {
 	case 'l':	opt_all = FALSE; opt_line = TRUE; break;
+	case 'b':	opt_all = FALSE; opt_blok = TRUE; break;
 	case 'c':	opt_all = FALSE; opt_char = TRUE; break;
 	case 'i':	opt_all = FALSE; opt_name = TRUE; break;
 	case 's':	opt_all = FALSE; opt_stat = TRUE; break;
@@ -994,7 +1090,7 @@ int	main (
 	}
 
 	if (opt_all == -1)
-		opt_line = opt_char = opt_name = opt_stat = TRUE;
+		opt_blok = opt_line = opt_char = opt_name = opt_stat = TRUE;
 	else if (spreadsheet)
 		per_file = TRUE;
 
@@ -1023,11 +1119,17 @@ int	main (
 					"W-TOTAL",	comma,
 					"W-LENGTH",	comma);
 			if (opt_stat)
-				PRINTF("%s%s%s%s%s%s%s%s",
+				PRINTF("%s%s%s%s%s%s%s%s%s%s",
 					"CODE:COMMENT",	comma,
 					"ILLEGAL-CHARS", comma,
 					"ILLEGAL-QUOTES", comma,
-					"ILLEGAL-COMMENTS", comma);
+					"ILLEGAL-COMMENTS", comma,
+					"ILLEGAL-BLOCKS", comma);
+			if (opt_blok)
+				PRINTF("%s%s%s%s%s%s",
+					"TOP-BLOCKS", comma,
+					"MAX-NESTING", comma,
+					"AVG-NESTING", comma);
 
 		} else
 			PRINTF("LINES%sSTATEMENTS%s", comma, comma);

@@ -22,3 +22,7 @@
   0.00	ratio of comment:code
      1	?:illegal characters found
 
+     3	top-level blocks/statements
+     2	maximum blocklevel
+  1.68	ratio of blocklevel:code
+
