@@ -1,6 +1,6 @@
 // C(++) Beautifier V1.61 Unix/MS-DOS update !
 // -----------------------------------------
-// $Id: bcpp.cpp,v 1.101 2003/11/04 02:10:47 tom Exp $
+// $Id: bcpp.cpp,v 1.102 2004/10/26 23:57:07 tom Exp $
 //
 // Program was written by Steven De Toni 1994 (CBC, ACBC).
 // Modified/revised by Thomas E. Dickey 1996-2002,2003.
@@ -386,6 +386,12 @@ static bool isContinuation(InputStruct *pItem)
 {
     size_t len;
     return isContinuation(len, pItem->pData, pItem->pState);
+}
+
+static bool isContinuation(OutputStruct *pItem)
+{
+    size_t len;
+    return isContinuation(len, pItem->pCode, pItem->pCFlag);
 }
 
 static void TrimContinuation(char *pData, char *pState)
@@ -1261,6 +1267,16 @@ static void computeBraces(OutputStruct *pOut, int& level)
     }
 }
 
+// Check if the given output line was a preprocessor line that ended with
+// a backslash.
+static bool outputWasContinuedPreP (OutputStruct * pOut)
+{
+    if (pOut != 0 && pOut -> pType == PreP && isContinuation(pOut)) {
+        return true;
+    }
+    return false;
+}
+
 // ----------------------------------------------------------------------------
 // Function takes a QueueList object that contains InputStructure items, and
 // uses these items to reconstruct a compressed version of a output line of
@@ -1319,7 +1335,13 @@ int ConstructLine (
                 indentPreP = False;
         }
 
-        switch (pTestType -> dataType)
+        int theType = pTestType -> dataType;
+        OutputStruct *pTestItem = (OutputStruct*) pOutputQueue -> peek(2);
+        if (outputWasContinuedPreP (pTestItem)) {
+            theType = PreP;
+        }
+
+        switch (theType)
         {
             //@@@@@@@ Processing of C type comments /* comment */
             case (CCom):
@@ -1461,7 +1483,8 @@ int ConstructLine (
             // @@@@@@ Preprocessor Line !
             case (PreP):
             {
-                pOut -> pCode = pTestType -> pData;
+                pOut -> pType  = PreP;
+                pOut -> pCode  = pTestType -> pData;
                 pOut -> pCFlag = pTestType -> pState;
                 if (userS.indentPreP) {
                     switch (typeOfPreP(pTestType))
@@ -2899,7 +2922,7 @@ int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
 
                 if (restoreit)
                 {
-                    TRACE(("FIXME: restore indentStack (%d)\n", indentStack))
+                    TRACE(("FIXME: restore indentStack (%d) to %d\n", indentStack, indentStack2))
                     //copyIndentStack(pIMode2, pIMode);
                     //freeIndentStack(pIMode2);
                     indentStack = indentStack2;
