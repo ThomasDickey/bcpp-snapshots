@@ -2,6 +2,8 @@
 // -----------------------------------------
 //
 // Program was written by Steven De Toni 1994 (CBC, ACBC).
+// Modified/revised by Thomas E. Dickey <dickey@clark.net> 1996.
+//
 // This program attempts to alter C, C++ code so that it fits to a
 // format that the user wants.
 // This program is the result of a project that needed to be written
@@ -2061,20 +2063,11 @@ QueueList* OutputToOutFile (FILE* pOutFile, QueueList* pLines, StackList* pIMode
          || !emptyString(pOut -> pBrace)
          || !emptyString(pOut -> pComment))
         {
+            int mark;
+            int in_code  = ((pOut -> pCode  != 0) ? strlen(pOut -> pCode) : 0)
+                         + ((pOut -> pBrace != 0) ? strlen(pOut -> pBrace) : 0);
             int leading  = pOut -> indentSpace + (pOut -> indentHangs * userS.tabSpaceSize); // FIXME: indentHangs should use separate param
-            int mark = 0;
             char *notes  = pOut -> pComment;
-
-            // compute the end-column of the code before filler, to use in
-            // adjusting tab conversion.
-            if (notes != 0)
-            {
-                mark = leading;
-                if (pOut -> pCode != 0)
-                    mark += strlen(pOut -> pCode);
-                if (pOut -> pBrace != 0)
-                    mark += strlen(pOut -> pBrace);
-            }
 
             // convert leading whitespace in a comment back to tabs
             if (fillMode & 1 && notes != NULL && *notes == SPACE)
@@ -2086,13 +2079,22 @@ QueueList* OutputToOutFile (FILE* pOutFile, QueueList* pLines, StackList* pIMode
                 }
             }
             else
-            if (emptyString(pOut -> pCode)
-              && emptyString(pOut -> pBrace)
+            if ((in_code == 0)
               && !emptyString(pOut -> pComment))
             {
                 if (pOut -> filler > leading)
                     leading = 0;
             }
+
+            // compute the end-column of the code before filler, to use in
+            // adjusting tab conversion.
+            mark = leading + in_code;
+
+            if (notes != 0)
+            if (pOut -> filler > userS.posOfCommentsWC - mark)
+                pOut -> filler = userS.posOfCommentsWC - mark;
+            if (pOut -> filler < 0)
+                pOut -> filler = 0;
 
             pIndentation = TabSpacing (fillMode,  0, leading, userS.tabSpaceSize);
             pFiller      = TabSpacing (fillMode, mark, pOut -> filler, userS.tabSpaceSize);
