@@ -1,4 +1,0 @@
-version=3
-
-opts=passive ftp://invisible-island.net/c_count/c_count-(\d+)\.tgz \
- debian  uupdate

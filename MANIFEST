@@ -1,61 +1,21 @@
-MANIFEST for c_count, version v7_17
+MANIFEST for conflict, version v950318
 --------------------------------------------------------------------------------
 MANIFEST                        this file
-CHANGES                         extracted change-log from c_count.c
-COPYING                         copyright notice for C_COUNT
-README                          brief description of C_COUNT
-aclocal.m4                      autoconf macros
-c_count.1                       manual-page for C_COUNT
-c_count.c                       C_COUNT main program
-config.guess                    guess configuration
-config.hin                      template for config.h
-config.sub                      substitute configuration
-configure                       Configuration script for UNIX
-configure.in                    autoconf-template for C_COUNT
-descrip.mms                     VMS build-script for C_COUNT
-install-sh                      install-script from X11
-makefile.in                     makefile-template for C_COUNT
-patchlev.h                      patch-level of C_COUNT
-system.h                        template for autoconf includes
-package                         subdirectory
-package/c_count.nsi             build-script
-package/c_count.spec            RPM build-script for c_count
-package/debian                  subdirectory
-package/debian/changelog        debian build script
-package/debian/compat           debian build script
-package/debian/control          debian build script
-package/debian/copyright        debian build script
-package/debian/docs             debian build script
-package/debian/rules            debian build script
-package/debian/source           subdirectory
-package/debian/source/format    debian build script
-package/debian                  subdirectory
-package/debian/watch            debian build script
-porting                         subdirectory
-porting/README                  description of files in porting directory
-porting/getopt.c                public-domain version of 'getopt()'
-porting/getopt.h                interface of 'getopt()'
-porting/makefile.wnt            makefile for Windows NT
-porting/turboc.mak              makefile for Turbo C/C++
-porting/vmsbuild.com            VMS script for building C_COUNT
-porting/vmsshare.opt            VAX C linker options
-porting/wildcard.c              wildcard expansion for non-UNIX configuration
-testing                         subdirectory
-testing/Makefile                makefile for C_COUNT test-directory
-testing/README                  description of files in testing-directory
-testing/cat.ref                 reference (output from 'cat' test)
-testing/descrip.mms             VMS build-script for C_COUNT testing
-testing/history.ref             reference (output from history-filtering)
-testing/list.ref                reference (output from list-test)
-testing/normal.ref              reference (output from normal test)
-testing/quotes.ref              reference (output from unbalanced-quote test)
-testing/run_test.bat            test-script for MSDOS
-testing/run_test.dcl            VMS test-script for C_COUNT
-testing/run_test.sh             UNIX test-script for C_COUNT
-testing/showdiff.bat            compute test-differences for MSDOS
-testing/showdiff.sh             perform reference-comparison for 'run_tests.sh'
-testing/table.ref               reference (spreadsheet/tabular output)
-testing/table_p.ref             reference (output from per-file table)
-testing/test1.c                 test-file (unbalanced quote via #define)
-testing/test2.c                 test-file (embedded tab)
-testing/test3.c                 test-file for RCS-history
+CHANGES                         change-log for 'conflict'
+COPYING                         collective copyright notice for 'conflict'
+README                          brief description of 'conflict'
+config_h.in                     template for config.h
+configure.in                    template for configure-script
+conflict.1                      UNIX manual-page for 'conflict'
+conflict.c                      'conflict' main program
+conflict.h                      common include for 'conflict'
+conflict.lsm                    Linux Software Map description of 'conflict'
+install.sh                      install-script, from X11R5
+makefile.in                     template for UNIX makefile for 'conflict'
+mkdirs.sh                       make directory-hierarchy (from X-windows)
+msdos.c                         MS-DOS support functions
+os2.c                           OS/2 support functions
+patchlev.h                      current patch-level of 'conflict'
+run_test.sh                     UNIX test-script for 'conflict'
+txtalloc.c                      text-allocator
+unix.c                          UNIX support functions

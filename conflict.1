@@ -1,0 +1,160 @@
+.\"*****************************************************************************
+.\" Copyright 1995 by Thomas E. Dickey.  All Rights Reserved.                  *
+.\"                                                                            *
+.\" You may freely copy or redistribute this software, so long as there is no  *
+.\" profit made from its use, sale trade or reproduction. You may not change   *
+.\" this copyright notice, and it must be included in any copy made.           *
+.\"*****************************************************************************
+.\" $Id: conflict.1,v 5.7 1995/03/18 01:54:28 tom Exp $
+.de DS
+.RS
+.nf
+.sp
+..
+.de DE
+.fi
+.RE
+.sp .5
+..
+.TH CONFLICT 1
+.hy 0
+.
+.SH NAME
+\fBconflict\fR \- filename conflict listing
+.
+.SH USAGE
+\fBconflict\fI [options] [file-specifications]
+.
+.SH SYNOPSIS
+\fBConflict\fR displays conflicting filenames in your execution path.
+Unlike the csh command \fIwhich\fR,
+it displays all of the (non-alias) executable files in your path.
+.
+.SH DESCRIPTION
+\fBConflict\fR reports pathname conflicts by making a list of the
+directories which are listed in the environment variable PATH, and
+then scanning these directories for executable files.
+If arguments are given to this program,
+the test for executable files is limited
+to the given names (after stripping the directory-prefix).
+.PP
+The first instance of a name in a given path
+(and those hard-linked to it) are marked with "*".
+Succeeding instances are marked with "+" marks.
+.PP
+The report is sent to standard output and always shows the list of
+directories.
+Conflicting names are reported on succeeding lines.
+.
+.SH OPTIONS
+.TP
+.BI \-e " name"
+specify another environment variable than PATH
+(e.g., INFOPATH, LD_LIBRARY_PATH).
+.
+.TP
+.BI \-I " path"
+for compatibility with C-preprocessor options, build up the search path
+with the given directory.
+(The corresponding \-D and \-U options are ignored.)
+Using the \-I or \-L options overrides the use of environment variables
+for the search path.
+.
+.TP
+.BI \-L " path"
+for compatibility with C-compiler options, build up the search path
+with the given directory.
+.
+.TP
+.B \-p
+print pathnames only, rather than the table.
+.
+.TP
+.B \-r
+look for readable files
+.
+.TP
+.BI \-t " types"
+specify a list of file types which are treated as conflicting.
+.
+.TP
+.B \-v
+Use verbose option to control how much is shown.
+Repeat the option for different levels:
+.RS
+.TP
+.I 1
+show all directory names
+.TP
+.I 2
+show all filenames which are found in the directories
+.TP
+.I 3
+directs \fBconflict\fR not only
+to print a summary line for each file, but also to print a running
+summary, showing executable file (with its full path) as it is found).
+.RE
+.
+.TP
+.B \-w
+look for writable files
+.
+.TP
+.BI \-W " number"
+expand width of display by number of columns (default: one column per path).
+.
+.TP
+.B \-x
+look for executable files (the default).
+.
+.PP
+You may combine the "\-r", "\-w" and "\-x" options.
+If you do not specify one of these, \fBconflict\fR assumes "\-x".
+.
+.SH OPERATIONS
+\fBConflict\fR may be used to list all conflicting names in your
+path (if no arguments are given), or to find conflicts for a specified
+name.
+To list only conflicts from a particular directory "path"
+you may type
+.DS
+conflict -a path/*
+.DE
+.PP
+An example of the use of \fBconflict\fR is shown below
+.DS
+bsd4.2(5) conflict
+Current working directory is "/home/dickey/src/conflict"
+-> .
+--> /home/dickey/bin
+---> /home/dickey/com
+----> /bin
+-----> /usr/bin
+------> /usr/ucb
+-------> /usr/local/bin
+-*----+: args
+----*-+: calendar
+---*--+: cc
+*+-----: conflict
+\&...
+.DE
+.
+.SH ENVIRONMENT
+\fBConflict\fR runs in a portable UNIX\*R environment, as well as
+MSDOS and OS/2 command-line.
+.
+.SH FILES
+\fBConflict\fR is a single binary module, which uses no auxiliary files.
+.
+.SH ANTICIPATED CHANGES
+add option to get aliases from the shell
+.PP
+handle compound directory structures such as MANPATH.
+.PP
+show symbol conflicts from object files and libraries.
+.
+.SH SEE ALSO
+csh (1) for a discussion of \fIwhich\fR.
+.
+.SH AUTHOR
+Thomas Dickey (dickey@clark.net)
