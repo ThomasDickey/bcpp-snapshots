@@ -37,6 +37,14 @@ enum  DataTypes { CCom = 1,   CppCom = 2, Code  = 3,
 enum indentAttr { noIndent=0, oneLine=1, multiLine=2, blockLine=3 };
 
 // ----------------------------------------------------------------------------
+typedef struct {
+    const char *name;
+    indentAttr code;
+} IndentwordStruct;
+
+extern const IndentwordStruct pIndentWords[];
+
+// ----------------------------------------------------------------------------
 // This structure is used to store line data that is de-constructed from the
 // user's input file.
 class InputStruct : public ANYOBJECT
@@ -66,26 +74,28 @@ class InputStruct : public ANYOBJECT
         }
 };
 
-#ifdef DEBUG
+#if defined(DEBUG) || defined(DEBUG2)
 extern int   totalTokens;            // token count, for debugging
 #endif
 
 // ----------------------------------------------------------------------------
 // The output structure is used to hold an entire output line. The structure is
-// expanded with it's real tabs/spaces within the output function of the program.
+// expanded with its real tabs/spaces within the output function of the program.
 class OutputStruct : public ANYOBJECT
 {
     private:
     public:
            DataTypes pType;
-#ifdef DEBUG
-           int   thisToken;    // current token number
+#if defined(DEBUG) || defined(DEBUG2)
+           int   thisToken;     // current token number
 #endif
-           int   indentSpace;  // num of spaces
+           int   indentSpace;   // num of spaces
+           int   indentHangs;   // num of indents for continuation
            char* pCode;
-           char* pState;
-           char* pBrace;       // "}" or "{"
-           int   filler;       // num of spaces
+           char* pCFlag;        // state-flags for pCode
+           char* pBrace;        // "}" or "{", with possible code-fragment
+           char* pBFlag;        // state-flags for pBrace
+           int   filler;        // num of spaces
            char* pComment;
 
            // Constructor
@@ -93,11 +103,11 @@ class OutputStruct : public ANYOBJECT
            inline  OutputStruct  (DataTypes theType)
            {
                 pType          = theType;
-#ifdef DEBUG
+#if defined(DEBUG) || defined(DEBUG2)
                 thisToken      = totalTokens++;
 #endif
-                pCode = pState = pBrace = pComment = NULL;
-                indentSpace    = filler   = 0;
+                pCode = pCFlag = pBrace = pBFlag = pComment = NULL;
+                indentSpace = indentHangs = filler = 0;
            }
 
            // Destructor
@@ -105,8 +115,9 @@ class OutputStruct : public ANYOBJECT
            inline ~OutputStruct (void)
            {
                 delete pCode;
-                delete pState;
+                delete pCFlag;
                 delete pBrace;
+                delete pBFlag;
                 delete pComment;
            }
 };
@@ -126,8 +137,6 @@ class IndentStruct : public ANYOBJECT
            // Indent double the amount for multiline single if, while ...
            // statements.
            int           singleIndentLen;
-           Boolean       firstPass; // user to determine if more than a single line
-                                    // if, while... statement.
 
     // constructor
     inline IndentStruct (void)
@@ -135,7 +144,6 @@ class IndentStruct : public ANYOBJECT
         attrib          = noIndent;
         pos             = 0;
         singleIndentLen = 0; // number of spaces to indent !
-        firstPass       = False;
     }
 };
 
@@ -159,7 +167,14 @@ inline bool emptyString(const char *s)
 
 //-----------------------------------------------------------------------------
 // exec_sql.cpp
-extern void IndentSQL (OutputStruct *pOut, const Config& userS, int& state);
+extern void IndentSQL (OutputStruct *pOut, int& state);
+
+// hanging.cpp
+extern void IndentHanging (OutputStruct *pOut, int& state);
+
+// FIXME
+extern int LookupKeyword(const char *tst);
+extern bool ContinuedQuote(OutputStruct *pOut);
 
 // strings.cpp
 extern bool isName(char c);

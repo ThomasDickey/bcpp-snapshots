@@ -15,11 +15,11 @@ static int NextWord(int start, OutputStruct *pOut, int& level)
 
     TRACE((stderr, "next:%s\n", pOut -> pCode+start))
     while (pOut -> pCode[n] != NULLC
-      &&  (pOut -> pState[n] != Normal || !isName(pOut -> pCode[n])))
+      &&  (pOut -> pCFlag[n] != Normal || !isName(pOut -> pCode[n])))
     {
-        if ((pOut -> pState[n] == Normal && !isName(pOut -> pCode[n]))
-          || pOut -> pState[n] == DQuoted
-          || pOut -> pState[n] == DQuoted)
+        if ((pOut -> pCFlag[n] == Normal && !isName(pOut -> pCode[n]))
+          || pOut -> pCFlag[n] == DQuoted
+          || pOut -> pCFlag[n] == DQuoted)
             reset = True;
         n++;
     }
@@ -40,7 +40,7 @@ static int SkipWord(int start, OutputStruct *pOut)
     TRACE((stderr, "skip:%s\n", pOut -> pCode+start))
     // skip the current word
     while (pOut -> pCode[n] != NULLC
-      &&  (ispunct(pOut -> pState[n]) && isName(pOut -> pCode[n])))
+      &&  (ispunct(pOut -> pCFlag[n]) && isName(pOut -> pCode[n])))
         n++;
     return n;
 }
@@ -172,7 +172,7 @@ static bool SqlVerb(const char *code)
     return False;
 }
 
-void IndentSQL(OutputStruct *pOut, const Config& userS, int& sql_state)
+void IndentSQL(OutputStruct *pOut, int& sql_state)
 {
     static int level;
     static char matched[80];
@@ -208,7 +208,7 @@ void IndentSQL(OutputStruct *pOut, const Config& userS, int& sql_state)
     // a statement.  Ignore preprocessor-lines.
     if (pOut -> pType == Code
      && pOut -> pCode != NULL
-     && pOut -> pState != NULL)
+     && pOut -> pCFlag != NULL)
     {
         pUprString = new char[strlen (pOut -> pCode) + 1];
         if (pUprString == NULL)
@@ -216,7 +216,7 @@ void IndentSQL(OutputStruct *pOut, const Config& userS, int& sql_state)
 
         StrUpr (strcpy(pUprString, pOut->pCode));
         TRACE((stderr, "HERE:%s\n", pUprString))
-        TRACE((stderr, "FLAG:%s\n", pOut->pState))
+        TRACE((stderr, "FLAG:%s\n", pOut->pCFlag))
 
         for (int n = NextWord(0, pOut, level);
             pOut -> pCode[n] != NULLC;
@@ -254,9 +254,9 @@ void IndentSQL(OutputStruct *pOut, const Config& userS, int& sql_state)
      && old_state != 0
      && pOut -> pType != PreP)
     {
-        pOut -> indentSpace += userS.tabSpaceSize;
+        pOut -> indentHangs = 1;
         if (sql_state == 2 && !SqlVerb(pUprString))
-            pOut -> indentSpace += userS.tabSpaceSize;
+            pOut -> indentHangs = 2;
     }
     old_state = sql_state;
     delete pUprString;

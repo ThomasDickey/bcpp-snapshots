@@ -17,6 +17,7 @@ BCPP.o	= \
         $(D)baseq.o \
         $(D)debug.o \
         $(D)execsql.o \
+        $(D)hanging.o \
         $(D)stacklis.o \
         $(D)cmdline.o \
         $(D)config.o \
@@ -34,4 +35,5 @@ $(BCPP.o) : config.h
 $(D)bcpp.o \
 $(D)debug.o \
 $(D)execsql.o \
+$(D)hanging.o \
 $(D)tabs.o : bcpp.h
