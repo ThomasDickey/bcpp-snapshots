@@ -1,16 +1,19 @@
-MANIFEST for conflict, version t20021229
+MANIFEST for conflict, version t20040327
 --------------------------------------------------------------------------------
 MANIFEST                        this file
 CHANGES                         change-log for 'conflict'
 COPYING                         collective copyright notice for 'conflict'
 README                          brief description of 'conflict'
 aclocal.m4                      autoconf macros for 'conflict'
+config.guess                    configure-script utility
+config.sub                      configure-script utility
 config_h.in                     template for config.h
+configure                       generated configure-script
 configure.in                    template for configure-script
 conflict.1                      UNIX manual-page for 'conflict'
 conflict.c                      'conflict' main program
 conflict.h                      common include for 'conflict'
-install.sh                      install-script, from X11R5
+install-sh                      install-script, from X11R5
 makefile.in                     template for UNIX makefile for 'conflict'
 makefile.wnt                    makefile for Visual C
 mkdirs.sh                       make directory-hierarchy (from X-windows)

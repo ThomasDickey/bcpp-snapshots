@@ -6,7 +6,7 @@
  * this copyright notice, and it must be included in any copy made.           *
  ******************************************************************************/
 #ifndef NO_IDENT
-static char *Id = "$Id: msdos.c,v 6.1 1999/07/28 23:11:52 tom Exp $";
+static char *Id = "$Id: msdos.c,v 6.3 2004/03/27 20:39:22 tom Exp $";
 #endif
 
 /*
@@ -78,6 +78,20 @@ set_drive (char *name)
 }
 #endif	/* SYS_MSDOS */
 
+#if SYS_OS2 || SYS_OS2_EMX
+#include <dos.h>		/* ...for _getdrive/_setdrive */
+
+int
+set_drive (char *name)
+{
+	if (have_drive(name)) {
+		if (_chdrive(name[0] + 1 - 'A') < 0)
+			return FALSE;
+	}
+	return TRUE;
+}
+#endif	/* SYS_OS2 || SYS_OS2_EMX */
+
 #if SYS_WIN32
 #include <dos.h>		/* ...for _getdrive/_setdrive */
 
@@ -101,7 +115,7 @@ char	*optarg;
 	 * This version of 'getopt()' uses either '/' or '-' for the switch
 	 * character to look more like a native dos or os/2 application.
 	 */
-int	getopt(int argc, char **argv, char *opts)
+int	getopt(int argc, char *const *argv, const char *opts)
 {
 	int	code = EOF;
 	char	*s, *t;
@@ -138,8 +152,17 @@ int	getopt(int argc, char **argv, char *opts)
 #endif
 
 #if	!HAVE_REALPATH
+/*
+ * Note: OS/2 EMX fixes slashes in _fullpath().
+ */
 char	*my_realpath(char *given, char *actual)
 {
-	return (_fullpath(actual, given, MAXPATHLEN));
+	char *result;
+	if (_fullpath(actual, given, MAXPATHLEN) == 0) {
+		result = actual;
+	} else {
+		result = given;
+	}
+	return result;
 }
 #endif

@@ -1,4 +1,4 @@
-/* $Id: conflict.h,v 6.2 1999/07/28 23:20:56 tom Exp $
+/* $Id: conflict.h,v 6.4 2004/03/27 11:32:52 tom Exp $
  *
  * Common/configurable definitions and types for 'conflict'.
  */
@@ -66,6 +66,10 @@
 # endif
 #endif
 
+#if defined(__EMX__) || defined(__UNIXOS2__)
+# define SYS_OS2_EMX 1		/* makefile.emx, or configure-script */
+#endif
+
 /* Some compilers (e.g., Watcom 10.0a) don't treat conditionals properly
  * for undefined tokens.
  */
@@ -99,6 +103,10 @@
 
 #ifndef SYS_OS2
 #define SYS_OS2 0
+#endif
+
+#ifndef SYS_OS2_EMX
+#define SYS_OS2_EMX 0
 #endif
 
 #ifndef SYS_WIN32
@@ -168,7 +176,7 @@
 #if HAVE_GETOPT_H
 #include <getopt.h>
 #else
-extern int getopt();
+extern int getopt(int, char *const*, const char *);
 extern int optind;
 extern char *optarg;
 #endif
@@ -177,15 +185,9 @@ extern char *optarg;
 #define getwd(buffer) getcwd(buffer, sizeof(buffer))
 #endif
 
-#ifdef lint
-#define TypeRealloc(type,p,n) (type *)((p)+(n))
-#define TypeAlloc(type,n)     (type *)(n)
-#define TypeAllocN(type,n)    (type *)(n)
-#else
 #define TypeRealloc(type,p,n) (type *)realloc(p,(n)*sizeof(type))
 #define TypeAlloc(type,n)     (type *)calloc(sizeof(type),n)
 #define TypeAllocN(type,n)    (type *)calloc(sizeof(type)+n,1)
-#endif
 
 #undef  SIZEOF
 #define SIZEOF(v) (sizeof(v)/sizeof(v[0]))
@@ -213,6 +215,9 @@ extern char *optarg;
 
 #if SYS_MSDOS || SYS_OS2 || SYS_WIN32
 # define PATHNAME_SEP '\\'
+# define PATHLIST_SEP ';'
+#elif SYS_OS2_EMX
+# define PATHNAME_SEP '/'
 # define PATHLIST_SEP ';'
 #else
 # define PATHNAME_SEP '/'
@@ -281,7 +286,7 @@ extern	char	*ftype (char *name);
 extern	void	blip (int c);
 
 /* MSDOS and OS/2 need a wrapper for 'chdir()' to also switch drives */
-#if SYS_MSDOS || SYS_OS2 || SYS_WIN32
+#if SYS_MSDOS || SYS_OS2 || SYS_OS2_EMX || SYS_WIN32
 extern	int	have_drive (char *name);
 extern	int	same_drive (char *a, char *b);
 extern	int	set_drive (char *name);

@@ -6,7 +6,7 @@
  * this copyright notice, and it must be included in any copy made.           *
  ******************************************************************************/
 #ifndef	NO_IDENT
-static const char Id[] = "$Header: /users/source/archives/conflict.vcs/RCS/conflict.c,v 6.4 2002/12/30 00:37:56 tom Exp $";
+static const char Id[] = "$Header: /users/source/archives/conflict.vcs/RCS/conflict.c,v 6.6 2004/03/27 12:53:26 tom Exp $";
 #endif
 
 /*
@@ -45,7 +45,7 @@ static int do_blips;
 static char *w_opt = "";	/* pads listing */
 static char *w_opt_text = "--------";
 
-#if SYS_MSDOS || SYS_OS2 || SYS_WIN32
+#if SYS_MSDOS || SYS_OS2 || SYS_WIN32 || SYS_OS2_EMX
 #define DOS_upper(s) strupr(s)
 #else
 #define DOS_upper(s) s
@@ -55,7 +55,7 @@ static char *w_opt_text = "--------";
 #define TYPES_PATH ".COM.EXE.BAT.PIF"
 #endif
 
-#if SYS_OS2
+#if SYS_OS2 || SYS_OS2_EMX
 #define TYPES_PATH ".EXE.CMD.bat.com.sys"
 #endif
 
@@ -97,7 +97,7 @@ node_found(INPATH * ip, unsigned n, type_t flags, struct stat *sb)
 
 #else
 static void
-node_found(INPATH * ip, int n, type_t flags)
+node_found(INPATH * ip, unsigned n, type_t flags)
 {
     NODEFLAGS(n) |= flags;
 }
@@ -371,7 +371,7 @@ ScanConflicts(char *path, unsigned inx, int argc, char **argv)
     struct stat sb;
     int j;
     unsigned k;
-#if SYS_MSDOS || SYS_OS2 || SYS_WIN32
+#if SYS_MSDOS || SYS_OS2 || SYS_WIN32 || SYS_OS2_EMX
     char save_wd[MAXPATHLEN];
 #endif
 
@@ -383,7 +383,7 @@ ScanConflicts(char *path, unsigned inx, int argc, char **argv)
      * MSDOS and OS/2 are a little more complicated, because each drive
      * has its own current directory.
      */
-#if SYS_MSDOS || SYS_OS2 || SYS_WIN32
+#if SYS_MSDOS || SYS_OS2 || SYS_WIN32 || SYS_OS2_EMX
     (void) strcpy(save_wd, dot);
     if (!strcmp(".", path)) {
 	path = dot;
@@ -430,7 +430,7 @@ ScanConflicts(char *path, unsigned inx, int argc, char **argv)
 	    if ((sb.st_mode & S_IFMT) != S_IFREG)
 		continue;
 
-#if SYS_UNIX || SYS_OS2
+#if SYS_UNIX || SYS_OS2 || SYS_OS2_EMX
 	    if (access(the_name, acc_mask) < 0)
 		continue;
 	    ok = 1;
@@ -472,7 +472,7 @@ ScanConflicts(char *path, unsigned inx, int argc, char **argv)
 	}
 	(void) closedir(dp);
     }
-#if SYS_MSDOS || SYS_OS2 || SYS_WIN32
+#if SYS_MSDOS || SYS_OS2 || SYS_WIN32 || SYS_OS2_EMX
     if (strcmp(dot, save_wd)) {
 	chdir(save_wd);
     }
@@ -649,7 +649,7 @@ main(int argc, char *argv[])
 	else
 	    failed(env_name);
 
-#if SYS_MSDOS || SYS_OS2 || SYS_WIN32
+#if SYS_MSDOS || SYS_OS2 || SYS_WIN32 || SYS_OS2_EMX
 	if (!strcmp(env_name, "PATH")) {
 	    /* look in current directory before looking in $PATH */
 	    s = malloc(strlen(pathlist) + 3);
@@ -667,7 +667,7 @@ main(int argc, char *argv[])
     /*
      * Reconstruct the type-list (if any) as an array to simplify scanning.
      */
-#if SYS_MSDOS || SYS_OS2 || SYS_WIN32
+#if SYS_MSDOS || SYS_OS2 || SYS_WIN32 || SYS_OS2_EMX
     if (type_list == 0) {
 	if (!strcmp(env_name, "PATH"))
 	    type_list = TYPES_PATH;
@@ -727,7 +727,12 @@ main(int argc, char *argv[])
 		}
 	    }
 	    if (!found) {
-		dirs[kk].name = MakeString(bfr);
+#if !USE_INODE
+		if (strcmp(bfr, "."))
+			dirs[kk].name = MakeString(dirs[kk].actual);
+		else
+#endif
+			dirs[kk].name = MakeString(bfr);
 		kk++;
 	    }
 	}
