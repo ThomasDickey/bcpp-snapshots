@@ -1,16 +1,18 @@
 #
 # makefile for 'conflict' on WIN32 using Microsoft Visual C++
 #
-# $Id: makefile.wnt,v 6.1 1999/07/28 23:11:52 tom Exp $
+# $Id: makefile.wnt,v 6.2 2004/03/27 20:45:39 tom Exp $
 #
 !include <ntwin32.mak>
 
-CFLAGS = $(cvars) $(cdebug) -nologo -G4 -W3 -I.
+CFLAGS = $(cvars) $(cdebug) -nologo -G4 -W3 -I. -Iwin32
 LDFLAGS = -nologo -pdb:none
+
+CFLAGS	= $(CFLAGS) -DRELEASE=\"t20040327\"
 
 NAME =	conflict
 OBJ = 	$(NAME).obj \
-	dirent.obj \
+	win32\dirent.obj \
 	msdos.obj \
 	txtalloc.obj
 
@@ -28,5 +30,5 @@ install:  $(NAME).exe
 	copy $(NAME).exe c:\com
 
 clean:
-	del $(NAME).exe
-	del *.obj
+	-del $(NAME).exe
+	-del /s/q *.obj

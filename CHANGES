@@ -1,6 +1,8 @@
-$Id: CHANGES,v 6.2 2002/12/30 00:39:43 tom Exp $
+$Id: CHANGES,v 6.4 2004/03/27 12:54:41 tom Exp $
 ------------------------------------------------------------------------------
 
+27 Mar 2004,	updated configure script, use AC_OBJEXT, AC_EXEEXT.
+		Fixes to build/work with OS/2 EMX.
 29 Dec 2002,	indent'd, updated configure script.  Add -V option.
 28 Jul 1999,	port to win32.  drop K&R compatibility.
 

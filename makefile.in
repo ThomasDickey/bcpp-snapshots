@@ -1,14 +1,14 @@
-# $Id: makefile.in,v 6.3 2002/12/30 00:45:09 tom Exp $
+# $Id: makefile.in,v 6.8 2004/03/28 00:53:18 tom Exp $
 # Makefile-template for 'conflict'
 
 THIS		= conflict
-RELEASE		= t20021229
-SYSTEM		= unix
+RELEASE		= t20040327
 
 #### Start of system configuration section. ####
 
-srcdir = @srcdir@
-VPATH  = @srcdir@
+SYSTEM		= @SYSTEM@
+srcdir		= @srcdir@
+VPATH  		= @srcdir@
 
 CC		= @CC@
 LINK		= $(CC)
@@ -27,7 +27,8 @@ bindir		= @bindir@
 mandir		= @mandir@/man1
 manext		= 1
 
-x		= @PROG_EXT@
+x		= @EXEEXT@
+o		= .@OBJEXT@
 
 #### End of system configuration section. ####
 
@@ -35,16 +36,17 @@ SHELL		= /bin/sh
 
 CPPFLAGS	= -I. -I$(srcdir) -DHAVE_CONFIG_H -DRELEASE=\"$(RELEASE)\"
 
-.c.o:
+.c$o:
 	$(CC) -c $(CPPFLAGS) $(CFLAGS) $<
 
 SRC =	CHANGES COPYING README \
 	$(THIS).c $(THIS).h $(THIS).1 \
 	txtalloc.c unix.c msdos.c os2.c \
-	config_h.in install.sh mkdirs.sh makefile.in configure.in \
+	aclocal.m4 config_h.in install-sh mkdirs.sh makefile.in configure.in \
+	config.guess config.sub \
 	run_test.sh
 
-OBJ = $(THIS).o $(SYSTEM).o txtalloc.o
+OBJ = $(THIS)$o $(SYSTEM)$o txtalloc$o
 
 DISTFILES = MANIFEST configure $(SRC)
 
@@ -68,7 +70,7 @@ uninstall:
 	rm -f $(bindir)/$(PROG) $(mandir)/$(THIS).$(manext)
 
 mostlyclean:
-	rm -f *.o core *~ *.BAK
+	rm -f *$o core *~ *.BAK
 
 clean: mostlyclean
 	rm -f $(PROG)
@@ -106,7 +108,7 @@ dist:	makefile $(DISTFILES)
 shar:	$(DISTFILES)
 	shar -a -m -M -L50 -n$(THIS) -oPart $(DISTFILES)
 
-$(THIS).o:	config.h
+$(THIS)$o:	config.h
 
 check: $(THIS)
 	sh ./run_test.sh	
