@@ -17,7 +17,7 @@
 // OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR   *
 // PERFORMANCE OF THIS SOFTWARE.                                               *
 //******************************************************************************
-// $Id: debug.cpp,v 1.11 1999/01/01 17:03:09 tom Exp $
+// $Id: debug.cpp,v 1.12 1999/08/10 23:04:32 tom Exp $
 // Debug/trace functions for BCPP
 
 #include <stdlib.h>
@@ -51,10 +51,10 @@ const char *traceDataType(DataTypes theType)
     return it;
 }
 
-void traceInput(int line, InputStruct *pIn)
+void traceInput(char *file, int line, InputStruct *pIn)
 {
-    TRACE(("@%d, %s%s (col:%d)\n",
-        line,
+    TRACE(("%s@%d, %s%s (col:%d)\n",
+        file, line,
         traceDataType(pIn->dataType),
         pIn->comWcode ? " comWcode" : "",
         pIn->offset))
@@ -62,10 +62,10 @@ void traceInput(int line, InputStruct *pIn)
     if (pIn->pState != 0) TRACE(("---- flag:%s\n", pIn->pState))
 }
 
-void traceOutput(int line, OutputStruct *pOut)
+void traceOutput(char *file, int line, OutputStruct *pOut)
 {
-    TRACE(("@%d, indent %d(%d), fill %d, OUT #%d:%s:%s:%s:\n",
-        line,
+    TRACE(("%s@%d, indent %d(%d), fill %d, OUT #%d:%s:%s:%s:\n",
+        file, line,
         pOut->indentSpace,
         pOut->indentHangs,
         pOut->filler,

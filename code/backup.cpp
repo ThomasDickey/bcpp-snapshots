@@ -17,7 +17,7 @@
 // OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR   *
 // PERFORMANCE OF THIS SOFTWARE.                                               *
 //******************************************************************************
-// $Id: backup.cpp,v 1.6 1999/01/05 15:50:16 tom Exp $
+// $Id: backup.cpp,v 1.7 1999/08/10 23:12:21 tom Exp $
 
 #include "bcpp.h"
 
@@ -60,7 +60,7 @@ int BackupFile (char*& oldFilename, char*& newFilename)
     const char* suffix = ".bac";
 
     newFilename        = oldFilename;
-    oldFilename        = new char[strlen(newFilename)+5];
+    oldFilename        = new char[strlen(newFilename)+6];
 
     if (oldFilename == NULL)
        return -1;

@@ -17,10 +17,13 @@
  * CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN        *
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.                   *
  ******************************************************************************/
-// $Id: bcpp.h,v 1.32 1999/01/04 20:37:58 tom Exp $
+// $Id: bcpp.h,v 1.33 1999/08/10 23:04:32 tom Exp $
 
 #ifndef _BCPP_HEADER
 #define _BCPP_HEADER
+
+#include <string.h>
+#include <sys/types.h>
 
 #include "config.h"
 #include "anyobj.h"            // Use ANYOBJECT base class
@@ -35,6 +38,15 @@
 #define TRACE(p) trace p;
 #else
 #define TRACE(p) /*nothing*/
+#endif
+
+#if defined(sun) && !defined(__SVR4)    // SunOS
+extern "C" {
+    extern char *strcat(char *, const char *);
+    extern char *strncpy(const char *, const char *, size_t);
+    extern char *strstr(const char *, const char *);
+    extern int strncmp(const char *, const char *, size_t);
+};
 #endif
 
 #ifdef __GNUC__
@@ -283,10 +295,10 @@ class IndentStruct : public ANYOBJECT
 extern void trace (const char *format, ...);
 #ifdef DEBUG
 extern const char *traceDataType(DataTypes theType);
-extern void traceInput(int line, InputStruct *pIn);
-extern void traceOutput(int line, OutputStruct *pOut);
-#define TRACE_INPUT(pOut)  traceInput(__LINE__, pOut);
-#define TRACE_OUTPUT(pOut) traceOutput(__LINE__, pOut);
+extern void traceInput(char *file, int line, InputStruct *pIn);
+extern void traceOutput(char *file, int line, OutputStruct *pOut);
+#define TRACE_INPUT(pOut)  traceInput(__FILE__, __LINE__, pOut);
+#define TRACE_OUTPUT(pOut) traceOutput(__FILE__, __LINE__, pOut);
 #else
 #define TRACE_INPUT(pOut)  /* nothing */
 #define TRACE_OUTPUT(pOut) /* nothing */
