@@ -14,8 +14,8 @@
 // Input, and output files are via the command line.
 //
 // If compiling under DOS, use Large memory model, any other
-// type of system (i.e Unix, Amiga), use default.
-// I have tryed to use all standard Unix functions for I/O to keep
+// type of system (i.e., Unix, Amiga), use default.
+// I have tried to use all standard Unix functions for I/O to keep
 // the Unix programmers happy.
 //
 // NOTE:
@@ -185,7 +185,7 @@ class InputStruct : public ANYOBJECT
 {
     public:
 
-    DataTypes dataType;       // i.e "/*" or "*/"                  (1)
+        DataTypes dataType;   // i.e "/*" or "*/"                  (1)
                               //     "//"                          (2)
                               //     Code (a = 5; , if (a == b) .. (3)
                               //     "{"                           (4)
@@ -193,12 +193,16 @@ class InputStruct : public ANYOBJECT
                               //     #define                       (6)
                               //     SPACES (nothing, blank line)  (7)
 
-
-    Boolean attrib;
+        Boolean comWcode;
                               //       -1 : True,  comment with code (for comment dataType)
                               //        0 : False, comment with no Code
 
-    char* pData;              // pointer to queue data !
+        char* pData;          // pointer to queue data !
+
+        inline InputStruct ()
+        {
+                comWcode = False;
+        }
 };
 
 #ifdef DEBUG
@@ -244,6 +248,7 @@ class OutputStruct : public ANYOBJECT
            }
 };
 
+enum indentAttr { noIndent=0, oneLine=1, multiLine=2 };
 
 // This structure is used to hold indent data on non-brace code.
 // This includes case statements, single line if's, while's, for statements...
@@ -252,8 +257,8 @@ class IndentStruct : public ANYOBJECT
     public:
            // attribute values ...
            // value 1 = indent code one position, until a ';' is found !
-           //       2 = end on close brace, and at a position
-           unsigned char attrib;
+           //       2 = end on close brace, and at a position "pos"
+           indentAttr    attrib;
            int           pos;
 
            // Indent double the amount for multiline single if, while ...
@@ -265,8 +270,8 @@ class IndentStruct : public ANYOBJECT
     // constructor
     inline IndentStruct (void)
     {
-        attrib = pos = 0;
-
+        attrib          = noIndent;
+        pos             = 0;
         singleIndentLen = 0; // number of spaces to indent !
         firstPass       = False;
     }
@@ -339,6 +344,32 @@ const char *MatchKeyword(const char *tst, int Icount)
 }
 
 #ifdef DEBUG
+static char *traceDataType(DataTypes theType)
+{
+    char *it;
+    switch (theType)
+    {
+        case CCom:   it = "CCom";   break;
+        case CppCom: it = "CppCom"; break;
+        case Code:   it = "Code";   break;
+        case OBrace: it = "OBrace"; break;
+        case CBrace: it = "CBrace"; break;
+        case PreP:   it = "PreP";   break;
+        default:
+        case ELine:  it = "ELine";  break;
+    }
+    return it;
+}
+
+static void traceInput(int line, InputStruct *pIn)
+{
+    TRACE((stderr, "@%d, %s%s:%s\n",
+        line,
+        traceDataType(pIn->dataType),
+        pIn->comWcode ? " comWcode" : "",
+        pIn->pData))
+}
+
 static void traceOutput(int line, OutputStruct *pOut)
 {
     TRACE((stderr, "@%d, indent %d, fill %d, #%d:%s:%s:%s:\n",
@@ -353,8 +384,10 @@ static void traceOutput(int line, OutputStruct *pOut)
     if (pOut->pBrace)   TRACE((stderr, "---- brace:%s\n", pOut->pBrace))
     if (pOut->pComment) TRACE((stderr, "-- comment:%s\n", pOut->pComment))
 }
+#define TRACE_INPUT(pOut)  traceInput(__LINE__, pOut);
 #define TRACE_OUTPUT(pOut) traceOutput(__LINE__, pOut);
 #else
+#define TRACE_INPUT(pOut)  /* nothing */
 #define TRACE_OUTPUT(pOut) /* nothing */
 #endif
 
@@ -460,7 +493,7 @@ InputStruct* ExtractCode (char*    pLineData,
                 StripSpacingLeftRight (pNewCode, pLineState);
             pItem -> pData    = pNewCode;
             pItem -> dataType = dataType;
-            pItem -> attrib   = False;     // no applicable
+            pItem -> comWcode = False;     // no applicable
     }
     else
         delete pNewCode;
@@ -614,8 +647,9 @@ int DecodeLine (char* pLineData, char *pLineState, QueueList* pInputQueue)
 
             pItem -> pData    = pNewComment;
             pItem -> dataType = CCom;      // comment
-            pItem -> attrib   = False;     // comment without code, even if it has some !
+            pItem -> comWcode = False;     // comment without code, even if it has some !
 
+            TRACE_INPUT(pItem)
             pInputQueue->putLast (pItem);
         }
         else //##### Place output as comment without code (C comment terminator not found)
@@ -626,6 +660,7 @@ int DecodeLine (char* pLineData, char *pLineState, QueueList* pInputQueue)
             if (pTemp == NULL)
                 return DecodeLineCleanUp (pInputQueue);
 
+            TRACE_INPUT(pTemp)
             pInputQueue->putLast (pTemp);
 
             return 0;
@@ -667,7 +702,7 @@ int DecodeLine (char* pLineData, char *pLineState, QueueList* pInputQueue)
 
             pItem -> pData    = pNewComment;
             pItem -> dataType = CCom;       // Comment
-            pItem -> attrib   = False;
+            pItem -> comWcode = False;
             // make multi-line C style comments totally separate
             // from code to avoid some likely errors occurring if they
             // are shifted due to being over written by code.
@@ -682,6 +717,7 @@ int DecodeLine (char* pLineData, char *pLineState, QueueList* pInputQueue)
                 return -1;
             }
 
+            TRACE_INPUT(pItem)
             pInputQueue->putLast (pItem);
 
             return 0; // no need to continue processing
@@ -705,9 +741,10 @@ int DecodeLine (char* pLineData, char *pLineState, QueueList* pInputQueue)
 
             pItem -> pData    = pNewComment;
             pItem -> dataType = CCom;                        // Comment
-            pItem -> attrib   = TestLineHasCode (pLineData); // Comment without code ?
-            TRACE((stderr, "@%d: set attrib to %d\n", __LINE__, pItem->attrib))
+            pItem -> comWcode = TestLineHasCode (pLineData); // Comment without code ?
+            TRACE((stderr, "@%d: set attrib to %d\n", __LINE__, pItem->comWcode))
 
+            TRACE_INPUT(pItem)
             pInputQueue->putLast (pItem);
 
         } //##### else
@@ -738,9 +775,10 @@ int DecodeLine (char* pLineData, char *pLineState, QueueList* pInputQueue)
 
         pItem -> pData    = pNewComment;
         pItem -> dataType = CppCom;                      // Comment
-        pItem -> attrib   = TestLineHasCode (pLineData); // Comment without code ?
-        TRACE((stderr, "@%d: set attrib to %d\n", __LINE__, pItem->attrib))
+        pItem -> comWcode = TestLineHasCode (pLineData); // Comment without code ?
+        TRACE((stderr, "@%d: set comWcode to %d\n", __LINE__, pItem->comWcode))
 
+        TRACE_INPUT(pItem)
         pInputQueue->putLast (pItem);
     }
 
@@ -759,6 +797,7 @@ int DecodeLine (char* pLineData, char *pLineState, QueueList* pInputQueue)
 
         pItem -> pData    = NewString(pLineData);
         pItem -> dataType = PreP;                            // preprocessor
+        TRACE_INPUT(pItem)
         pInputQueue->putLast (pItem);
 
         return 0; // no worries !
@@ -793,8 +832,15 @@ int DecodeLine (char* pLineData, char *pLineState, QueueList* pInputQueue)
         //store code as enum type if follow-up condition is true
         EChar++;
 
-        if (pLineData[EChar] == SEMICOLON) // advance another char
+        switch (pLineData[EChar]) // advance another char?
+        {
+            case SEMICOLON:
+            case ',':
                 EChar++;
+                break;
+            default:
+                break;
+        }
 
         char BackUp = pLineData[EChar];
         pLineData[EChar] = NULLC;
@@ -803,6 +849,7 @@ int DecodeLine (char* pLineData, char *pLineState, QueueList* pInputQueue)
         if (pTemp == NULL)
             return DecodeLineCleanUp (pInputQueue);
 
+        TRACE_INPUT(pTemp)
         pInputQueue->putLast (pTemp);
 
         pLineData[EChar]   = BackUp;
@@ -849,6 +896,7 @@ int DecodeLine (char* pLineData, char *pLineState, QueueList* pInputQueue)
            if (pLeadCode == NULL)
                 return DecodeLineCleanUp (pInputQueue);
 
+            TRACE_INPUT(pLeadCode)
            pInputQueue->putLast (pLeadCode);
            delete pTemp;
         }
@@ -936,6 +984,7 @@ int DecodeLine (char* pLineData, char *pLineState, QueueList* pInputQueue)
             if (pTemp == NULL)
                 return DecodeLineCleanUp (pInputQueue);
 
+            TRACE_INPUT(pTemp)
             pInputQueue->putLast (pTemp); // store Item
 
         } while ((TestLineHasCode (pLineData) != False) && (pTemp != NULL));
@@ -953,19 +1002,21 @@ int DecodeLine (char* pLineData, char *pLineState, QueueList* pInputQueue)
             if (pTemp == NULL)
                 return DecodeLineCleanUp (pInputQueue);
 
+            TRACE_INPUT(pTemp)
             pInputQueue->putLast (pTemp);
         }
         //##### If line has more than spacing/tabs then code
         else if (TestLineHasCode (pLineData) != False)
-             {
-                  // implement blank space
-                  InputStruct* pTemp = ExtractCode (pLineData, pLineState);
+        {
+            // implement blank space
+            InputStruct* pTemp = ExtractCode (pLineData, pLineState);
 
-                  if (pTemp == NULL)
-                      return DecodeLineCleanUp (pInputQueue);
+            if (pTemp == NULL)
+                return DecodeLineCleanUp (pInputQueue);
 
-                  pInputQueue->putLast (pTemp);
-             }
+            TRACE_INPUT(pTemp)
+            pInputQueue->putLast (pTemp);
+        }
     }
     return 0;  // no worries
 }
@@ -1040,8 +1091,52 @@ static bool inputIsCode(InputStruct *pItem)
 }
 
 // ----------------------------------------------------------------------------
+// Determine the type of preprocessor-control:
+//  0 = unknown (leave it alone!)
+//  1 = if-nesting
+//  2 = if-unnesting
+//  3 = other
+int typeOfPreP(InputStruct *pItem)
+{
+    static const struct {
+        char *keyword;
+        int code;
+    } table[] = {
+        { "if",        1 },
+        { "ifdef",     1 },
+        { "ifndef",    1 },
+        { "endif",     2 },
+        { "elif",      3 },
+        { "undef",     3 },
+        { "define",    3 },
+        { "include",   3 }
+    };
+
+    const char *s = pItem -> pData;
+
+    // FIXME: we should be using the "state", just in case there's quotes
+    if (*s == POUNDC)
+    {
+        s = SkipBlanks(s+1);
+        for (size_t i = 0; i < sizeof(table)/sizeof(table[0]); i++) {
+            if (CompareKeyword(s, table[i].keyword))
+                return table[i].code;
+        }
+    }
+    return 0;
+}
+
+// Returns the combination of brace-indent and preprocessor-indent
+int combinedIndent(int indentStack, int prepStack, Config userS)
+{
+    if (prepStack > userS.tabSpaceSize)
+        return indentStack + prepStack - userS.tabSpaceSize;
+    return indentStack;
+}
+
+// ----------------------------------------------------------------------------
 // Function takes a QueueList object that contains InputStructure items, and
-// uses these items to reconstuct a compressed version of a output line of
+// uses these items to reconstruct a compressed version of a output line of
 // code, comment, or both.
 //
 // Parameters:
@@ -1056,7 +1151,7 @@ static bool inputIsCode(InputStruct *pItem)
 //         0 = No problems
 //        -1 = Memory allocation failure
 //        -2 = Line construction error, unexpected type found.
-int ConstructLine (int& indentStack, QueueList* pInputQueue, QueueList* pOutputQueue, Config userS)
+int ConstructLine (Boolean &indentPreP, int &prepStack, int& indentStack, QueueList* pInputQueue, QueueList* pOutputQueue, Config userS)
 {
     InputStruct* pTestType = NULL;
     char *pendingComment = NULL;
@@ -1070,6 +1165,20 @@ int ConstructLine (int& indentStack, QueueList* pInputQueue, QueueList* pOutputQ
         if (pOut == NULL)
             return -1;
 
+        // Special logic to make comments for MCCONFIG look "correct"
+        if (pTestType -> dataType == CppCom)
+        {
+            const char *tst = SkipBlanks(pTestType -> pData + 2);
+            static const char *keys[] = {
+                "MCCONFIG{{",
+                "MCCONFIG}}"
+            };
+            if (CompareKeyword(tst, keys[0]))
+                indentPreP = True;
+            if (CompareKeyword(tst, keys[1]))
+                indentPreP = False;
+        }
+
         switch (pTestType -> dataType)
         {
             //@@@@@@@ Processing of C type comments /* comment */
@@ -1077,7 +1186,7 @@ int ConstructLine (int& indentStack, QueueList* pInputQueue, QueueList* pOutputQ
             //@@@@@@@ Processing of C++ type comments // comment
             case (CppCom):
             {
-                if (pTestType -> attrib == True)  //##### If true then comment has code
+                if (pTestType -> comWcode == True)  //##### If true then comment has code
                 {
                     InputStruct *pNextItem = (InputStruct*) pInputQueue -> peek(1);
 
@@ -1090,12 +1199,12 @@ int ConstructLine (int& indentStack, QueueList* pInputQueue, QueueList* pOutputQ
                     {
                         pOut -> filler = userS.posOfCommentsWC;
                         pOut -> pComment = pTestType -> pData;
-                        TRACE((stderr, "Split Comment = %s:%d at %d\n", pOut->pComment, pOut->thisToken, __LINE__))
+                        TRACE((stderr, "@%d, Split Comment = %s:%d\n", __LINE__, pOut->pComment, pOut->thisToken))
                     }
                     else
                     {
                         pendingComment = pTestType -> pData;
-                        TRACE((stderr, "Pending Comment = %s:%d at %d\n", pendingComment, pOut->thisToken, __LINE__))
+                        TRACE((stderr, "@%d, Pending Comment = %s:%d\n", __LINE__, pendingComment, pOut->thisToken))
                         delete pTestType;
                         delete pOut;
                         continue;
@@ -1105,7 +1214,7 @@ int ConstructLine (int& indentStack, QueueList* pInputQueue, QueueList* pOutputQ
                 {
                     // JZAS Start
                     if (userS.leaveCommentsNC != False)
-                        pOut -> indentSpace   = indentStack;
+                        pOut -> indentSpace   = combinedIndent(indentStack, prepStack, userS);
                     else
                         pOut -> indentSpace   = userS.posOfCommentsNC;
                     // JZAS End
@@ -1113,7 +1222,7 @@ int ConstructLine (int& indentStack, QueueList* pInputQueue, QueueList* pOutputQ
                     pOut -> pComment          = pTestType -> pData;
                     dontHangComment(pTestType, pOut, pOutputQueue);
 
-                    TRACE((stderr, "Set Comment = %s:%d indent %d at %d\n", pOut->pComment, pOut->thisToken, pOut->indentSpace, __LINE__))
+                    TRACE((stderr, "@%d, Set Comment = %s:%d indent %d\n", __LINE__, pOut->pComment, pOut->thisToken, pOut->indentSpace))
 
                 }// else a comment without code !
                 break;
@@ -1123,9 +1232,9 @@ int ConstructLine (int& indentStack, QueueList* pInputQueue, QueueList* pOutputQ
             // @@@@@@ Processing of code (i.e k = 1; enum show {one, two};)
             case (Code):
             {
-                pOut -> indentSpace     = indentStack;
+                pOut -> indentSpace     = combinedIndent(indentStack, prepStack, userS);
                 pOut -> pCode           = pTestType -> pData;
-                TRACE((stderr, "Set Code   = %s:%d indent %d at %d\n", pOut->pCode, pOut->thisToken, pOut->indentSpace, __LINE__))
+                TRACE((stderr, "@%d, Set Code   = %s:%d indent %d\n", __LINE__, pOut->pCode, pOut->thisToken, pOut->indentSpace))
 
                 break;
             }
@@ -1136,12 +1245,16 @@ int ConstructLine (int& indentStack, QueueList* pInputQueue, QueueList* pOutputQ
             case (CBrace):
             {
                 // indent back before adding brace, some error checking
-                if ((pTestType -> dataType == CBrace) && (indentStack > 0))
+                if (pTestType -> dataType == CBrace)
+                {
                     indentStack -= userS.tabSpaceSize;
+                    if (indentStack < 0)
+                        indentStack = 0;
+                }
 
-                pOut -> indentSpace     = indentStack;
+                pOut -> indentSpace     = combinedIndent(indentStack, prepStack, userS);
                 pOut -> pBrace          = pTestType -> pData;
-                TRACE((stderr, "Set pBrace = %s:%d indent %d at %d\n", pOut->pBrace, pOut->thisToken, pOut->indentSpace, __LINE__))
+                TRACE((stderr, "@%d, Set pBrace = %s:%d indent %d\n", __LINE__, pOut->pBrace, pOut->thisToken, pOut->indentSpace))
 
                 // ##### advance to the right !
                 if (pTestType -> dataType == OBrace)
@@ -1161,7 +1274,33 @@ int ConstructLine (int& indentStack, QueueList* pInputQueue, QueueList* pOutputQ
             case (PreP):
             {
                 pOut -> pCode       = pTestType -> pData;
-                pOut -> indentSpace = 0;
+                if (userS.indentPreP) {
+                    switch (typeOfPreP(pTestType))
+                    {
+                        case 0:
+                            pOut -> indentSpace = 0;
+                            break;
+                        case 1:
+                            pOut -> indentSpace = indentStack + prepStack;
+                            if (indentPreP != False)
+                                prepStack += userS.tabSpaceSize;
+                            break;
+                        case 2:
+                            if (indentPreP != False)
+                            {
+                                prepStack -= userS.tabSpaceSize;
+                                if (prepStack < 0)
+                                    prepStack = 0;
+                            }
+                            pOut -> indentSpace = indentStack + prepStack;
+                            break;
+                        case 3:
+                            pOut -> indentSpace = indentStack + prepStack;
+                            break;
+                    }
+                }
+                else
+                    pOut -> indentSpace = 0;
                 break;
             }
 
@@ -1178,6 +1317,9 @@ int ConstructLine (int& indentStack, QueueList* pInputQueue, QueueList* pOutputQ
         delete pTestType; // ##### Remove structure from memory, not its data
                           // ##### (i.e., char* pData), this is stored
                           // ##### in the output queue.
+
+        if (indentStack < 0)
+            indentStack = 0;
 
     } // while there are items to construct !
 
@@ -1197,7 +1339,7 @@ void resetSingleIndent(StackList* pIMode)
         TRACE((stderr, "...reset single-indent (%d)\n", pIndentItem->singleIndentLen))
         pIndentItem->singleIndentLen = 0;
         pIndentItem->firstPass = False;
-        pIndentItem->attrib = 0;
+        pIndentItem->attrib = noIndent;
     }
 }
 
@@ -1337,8 +1479,11 @@ QueueList* IndentNonBraceCode (QueueList* pLines, StackList* pIMode, Config& use
         TRACE((stderr, "#%d, attrib=%d\n", pAlterLine->thisToken, pIndentItem->attrib))
         switch (pIndentItem -> attrib)
         {
+            case (noIndent):
+                break;
+
             // single indent
-            case (1):
+            case (oneLine):
             {
                 int indentAmount;
 
@@ -1359,12 +1504,12 @@ QueueList* IndentNonBraceCode (QueueList* pLines, StackList* pIMode, Config& use
 
                 // Single line indentation calculation
                 pAlterLine -> indentSpace += indentAmount;
-                TRACE((stderr, "total indent %d (%d)\n", pAlterLine->indentSpace, indentAmount))
+                TRACE((stderr, "@%d, total indent %d (%d)\n", __LINE__, pAlterLine->indentSpace, indentAmount))
                 break;
             }
 
             // indent of a case statement !
-            case (2):
+            case (multiLine):
             {
                 // determine how many case like items are stored within
                 // list to determine how much to indent !
@@ -1623,7 +1768,7 @@ QueueList* IndentNonBraces (StackList* pIMode, QueueList* pLines, Config userS)
             {
                 pTestCode = ((OutputStruct*) pLines -> peek (1)) -> pCode;
 
-                pIndent -> attrib = 1; // single indent !
+                pIndent -> attrib = oneLine; // single indent !
 
                 // determine how much to indent the next line of code !
                 TRACE((stderr, "#%d: change single-indent from %d\n", ((OutputStruct *)pLines->peek(1))->thisToken, pIndent->singleIndentLen))
@@ -1640,7 +1785,7 @@ QueueList* IndentNonBraces (StackList* pIMode, QueueList* pLines, Config userS)
             }
             else // it's a case statement !
             {
-                pIndent -> attrib = 2; // multiple indent !
+                pIndent -> attrib = multiLine; // multiple indent !
                 pIndent -> pos    = (((OutputStruct*) pLines -> peek (1)) -> indentSpace) - userS.tabSpaceSize;
                 TRACE((stderr, "#%d: set multi-indent\n", ((OutputStruct *)pLines->peek(1))->thisToken))
             }
@@ -1662,7 +1807,7 @@ QueueList* IndentNonBraces (StackList* pIMode, QueueList* pLines, Config userS)
             {
                 pThrowOut = (IndentStruct*) pIMode -> pop();
 
-                if (pThrowOut -> attrib >= 2)
+                if (pThrowOut -> attrib == multiLine)
                 {
                     pIMode -> push (pThrowOut);
                     break;
@@ -2153,6 +2298,8 @@ int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
     CharState           curState     = Blank;
     char*               lineState    = NULL;
     Boolean             codeOnLine   = False;
+    Boolean             indentPreP   = False;
+    int                 prepStack    = 0;
 
     // Check memory allocated !
     if (((pOutputQueue == NULL) || (pIMode == NULL)) || (pInputQueue == NULL))
@@ -2213,7 +2360,7 @@ int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
 
             if (DecodeLine (pData, lineState, pInputQueue) == 0) // if there are input items to process
             {
-                    int errorCode = ConstructLine (indentStack, pInputQueue, pOutputQueue, userS);
+                    int errorCode = ConstructLine (indentPreP, prepStack, indentStack, pInputQueue, pOutputQueue, userS);
 
                     switch (errorCode)
                     {
