@@ -434,7 +434,7 @@ void ExpandTabs (char* &pString,
 // Return Values:
 // char*     : Returns a pointer to the memory/string that was allocated
 //
-char* TabSpacing (int mode, int len, int spaceIndent)
+char* TabSpacing (int mode, int col, int len, int spaceIndent)
 {
     char* pOutTab = NULL;
     char* pOutSpc = NULL;
@@ -445,9 +445,13 @@ char* TabSpacing (int mode, int len, int spaceIndent)
 
         // bypass exception error
         if (spaceIndent > 0)
-           numOfTabs = len / spaceIndent;
+        {
+           numOfTabs = ((len+col) / spaceIndent) - (col / spaceIndent);
+           if (len != 0)
+               len = (len + col) % spaceIndent;
+        }
 
-        pOutTab = new char[numOfTabs+1];
+        pOutTab = new char[numOfTabs + 1];
         if (pOutTab != NULL)
         {
             for (int fillTabs = 0; fillTabs < numOfTabs; fillTabs++)

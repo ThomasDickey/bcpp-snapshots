@@ -1073,6 +1073,7 @@ int ConstructLine (
                     {
                         pendingComment = pTestType -> pData;
                         TRACE((stderr, "@%d, Pending Comment = %s:%d\n", __LINE__, pendingComment, pOut->thisToken))
+                        delete pTestType -> pState;
                         delete pTestType;
                         delete pOut;
                         continue;
@@ -1082,7 +1083,15 @@ int ConstructLine (
                 {
                     // JZAS Start
                     if (userS.leaveCommentsNC != False)
+                    {
                         pOut -> indentSpace   = combinedIndent(indentStack, prepStack, userS);
+                        if ((pOut -> offset >= userS.posOfCommentsWC)
+                         && (pOut -> indentSpace < userS.posOfCommentsWC))
+                        {
+                            pOut -> indentSpace = 0;
+                            pOut -> filler = userS.posOfCommentsWC;
+                        }
+                    }
                     else
                         pOut -> indentSpace   = userS.posOfCommentsNC;
                     // JZAS End
@@ -2053,12 +2062,23 @@ QueueList* OutputToOutFile (FILE* pOutFile, QueueList* pLines, StackList* pIMode
          || !emptyString(pOut -> pBrace)
          || !emptyString(pOut -> pComment))
         {
-            int nn = (pOut -> pCode == 0 && pOut -> pBrace == 0) ? fillMode : 2;
             int leading  = pOut -> indentSpace + (pOut -> indentHangs * userS.tabSpaceSize); // FIXME: indentHangs should use separate param
+            int mark = 0;
             char *notes  = pOut -> pComment;
 
+            // compute the end-column of the code before filler, to use in
+            // adjusting tab conversion.
+            if (notes != 0)
+            {
+                mark = leading;
+                if (pOut -> pCode != 0)
+                    mark += strlen(pOut -> pCode);
+                if (pOut -> pBrace != 0)
+                    mark += strlen(pOut -> pBrace);
+            }
+
             // convert leading whitespace in a comment back to tabs
-            if (nn & 1 && notes != NULL && *notes == SPACE)
+            if (fillMode & 1 && notes != NULL && *notes == SPACE)
             {
                 while (*notes == SPACE)
                 {
@@ -2074,8 +2094,8 @@ QueueList* OutputToOutFile (FILE* pOutFile, QueueList* pLines, StackList* pIMode
                 if (pOut -> filler > leading)
                     leading = 0;
             }
-            pIndentation = TabSpacing (fillMode,  leading, userS.tabSpaceSize);
-            pFiller      = TabSpacing (nn, pOut -> filler, userS.tabSpaceSize);
+            pIndentation = TabSpacing (fillMode,  0, leading, userS.tabSpaceSize);
+            pFiller      = TabSpacing (fillMode, mark, pOut -> filler, userS.tabSpaceSize);
 
             if (pendingBlank != 0)
             {
