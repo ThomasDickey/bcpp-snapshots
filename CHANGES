@@ -1,3 +1,9 @@
+revision 7.4
+	1997/10/5
+		change copyright terms to allow commerical distribution.
+
+		add -b option, to display blocklevel statistics.
+
 revision 7.3
 	1997/4/25
 		correct state-parsing of "/*<LF>", supplied test.
