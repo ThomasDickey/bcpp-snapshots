@@ -8,7 +8,8 @@
 #include "cmdline.h"        // StrUpr()
 
 // skip to the beginning of the next word, inclusive of the starting position.
-static int NextWord(int start, OutputStruct *pOut, int& level)
+int
+SqlStruct::NextWord(int start, OutputStruct *pOut)
 {
     int n = start;
     bool reset = False;
@@ -28,12 +29,22 @@ static int NextWord(int start, OutputStruct *pOut, int& level)
     // have matched.  Punctuation resets it, since the SQL-keywords don't
     // bypass normal C/C++ syntax.
     if (reset)
-        level = 0;
+    {
+        matched[level = 0] = NULLC;
+        if (state == 3
+         && pOut -> pCFlag[n-1] == Normal
+         && pOut -> pCode[n-1] == SEMICOLON)
+        {
+            //TRACE((stderr, "FIXME2:%s\n", pOut->pCode + n - 1))
+            state = 0;
+        }
+    }
 
     return n;
 }
 
-static int SkipWord(int start, OutputStruct *pOut)
+int
+SqlStruct::SkipWord(int start, OutputStruct *pOut)
 {
     int n = start;
 
@@ -46,7 +57,8 @@ static int SkipWord(int start, OutputStruct *pOut)
 }
 
 // return true if we've found a keyword which shouldn't be indented
-static bool SqlVerb(const char *code)
+bool
+SqlStruct::SqlVerb(const char *code)
 {
     if (!emptyString(code))
     {
@@ -172,11 +184,9 @@ static bool SqlVerb(const char *code)
     return False;
 }
 
-void IndentSQL(OutputStruct *pOut, int& sql_state)
+void
+SqlStruct::IndentSQL(OutputStruct *pOut)
 {
-    static int level;
-    static char matched[80];
-
     // (Yes, lex/yacc would be more powerful ;-)
     const struct {
         char *name;
@@ -201,7 +211,7 @@ void IndentSQL(OutputStruct *pOut, int& sql_state)
         { "E",      0 },        // end statement
     };
 
-    int old_state = sql_state;
+    int old_state = state;
     char* pUprString = NULL;
 
     // First, look for SQL keywords to see when we've entered a block or
@@ -218,14 +228,17 @@ void IndentSQL(OutputStruct *pOut, int& sql_state)
         TRACE((stderr, "HERE:%s\n", pUprString))
         TRACE((stderr, "FLAG:%s\n", pOut->pCFlag))
 
-        for (int n = NextWord(0, pOut, level);
+        for (int n = NextWord(0, pOut);
             pOut -> pCode[n] != NULLC;
-                n = NextWord(n, pOut, level))
+                n = NextWord(n, pOut))
         {
+            bool found = False;
+
             for (size_t m = 0; m < TABLESIZE(state_keys); m++)
             {
                 if (CompareKeyword(pUprString+n, state_keys[m].name))
                 {
+                    found = True;
                     matched[level++] = state_keys[m].code;
                     matched[level] = NULLC;
                     n += strlen(state_keys[m].name); // fix for END-EXEC
@@ -233,7 +246,7 @@ void IndentSQL(OutputStruct *pOut, int& sql_state)
                     {
                         if (!strcmp(state_strings[j].text, matched))
                         {
-                            sql_state = state_strings[j].code;
+                            state = state_strings[j].code;
                             matched[level = 0] = NULLC;
                             break;
                         }
@@ -241,7 +254,18 @@ void IndentSQL(OutputStruct *pOut, int& sql_state)
                     break;
                 }
             }
-            TRACE((stderr, "TEST:%d:%s:%s\n", level, matched, pUprString+n))
+            if (!found)
+            {
+                if (state == 0
+                 && level >= 2
+                 && !strncmp(matched, "+S", 2))
+                {
+                    state = 3;
+                    //TRACE((stderr, "FIXME:%s\n", pOut->pCode + n))
+                }
+                matched[level = 0] = NULLC;
+            }
+            TRACE((stderr, "TEST:%d:%d:%s:%s\n", state, level, matched, pUprString+n))
             n = SkipWord(n, pOut);
             if (pOut -> pCode[n] == NULLC)
             {
@@ -250,14 +274,26 @@ void IndentSQL(OutputStruct *pOut, int& sql_state)
         }
     }
 
-    if (sql_state != 0
-     && old_state != 0
-     && pOut -> pType != PreP)
+    if (pOut -> pType != PreP)
     {
-        pOut -> indentHangs = 1;
-        if (sql_state == 2 && !SqlVerb(pUprString))
-            pOut -> indentHangs = 2;
+        if (state != 0
+         && old_state != 0)
+        {
+            pOut -> indentHangs = 1;
+            if ((state == 2 || state == 3) && !SqlVerb(pUprString))
+                pOut -> indentHangs = 2;
+            //TRACE((stderr, "FIXME-HANG:%d\n", pOut -> indentHangs))
+        }
+        else
+        if (state == 0
+         && old_state == 3)
+        {
+            pOut -> indentHangs = 1;
+            if (!SqlVerb(pUprString))
+                pOut -> indentHangs = 2;
+            //TRACE((stderr, "FIXME-HANG2:%d\n", pOut -> indentHangs))
+        }
     }
-    old_state = sql_state;
+
     delete pUprString;
 }

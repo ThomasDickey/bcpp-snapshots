@@ -193,6 +193,27 @@ class HangStruct : public ANYOBJECT
 };
 
 // ----------------------------------------------------------------------------
+class SqlStruct : public ANYOBJECT
+{
+        int state;
+        int level;
+        char matched[80];
+
+    public:
+        SqlStruct(void)
+        {
+            state = 0;
+            matched[level = 0] = 0;
+        }
+        void IndentSQL(OutputStruct *pOut);
+
+    private:
+        int NextWord(int start, OutputStruct *pOut);
+        int SkipWord(int start, OutputStruct *pOut);
+        bool SqlVerb(const char *code);
+};
+
+// ----------------------------------------------------------------------------
 // This structure is used to hold indent data on non-brace code.
 // This includes case statements, single line if's, while's, for statements...
 class IndentStruct : public ANYOBJECT
