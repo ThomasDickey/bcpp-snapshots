@@ -12,16 +12,11 @@
 
 enum Boolean     {False = 0, True = -1};
 
-enum ConfigWords {ANYT = 0, FSPC, UTAB, ISPC, IPRO, ISQL,
-                  NAQTOOCT, COMWC, COMNC, LCNC,
-                  LGRAPHC, ASCIIO, PBNLINE, PROGO, QBUF, BUF,
-                  EQUAL, YES, ON, NO, OFF};
-
 // Commonly-used characters that are awkward to represent
 enum ConfigChars {NULLC = '\0',
-                  TAB = 9,
-                  LF = 10,
-                  CR = 13,
+                  TAB = '\t',
+                  LF = '\n',
+                  CR = '\r',
                   SPACE = ' ',
                   SEMICOLON = ';',
                   POUNDC = '#',
@@ -67,72 +62,6 @@ struct Config
 char* ReadLine (FILE *pInFile, int& EndOfFile);
 
 
-// @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\
-// Functions finds keywords within a line of data.
-//
-// Parameters:
-// Type :
-//        The parameter is used to define the type of keyword to find within
-//        a configuration line.
-//
-//        See ConfigWords enum for values, Use ANYT, or a value of 0 to search
-//        for any valid keywords within the line.
-//
-// pConfigLine :
-//        This parameter is a pointer to a string that contains the data that
-//        is going to be searched.
-//
-// Return Values:
-//
-// Type : Returns the keyword value expected, or keyword value found if
-//        searching for any.
-//
-// Char*: Returns a pointer in the string to the next starting location
-//        AFTER the keyword found. Or returns NULL if no keyword found!
-//
-char* FindConfigWords (char* pConfigLine, ConfigWords& type);
-
-
-// @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-// This function is used to generate a generic error message.
-//
-// Parameters:
-// LineNo       : Line number where the error occurred
-// errorCode    : Error type to output to the user
-// errorCount   : This variable is increment when this function is used
-// pMessage     : Use by programmer to add additional information about the error
-//
-//
-// Return Values:
-// errorCount   : This variable is used to show how many errors have occurred!
-//
-void ErrorMessage (int lineNo, int errorCode, int& errorCount, const char* pMessage = NULL);
-
-
-// @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-// ConfigAssignment function is used to assigned Boolean, or unsigned integer
-// values from 0 - 500 to variables that are passed to it.
-//
-// Parameters:
-// type       : This variable defines the keyword next to expect within config line.
-// assignType : The variable is used to define what type of assignment to use,
-//              (i.e 1 = Boolean, 2 = Integer)
-// errorCount : Variable used to define how many error have occurred. If any errors
-//              encountered within the function, then this var will be incremented.
-// PosInLine  : Defines a pointer to the starting location to read in data for
-//              assignment from config data line (string).
-// variable   : This defines the variables that's going to be altered, be boolean, or
-//              integer.
-//
-// Return Values:
-// errorCount : If any error occur within variable assignment, the a error
-//              message is displayed, and this variable is incremented.
-// variable   : If no errors have occurred, then this variable will contain the value
-//              that was set by the user !
-//
-void ConfigAssignment (ConfigWords type, int assignType, int& errorCount, int& configError, char* pPosInLine, int& variable);
-
-
 // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 // This function is used to load the users configuration from a file.
 //
@@ -147,7 +76,18 @@ void ConfigAssignment (ConfigWords type, int assignType, int& errorCount, int& c
 // userSettings : This variable is altered to the user settings read from the
 //                config file.
 //
-int SetConfig (FILE* pConfigFile, Config& userSettings);
+extern int SetConfig (FILE* pConfigFile, Config& userSettings);
 
+// @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+// This function is used to show the users configuration
+//
+// Parameters:
+// userSettings : Config structure that contains the user settings.
+//
+// Return Values:
+// int          : Returns the number of errors encountered when reading the
+//                configuration file.
+//
+extern int ShowConfig(Config& userSettings);
 
 #endif

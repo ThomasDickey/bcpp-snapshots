@@ -2,7 +2,7 @@
 // -----------------------------------------
 //
 // Program was written by Steven De Toni 1994 (CBC, ACBC).
-// Modified/revised by Thomas E. Dickey <dickey@clark.net> 1996.
+// Modified/revised by Thomas E. Dickey <dickey@clark.net> 1996, 1999.
 //
 // This program attempts to alter C, C++ code so that it fits to a
 // format that the user wants.
@@ -158,8 +158,6 @@
 #include <ctype.h>             // character-types
 
 #include "cmdline.h"           // ProcessCommandLine()
-#include "config.h"            // SetConfig()
-
 #include "bcpp.h"
 
 // ----------------------------------------------------------------------------
@@ -308,8 +306,7 @@ static bool isContinuation(size_t &len, char *pData, char *pState)
 {
     len = strlen(pState);
     if (len != 0
-     && pData[--len] == ESCAPE
-     && pState[len] == Normal)
+     && pData[--len] == ESCAPE)
         return True;
     return False;
 }
@@ -445,7 +442,7 @@ InputStruct* ExtractCCmt (int&     offset,
     }
 
     offset += len;
-    TRACE((stderr, "Updated offset to %d\n", offset))
+    TRACE(("Updated offset to %d\n", offset))
     return pItem;
 }
 
@@ -544,20 +541,23 @@ static int FindPunctuation(char *pLineData, char *pLineState, char punct)
 // pLineData  : Pointer to a line of a users input file (string).
 // pLineState : Pointer to a state of a users input line (string).
 //
-static void splitContinuation(InputStruct *pItem, char *pLineData, char *pLineState)
+static void splitContinuation(InputStruct *pItem, char *pLineData, char *pLineState, bool force)
 {
     size_t len;
 
-    if (isContinuation(len, pLineData, pLineState)
+    if (force && !strcmp(pLineData, pItem->pData))
+        force = False;
+
+    if ((force || isContinuation(len, pLineData, pLineState))
      && !isContinuation(len, pItem->pData, pItem->pState))
     {
-        char *s = new char[len + 3];
+        char *s = new char[len + 4];
         strcpy(s, pItem->pData);
         strcat(s, " \\");
         delete pItem->pData;
         pItem->pData = s;
 
-        s = new char[len + 3];
+        s = new char[len + 4];
         strcpy(s, pItem->pState);
         s[++len] = Blank;
         s[++len] = Normal;
@@ -588,10 +588,11 @@ static void splitContinuation(InputStruct *pItem, char *pLineData, char *pLineSt
 //              -1 : Memory allocation failure
 //               0 : No Worries
 //
-int DecodeLine (int offset, char* pLineData, char *pLineState, QueueList* pInputQueue)
+static int DecodeLine (bool afterSlash, int offset, char* pLineData, char *pLineState, QueueList* pInputQueue)
 {
     int         SChar = -1;
     int         EChar = -1;
+    size_t      commentLen = 0;
 
     // @@@@@@ C Comment processing, if over multiple lines @@@@@@
     if (*pLineState == Comment && !IsStartOfComment(pLineData, pLineState))
@@ -654,7 +655,7 @@ int DecodeLine (int offset, char* pLineData, char *pLineState, QueueList* pInput
 
             // apply recursion so that comment is last item placed
             // in queue !
-            if (DecodeLine (offset, pLineData, pLineState, pInputQueue) != 0)
+            if (DecodeLine (afterSlash, offset, pLineData, pLineState, pInputQueue) != 0)
             {
                 // problems !
                 delete pItem -> pData;
@@ -667,7 +668,7 @@ int DecodeLine (int offset, char* pLineData, char *pLineState, QueueList* pInput
 
             return 0; // no need to continue processing
         }
-        else
+        else if (!isContinuation(commentLen, pLineData, pLineState))
         {
             InputStruct* pItem = ExtractCCmt(offset, SChar, EChar, pLineData, pLineState, CCom);
 
@@ -765,7 +766,7 @@ int DecodeLine (int offset, char* pLineData, char *pLineState, QueueList* pInput
 
         pLineData[EChar]   = saveData;
         pLineState[EChar]  = saveState;
-        splitContinuation(pTemp, pLineData, pLineState);
+        splitContinuation(pTemp, pLineData, pLineState, afterSlash);
 
         TRACE_INPUT(pTemp)
         pInputQueue->putLast (pTemp);
@@ -775,7 +776,7 @@ int DecodeLine (int offset, char* pLineData, char *pLineState, QueueList* pInput
         ShiftLeft (pLineState, EChar);
 
         // restart decoding line !
-        return DecodeLine (offset, pLineData, pLineState, pInputQueue);
+        return DecodeLine (afterSlash, offset, pLineData, pLineState, pInputQueue);
         // end of recursive call !
 
     } // if L_CURL and R_CURL exit on same line
@@ -806,9 +807,9 @@ int DecodeLine (int offset, char* pLineData, char *pLineState, QueueList* pInput
            if (pTemp == NULL)
                 return DecodeLineCleanUp (pInputQueue);
 
-           //#### strip spacing is handled within extractCode routine. This
-           //#### means that pointers that are calculated before stripSpacing function
-           //#### remain valid.
+           //#### strip spacing is handled within extractCode routine.  This
+           //#### means that pointers that are calculated before stripSpacing
+           //#### function remain valid.
 
            InputStruct* pLeadCode = ExtractCode (offset, pTemp, pLineState);
 
@@ -817,7 +818,7 @@ int DecodeLine (int offset, char* pLineData, char *pLineState, QueueList* pInput
 
            pLineData[toSave]  = saveCode;
            pLineState[toSave] = saveFlag;
-           splitContinuation(pLeadCode, pLineData+toSave+1, pLineState+toSave+1);
+           splitContinuation(pLeadCode, pLineData+toSave+1, pLineState+toSave+1, afterSlash);
 
            TRACE_INPUT(pLeadCode)
            pInputQueue->putLast (pLeadCode);
@@ -855,7 +856,7 @@ int DecodeLine (int offset, char* pLineData, char *pLineState, QueueList* pInput
                     pLineData[1] = saveCode;  ShiftLeft (pLineData,  1);
                     pLineState[1] = saveFlag; ShiftLeft (pLineState, 1);
 
-                    splitContinuation(pTemp, pLineData, pLineState);
+                    splitContinuation(pTemp, pLineData, pLineState, afterSlash);
                     extractMode  = 3;            // apply recursive extraction
 
                     break;
@@ -889,13 +890,13 @@ int DecodeLine (int offset, char* pLineData, char *pLineState, QueueList* pInput
                         pLineData[mark] = saveCode;  ShiftLeft (pLineData,  mark);
                         pLineState[mark] = saveFlag; ShiftLeft (pLineState, mark);
 
-                        splitContinuation(pTemp, pLineData, pLineState);
+                        splitContinuation(pTemp, pLineData, pLineState, afterSlash);
                         extractMode       = 3;       // apply recursive extraction
                     }
                     else // rest of data is considered as code !
                     {
                         pTemp     = ExtractCode (offset, pLineData, pLineState, CBrace);
-                        splitContinuation(pTemp, pLineData, pLineState);
+                        splitContinuation(pTemp, pLineData, pLineState, afterSlash);
                         pLineState = NULL;      // leave processing !
                     }
                     break;
@@ -903,7 +904,7 @@ int DecodeLine (int offset, char* pLineData, char *pLineState, QueueList* pInput
 
                 case (3):   // remove what is left on line as code.
                 {
-                    return DecodeLine (offset, pLineData, pLineState, pInputQueue);
+                    return DecodeLine (afterSlash, offset, pLineData, pLineState, pInputQueue);
                     // end of recursive call !
                 }
             }// switch;
@@ -1012,12 +1013,12 @@ static bool inputIsCode(InputStruct *pItem)
         }
     }
 
-    fprintf (stderr, "\n#### ERROR ! Error In Line Construction !");
-    fprintf (stderr, "\nExpected Some Sort Of Code ! Data Type Found = ");
+    warning ("\n#### ERROR ! Error In Line Construction !");
+    warning ("\nExpected Some Sort Of Code ! Data Type Found = ");
     if (pItem == NULL)
-        fprintf (stderr, "NULL");
+        warning ("NULL");
     else
-        fprintf (stderr, "%d", pItem -> dataType);
+        warning ("%d", pItem -> dataType);
 
     return False;      // ##### incorrect dataType expected!
 }
@@ -1191,7 +1192,13 @@ int ConstructLine (
                 {
                     InputStruct *pNextItem = (InputStruct*) pInputQueue -> peek(1);
 
-                    // ##### Type Checking !!!!!
+                    if (pNextItem == 0)
+                    {
+                        // comment after nothing?
+                        pOut -> pComment = pTestType -> pData;
+                        dontHangComment(pTestType, pOut, pOutputQueue);
+                        break;
+                    }
                     if (!inputIsCode(pNextItem))
                         return -2;      // ##### incorrect dataType expected!
 
@@ -1200,12 +1207,12 @@ int ConstructLine (
                     {
                         pOut -> filler = userS.posOfCommentsWC;
                         pOut -> pComment = pTestType -> pData;
-                        TRACE((stderr, "@%d, Split Comment = %s:%d\n", __LINE__, pOut->pComment, pOut->thisToken))
+                        TRACE(("@%d, Split Comment = %s:%d\n", __LINE__, pOut->pComment, pOut->thisToken))
                     }
                     else
                     {
                         pendingComment = pTestType -> pData;
-                        TRACE((stderr, "@%d, Pending Comment = %s:%d\n", __LINE__, pendingComment, pOut->thisToken))
+                        TRACE(("@%d, Pending Comment = %s:%d\n", __LINE__, pendingComment, pOut->thisToken))
                         delete pTestType -> pState;
                         delete pTestType;
                         delete pOut;
@@ -1232,7 +1239,7 @@ int ConstructLine (
                     pOut -> pComment          = pTestType -> pData;
                     dontHangComment(pTestType, pOut, pOutputQueue);
 
-                    TRACE((stderr, "@%d, Set Comment = %s:%d indent %d\n", __LINE__, pOut->pComment, pOut->thisToken, pOut->indentSpace))
+                    TRACE(("@%d, Set Comment = %s:%d indent %d\n", __LINE__, pOut->pComment, pOut->thisToken, pOut->indentSpace))
 
                 }// else a comment without code !
                 break;
@@ -1254,7 +1261,7 @@ int ConstructLine (
                         pOut -> splitElseIf = True;
                     pendingElse = BeginsElseClause(pOut);
                 }
-                TRACE((stderr, "@%d, Set Code   = %s:%d indent %d\n", __LINE__, pOut->pCode, pOut->thisToken, pOut->indentSpace))
+                TRACE(("@%d, Set Code   = %s:%d indent %d\n", __LINE__, pOut->pCode, pOut->thisToken, pOut->indentSpace))
 
                 break;
             }
@@ -1278,7 +1285,7 @@ int ConstructLine (
                 pOut -> indentSpace     = combinedIndent(indentStack, prepStack, userS);
                 pOut -> pBrace          = pTestType -> pData;
                 pOut -> pBFlag          = pTestType -> pState;
-                TRACE((stderr, "@%d, Set pBrace = %s:%d indent %d\n", __LINE__, pOut->pBrace, pOut->thisToken, pOut->indentSpace))
+                TRACE(("@%d, Set pBrace = %s:%d indent %d\n", __LINE__, pOut->pBrace, pOut->thisToken, pOut->indentSpace))
 
                 // ##### advance to the right !
                 if (pTestType -> dataType == OBrace)
@@ -1370,7 +1377,7 @@ int ConstructLine (
 static void freeIndentStack(StackList* pImode)
 {
     while ((pImode -> pop()) != 0)
-        TRACE((stderr, "freeing...\n"));
+        TRACE(("freeing...\n"));
 }
 
 // copy one Indent-stack to another.  The 'dst' stack is empty.
@@ -1381,8 +1388,8 @@ static void copyIndentStack(StackList* src, StackList* dst)
     ANYOBJECT* temp;
     while ((temp = src -> peek(n++)) != 0)
     {
-        //TRACE((stderr, "copying %d...\n", ((IndentStruct *)temp) -> pos))
-        TRACE((stderr, "copying %d...\n", n-1))
+        //TRACE(("copying %d...\n", ((IndentStruct *)temp) -> pos))
+        TRACE(("copying %d...\n", n-1))
         dst -> push(temp);
     }
 }
@@ -1395,7 +1402,7 @@ void resetSingleIndent(StackList* pIMode)
 
     while ((pIndentItem = (IndentStruct*) pIMode -> peek(n++)) != 0)
     {
-        TRACE((stderr, "...reset single-indent (%d)\n", pIndentItem->singleIndentLen))
+        TRACE(("...reset single-indent (%d)\n", pIndentItem->singleIndentLen))
         pIndentItem->singleIndentLen = 0;
         pIndentItem->attrib = noIndent;
     }
@@ -1456,7 +1463,7 @@ void shiftToMatchSingleIndent(QueueList* pLines, int indention, int first)
 
     if (adjust > 0)
     {
-        TRACE((stderr, "shiftToMatchSingleIndent, base %d adj %d\n", baseIn, adjust))
+        TRACE(("shiftToMatchSingleIndent, base %d adj %d\n", baseIn, adjust))
         for (int i = first; i <= pLines -> status() ; i++)
         {
             OutputStruct* pAlterLine  = (OutputStruct*) pLines -> peek (i);
@@ -1487,7 +1494,7 @@ void shiftToMatchSingleIndent(QueueList* pLines, int indention, int first)
             if (pAlterLine -> indentSpace < baseIn)
                 break;
 
-            TRACE((stderr, "...shift %2d %2d :%s\n",
+            TRACE(("...shift %2d %2d :%s\n",
                 pAlterLine -> indentSpace,
                 pAlterLine -> indentSpace + adjust,
                 pAlterLine -> pCode
@@ -1575,7 +1582,7 @@ QueueList* IndentNonBraceCode (QueueList* pLines, StackList* pIMode, const Confi
 
                 // Single line indentation calculation
                 pAlterLine -> indentSpace += indentAmount;
-                TRACE((stderr, "@%d, total indent %d (%d)\n", __LINE__, pAlterLine->indentSpace, indentAmount))
+                TRACE(("@%d, total indent %d (%d)\n", __LINE__, pAlterLine->indentSpace, indentAmount))
                 break;
             }
 
@@ -1700,13 +1707,13 @@ QueueList* IndentNonBraceCode (QueueList* pLines, StackList* pIMode, const Confi
         if (pIndentItem -> attrib == oneLine)
         {
             int block = 0;
- 
+
             // recursive function call !
             if (pIMode -> status() > 0)
                 pLines = IndentNonBraceCode (pLines, pIMode, userS, False);
 
-            TRACE((stderr, "#%d, brace=%p: %d\n", pAlterLine->thisToken, pAlterLine->pBrace, pIndentItem->attrib))
-            TRACE((stderr, "@%d, push indent %d\n", __LINE__, pIndentItem -> singleIndentLen))
+            TRACE(("#%d, brace=%p: %d\n", pAlterLine->thisToken, pAlterLine->pBrace, pIndentItem->attrib))
+            TRACE(("@%d, push indent %d\n", __LINE__, pIndentItem -> singleIndentLen))
             pIMode -> push (pIndentItem);
             pIndentItem = NULL;
 
@@ -1722,7 +1729,7 @@ QueueList* IndentNonBraceCode (QueueList* pLines, StackList* pIMode, const Confi
     } // if code to process
     else if (pIndentItem != NULL)
     {
-        TRACE((stderr, "#%d, brace=%p: %d\n", pAlterLine->thisToken, pAlterLine->pBrace, pIndentItem->attrib))
+        TRACE(("#%d, brace=%p: %d\n", pAlterLine->thisToken, pAlterLine->pBrace, pIndentItem->attrib))
         // no indentation yet, maybe only blank line, or comment in case
         pIMode -> push (pIndentItem);
 
@@ -1844,13 +1851,13 @@ QueueList* IndentNonBraces (StackList* pIMode, QueueList* pLines, const Config& 
 
                 // determine how much to indent the next line of code !
                 pIndent -> singleIndentLen = userS.tabSpaceSize;
-                TRACE((stderr, "#%d: set single-indent to %d\n", ((OutputStruct *)pLines->peek(1))->thisToken, pIndent->singleIndentLen))
+                TRACE(("#%d: set single-indent to %d\n", ((OutputStruct *)pLines->peek(1))->thisToken, pIndent->singleIndentLen))
             }
             else // it's a case or other block-statement !
             {
                 pIndent -> attrib = pIndentWords[findWord].code;
                 pIndent -> pos    = (((OutputStruct*) pLines -> peek (1)) -> indentSpace) - userS.tabSpaceSize;
-                TRACE((stderr, "#%d: set multi-indent %d, pos = %d\n", ((OutputStruct *)pLines->peek(1))->thisToken, pIndent -> attrib, pIndent -> pos))
+                TRACE(("#%d: set multi-indent %d, pos = %d\n", ((OutputStruct *)pLines->peek(1))->thisToken, pIndent -> attrib, pIndent -> pos))
             }
 
             // place item on stack !
@@ -2178,7 +2185,7 @@ static int beginningPrePro (QueueList *pInputQueue, int Current)
         }
         if (Current && !result)
         {
-            TRACE((stderr, "FIXME:PEEK(%d)%s\n", Current, isContinuation(pNextItem) ? " CONT" : ""))
+            TRACE(("FIXME:PEEK(%d)%s\n", Current, isContinuation(pNextItem) ? " CONT" : ""))
             TRACE_INPUT(pNextItem)
         }
     }
@@ -2240,9 +2247,6 @@ QueueList* OutputToOutFile (FILE* pOutFile, QueueList* pLines, StackList* pIMode
 
         pOut = (OutputStruct*) pLines -> takeNext();
 
-        // ######## debug
-        //gotoxy (1,1);
-        //printf ("%d Indent    %d  Filler   \n", pOut -> indentSpace, pOut -> filler);
         TRACE_OUTPUT(pOut)
 
         // expand pOut structure to print to the output file
@@ -2323,7 +2327,12 @@ QueueList* OutputToOutFile (FILE* pOutFile, QueueList* pLines, StackList* pIMode
             }
 
             if (notes != NULL)
+            {
+                size_t len = strlen(notes);
                 fprintf (pOutFile, "%s", notes);
+                if (len > 0 && notes[len-1] == ESCAPE)
+                    fprintf (pOutFile, " ");
+            }
 
             fputc (LF, pOutFile); // output line feed!
         }
@@ -2392,7 +2401,7 @@ unsigned long int GetStartEndTime (int mode)
 int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
 {
     const    char* errorMsg = "\n\n#### ERROR ! Memory Allocation Failed\n";
-    const    int        lineStep     = 10;     // line number update period (show every 10 lines)
+    const    unsigned long lineStep  = 10;     // line number update period (show every 10 lines)
 
     unsigned long int   lineNo       = 0;
     int                 EndOfFile    = 0;      // Var used by readline() to show eof has been reached
@@ -2416,7 +2425,11 @@ int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
     int                 prepStack    = 0;
     int                 in_prepro    = 0;
     HangStruct          hang_state;
+    HtmlStruct          html_state;
     SqlStruct           sql_state;
+    size_t              beforeSize;
+    bool                beforeSlash  = False;
+    bool                afterSlash;
 
     // Check memory allocated !
     if (((pOutputQueue == NULL) || (pIMode == NULL)) || (pInputQueue == NULL))
@@ -2425,14 +2438,14 @@ int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
            delete pInputQueue;
            delete pIMode;
 
-        printf ("%s", errorMsg);
+        warning ("%s", errorMsg);
         return -1;
     }
 
     if (userS.output != False)
     {
-        printf ("\nFeed Me, Feed Me Code ...\n");
-        printf ("Number Of Lines Processed :  ");
+        verbose ("\nFeed Me, Feed Me Code ...\n");
+        verbose ("Number Of Lines Processed :  ");
     }
 
     GetStartEndTime (1);    // lets time the operation !
@@ -2455,10 +2468,27 @@ int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
             lineNo++;
             if ( (lineNo % lineStep == 0) && (userS.output != False) )
             {
-                    if (lineNo > 0)
-                        backSpaceIt (lineNo - lineStep); // reposition cursor ! Don't used gotoxy() for Unix compatibility
+                if (lineNo > 0)
+                    backSpaceIt (lineNo - lineStep); // reposition cursor ! Don't used gotoxy() for Unix compatibility
 
-                    printf ("%ld ", lineNo);
+                printf ("%ld ", lineNo);
+            }
+
+            if (html_state.Active(pData))
+            {
+                if (EndOfFile)
+                    break;
+                // flush queue ...
+                pOutputQueue = OutputToOutFile (
+                        pOutFile,
+                        pOutputQueue,
+                        pIMode,
+                        FuncVar,
+                        userS,
+                        0,
+                        pendingBlank);
+                fprintf(pOutFile, "%s\n", pData);
+                continue;
             }
 
             ExpandTabs (pData,
@@ -2468,14 +2498,17 @@ int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
                 curState, lineState, codeOnLine);
             if (pData == NULL)
             {
-                printf ("%s", errorMsg);
+                warning ("%s", errorMsg);
                 delete pIMode;
                 delete pInputQueue;
                 delete pOutputQueue;
                 return -1;
             }
 
-            if (DecodeLine (0, pData, lineState, pInputQueue) == 0) // if there are input items to process
+            afterSlash = beforeSlash;
+            beforeSlash = isContinuation(beforeSize, pData, lineState);
+
+            if (DecodeLine (afterSlash, 0, pData, lineState, pInputQueue) == 0) // if there are input items to process
             {
                 int old_prepro = in_prepro;
                 bool restoreit = False;
@@ -2484,19 +2517,21 @@ int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
                 {
                     if (in_prepro == 1)
                     {
-                        TRACE((stderr, "FIXME: save indentStack: %d (%d)\n", in_prepro, indentStack))
+                        TRACE(("FIXME: save indentStack: %d (%d)\n", in_prepro, indentStack))
                         //copyIndentStack(pIMode, pIMode2);
                         indentStack2 = indentStack;
                     }
                     else if (in_prepro == 2)
                     {
-                        TRACE((stderr, "FIXME: increase indentStack\n"))
+                        TRACE(("FIXME: increase indentStack\n"))
                         indentStack += userS.tabSpaceSize;
                     }
                 }
                 else if (old_prepro)
                 {
                     restoreit = True;
+                    if (old_prepro == 1)
+                        indentStack += userS.tabSpaceSize;
                 }
 
                 int errorCode = ConstructLine (
@@ -2515,7 +2550,7 @@ int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
                     case (0)  : break;
                     case (-1) :
                     {
-                        fprintf (stderr, "%s", errorMsg);
+                        warning ("%s", errorMsg);
                         delete pIMode;
                         delete pInputQueue;
                         delete pOutputQueue;
@@ -2525,7 +2560,7 @@ int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
                     case (-2): // Construct line failed !
                     {
                         // output final line position
-                        fprintf (stderr, "\nLast Line Read %ld", lineNo);
+                        warning ("\nLast Line Read %ld", lineNo);
                         delete pIMode;
                         delete pInputQueue;
                         delete pOutputQueue;
@@ -2534,7 +2569,7 @@ int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
 
                     default:
                     {
-                        fprintf (stderr, "\nSomething Weird %d\n", errorCode);
+                        warning ("\nSomething Weird %d\n", errorCode);
                         return errorCode;
                     }
 
@@ -2551,7 +2586,7 @@ int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
 
                 if (pOutputQueue == NULL)
                 {
-                    fprintf (stderr, "%s", errorMsg);
+                    warning ("%s", errorMsg);
                     delete pIMode;
                     delete pInputQueue;
                     return -1; // memory allocation error !
@@ -2559,7 +2594,7 @@ int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
 
                 if (restoreit)
                 {
-                    TRACE((stderr, "FIXME: restore indentStack (%d)\n", indentStack))
+                    TRACE(("FIXME: restore indentStack (%d)\n", indentStack))
                     //copyIndentStack(pIMode2, pIMode);
                     //freeIndentStack(pIMode2);
                     indentStack = indentStack2;
@@ -2589,6 +2624,7 @@ int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
         printf ("%ld ", lineNo);
     }
 
+    delete pIMode2;
     delete pIMode;
     delete pOutputQueue;
     delete pInputQueue;
@@ -2601,67 +2637,11 @@ int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
         int    hours = (t / 60) / 60,
                mins  = (t / 60),
                secs  = (t % 60);
-        printf ("(In %d Hours %d Minutes %d Seconds)", hours, mins, secs);
+        verbose ("(In %d Hours %d Minutes %d Seconds)", hours, mins, secs);
     }
 
     return 0;
 }
-
-// Function creates a backup of pInFile, by opening a
-// new file with a ".bac" extension and copying the original
-// data into it.
-//
-int BackupFile (char*& pInFile, char*& pOutFile)
-{
-    const char* pBackUp    = ".bac";
-
-    pOutFile               = pInFile;
-    pInFile                = new char[strlen(pOutFile)+5];
-    char*    pLook         = NULL;
-    FILE*    pInputFile    = NULL;
-    FILE*    pOutputFile   = NULL;
-
-    if (pInFile == NULL)
-       return -1;
-
-    strcpy (pInFile, pOutFile);
-
-    // change input filename !
-    pLook = endOf(pInFile)-1;
-    while ( ((*pLook != '.')  && (pLook > pInFile)) &&
-            ((*pLook != '\\') && (*pLook != '/')) )
-                     pLook--;
-
-    if  ((pLook <= pInFile) || ((*pLook == '\\') || (*pLook == '/')))
-        strcpy (endOf(pInFile) - 1, pBackUp);
-    else
-        strcpy (pLook, pBackUp);
-
-    // implement custom backup routine as one is NOT provided as standard !
-    pInputFile  = fopen(pInFile,  "wb");
-    pOutputFile = fopen(pOutFile, "rb");
-
-    if ((pInputFile == NULL) || (pOutputFile == NULL))
-    {
-        fclose (pInputFile);
-        fclose (pOutputFile);
-        return -1;
-    }
-
-    int inChar = fgetc (pOutputFile);
-
-    while (inChar >= 0)
-    {
-        fputc (inChar, pInputFile);
-        inChar = fgetc (pOutputFile);
-    }
-
-    fclose (pInputFile);
-    fclose (pOutputFile);
-
-    return 0;
-}
-
 
 // ----------------------------------------------------------------------------
 // locates programs configuration file via the PATH command.
@@ -2681,7 +2661,7 @@ void FindConfigFile (const char* pCfgName, FILE*& pCfgFile)
     int   count       = 0;
 
     // test to see if file is in current directory first !
-    if ((pCfgFile = fopen(pCfgName, "rb")) != NULL)
+    if ((pCfgFile = fopen(pCfgName, "r")) != NULL)
         return;
 
     // environment variable not found, lord knows what it is !
@@ -2732,7 +2712,7 @@ void FindConfigFile (const char* pCfgName, FILE*& pCfgFile)
               pSPath = pEPath;
           }
 
-          pCfgFile = fopen(pNameMem, "rb");
+          pCfgFile = fopen(pNameMem, "r");
 
     } while ((*pEPath != NULLC) && (pCfgFile == NULL));
 
@@ -2752,8 +2732,8 @@ void FindConfigFile (const char* pCfgName, FILE*& pCfgFile)
 //
 int LoadnRun (int argc, char* argv[])
 {
-    const char* choices[2] = {"Yes", "No"};
     const char* pNoFile    = "Couldn't Open, or Create File";
+    bool  renamed          = False;
     char* pConfig          = NULL;
     char* pInFile          = NULL;
     char* pOutFile         = NULL;
@@ -2794,12 +2774,12 @@ int LoadnRun (int argc, char* argv[])
     if (pConfig == NULL)
         FindConfigFile ("bcpp.cfg", pConfigFile);
     else
-        pConfigFile = fopen(pConfig, "rb");
+        pConfigFile = fopen(pConfig, "r");
 
     if (pConfigFile == NULL)
     {
-        fprintf (stderr, "\nCouldn't Open Config File: %s\n", pConfig);
-        fprintf (stderr, "Read Docs For Configuration Settings\n");
+        warning ("\nCouldn't Open Config File: %s\n", pConfig);
+        warning ("Read Docs For Configuration Settings\n");
     }
     else
     {
@@ -2812,13 +2792,13 @@ int LoadnRun (int argc, char* argv[])
            settings.output = False;
 
         if (settings.output != False)
-           fprintf (stderr, "\n%d Error(s) In Config File.\n\n", errorNum);
+           warning ("\n%d Error(s) In Config File.\n\n", errorNum);
     }
 
     // *********************************************************************
 
     // SECOND read of the command line will overwrite settings that may have
-    // been changed by the previous command.  Lots of processing to over come
+    // been changed by the previous command.  Lots of processing to overcome
     // this process, but hey it's a easy solution !
 
     pInFile = pOutFile = NULL;  // reset these so they can re-assigned again !
@@ -2831,14 +2811,9 @@ int LoadnRun (int argc, char* argv[])
     if ( ((settings.backUp != False) && (pInFile != NULL)) &&
           (pOutFile == NULL)) // Test if user wants an output file !
     {
-        if (settings.output != False)
-           printf ("Please Wait, Backing Up Data ... ");
-
         if (BackupFile (pInFile, pOutFile) != 0)
            return -1;
-
-        if (settings.output != False)
-           printf ("Done!\n\n");
+        renamed = True;
     }
     // **************************************************************
 
@@ -2846,7 +2821,7 @@ int LoadnRun (int argc, char* argv[])
     if (pInFile == NULL)
         pInputFile = stdin;
     else
-        pInputFile = fopen(pInFile, "rb");
+        pInputFile = fopen(pInFile, "r");
 
     if (pOutFile == NULL)
     {
@@ -2854,90 +2829,45 @@ int LoadnRun (int argc, char* argv[])
         settings.output = False; // if using standard out, don't corrupt output
     }
     else
-        pOutputFile = fopen(pOutFile, "wb");
+        pOutputFile = fopen(pOutFile, "w");
 
     // Check user defined I/O streams
     if (pInputFile == NULL)
     {
-        fprintf (stderr, "%s %s\n", pNoFile, pInFile);
+        warning ("%s %s\n", pNoFile, pInFile);
         errorCode = -1;
     }
 
     if (pOutputFile == NULL)
     {
-        fprintf (stderr, "%s %s\n", pNoFile, pOutFile);
+        warning ("%s %s\n", pNoFile, pOutFile);
         errorCode = -1;
     }
 
-    // **************************************************************
-
     if ((settings.output != False) && (errorCode == 0))
-    {
-        printf ("Function Line Spacing              : %d\n", settings.numOfLineFunc);
-        printf ("Use Tabs In Indenting              : %s\n", choices[settings.useTabs+1]);
-        printf ("Indent Spacing Length              : %d\n", settings.tabSpaceSize);
-        printf ("Comments With Code                 : %d\n", settings.posOfCommentsWC);
-        if (settings.leaveCommentsNC != False)
-            printf ("Comments With No Code              : Indented According To Code\n");
-        else
-            printf ("Comments With No Code              : %d\n", settings.posOfCommentsNC);
-        printf ("Remove Non-ASCII Chars             : ");
-
-        switch (settings.deleteHighChars)
-        {
-            case (0):
-                 printf ("No\n");
-                 break;
-            case (1):
-                 printf ("Yes\n");
-                 break;
-            case (3):
-                 printf ("Yes But Not Graphic Chars\n");
-                 break;
-            default:
-                    fprintf (stderr, "#### ERROR : Unexpected Value %d", settings.deleteHighChars);
-                    errorNum++;
-        }
-
-        printf ("Non-ASCII Chars In Quotes To Octal : %s\n", choices[settings.quoteChars+1]);
-        printf ("Open Braces On New Line            : %s\n", choices[settings.braceLoc+1]);
-        printf ("Program Output                     : %s\n", choices[settings.output+1]);
-        printf ("Internal Queue Buffer Size         : %d\n", settings.queueBuffer);
-
-        if (errorNum > 0)
-        {
-            fprintf (stderr, "\nDo You Wish To Continue To Process %s File [Y/N] ?", pInFile);
-
-            int userKey = 0;
-            do
-            {
-                userKey = getc(stdin);
-                userKey = (userKey & 223); // change key to upper case!
-                if (userKey == 'Y')
-                   errorNum = 0;
-
-            } while ((userKey != 'Y') && (userKey != 'N'));
-        }
-    }// display user settings !
+        errorNum = ShowConfig(settings);
 
     if (pConfigFile != NULL)
        fclose (pConfigFile);
 
     // #### Lets do some code crunching !
     if ((errorNum == 0) && (errorCode == 0))
-       errorCode = ProcessFile (pInputFile, pOutputFile, settings);
+        errorCode = ProcessFile (pInputFile, pOutputFile, settings);
 
     if (settings.output != False)
-          printf ("\nCleaning Up Dinner ... ");
+        verbose ("\nCleaning Up Dinner ... ");
 
     if (pInputFile != NULL)
-          fclose (pInputFile);
+        fclose (pInputFile);
 
     if (pOutputFile != NULL)
-          fclose (pOutputFile);
+        fclose (pOutputFile);
+
+    if (renamed)
+        RestoreIfUnchanged(pInFile, pOutFile);
 
     if (settings.output != False)
-          printf ("Done !\n");
+        verbose ("Done !\n");
 
     return errorCode;
 }

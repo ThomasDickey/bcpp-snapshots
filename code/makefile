@@ -14,15 +14,18 @@ CXXFLAGS	= -x c++ $(CPPFLAGS)
 BCPP.o	= \
         $(D)bcpp.o \
         $(D)anyobj.o \
+        $(D)backup.o \
         $(D)baseq.o \
+        $(D)cmdline.o \
+        $(D)config.o \
         $(D)debug.o \
         $(D)execsql.o \
         $(D)hanging.o \
+        $(D)html.o \
         $(D)stacklis.o \
-        $(D)cmdline.o \
-        $(D)config.o \
         $(D)strings.o \
-        $(D)tabs.o
+        $(D)tabs.o \
+        $(D)verbose.o
 
 bcpp:		$(BCPP.o)
 	$(CXX) $(BCPP.o) -o $@ -lg++

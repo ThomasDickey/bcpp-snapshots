@@ -1,4 +1,4 @@
-MANIFEST for bcpp, version t1997-04-04
+MANIFEST for bcpp, version t1999-01-02
 --------------------------------------------------------------------------------
 MANIFEST                        this file
 README                          top-level README for bcpp
@@ -6,6 +6,7 @@ bcppall.bat                     run bcpp for a whole directory
 code                            subdirectory
 code/anyobj.cpp                 the base class for all objects...
 code/anyobj.h                   interface of anyobj.cpp
+code/backup.cpp                 backup original file, restore if no change is made
 code/baseq.cpp                  objects which are descendents of ANYOBJECT
 code/baseq.h                    interface of baseq.cpp
 code/bcpp.cfg                   sample config-file for bcpp (used in testing also)
@@ -18,11 +19,14 @@ code/config.h                   interface of config.cpp
 code/debug.cpp                  debug/trace functions for BCPP
 code/execsql.cpp                module to indent embedded SQL statements
 code/hanging.cpp                compute hanging-indent of multiline statements
+code/html.cpp                   test for HTML vs JavaScript
 code/makefile                   makefile for UNIX (g++)
+code/run-test                   test-script
 code/stacklis.cpp               container class that stores items in a linked list
 code/stacklis.h                 interface of stacklis.cpp
 code/strings.cpp                simple string-utilities
 code/tabs.cpp                   tab expansion/conversion for BCPP
+code/verbose.cpp                all output to stdout or stderr
 txtdocs                         subdirectory
 txtdocs/hirachy.txt             text-version of class-hierarchy
 unix                            subdirectory

@@ -1,5 +1,5 @@
 //******************************************************************************
-// Copyright 1996,1997,1999 by Thomas E. Dickey <dickey@clark.net>             *
+// Copyright 1999 by Thomas E. Dickey <dickey@clark.net>                       *
 // All Rights Reserved.                                                        *
 //                                                                             *
 // Permission to use, copy, modify, and distribute this software and its       *
@@ -17,51 +17,59 @@
 // OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR   *
 // PERFORMANCE OF THIS SOFTWARE.                                               *
 //******************************************************************************
-// $Id: strings.cpp,v 1.8 1999/01/01 17:05:38 tom Exp $
-// strings.cpp
-
-#include <stdlib.h>
-#include <ctype.h>
-#include <string.h>
+// $Id: verbose.cpp,v 1.4 1999/01/01 18:28:15 tom Exp $
+// verbose.cpp
 
 #include "bcpp.h"
 
-bool isName(char c)
-{
-   return isalnum(c) || (c == '_') || (c == '$');
-}
+#include <stdarg.h>
 
-bool CompareKeyword(const char *tst, const char *ref)
-{
-   int n;
-   for (n = 0; ref[n] != NULLC; n++)
-      if (tst[n] != ref[n])
-         return False;
-   TRACE(("Match (%s,%s)\n", tst, ref))
-   return !isName(tst[n]);
-}
+#if HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 
-char *NewString (const char *src)
-{
-    char* dst =  new char[strlen (src)+1];
-    if (dst != 0)
-        strcpy(dst, src);
-    return dst;
-}
+#undef verbose      // in case we defined it to 'printf'
 
-char *NewSubstring (const char *src, size_t len)
+static int my_level = 1;
+
+void verbose(const char *format, ...)
 {
-    char* dst =  new char[len + 1];
-    if (dst != 0)
-    {
-        strncpy(dst, src, len)[len] = NULLC;
+    if (my_level > 0) {
+        va_list ap;
+        va_start(ap, format);
+        vprintf(format, ap);
+        va_end(ap);
     }
-    return dst;
 }
 
-const char *SkipBlanks(const char *s)
+void warning(const char *format, ...)
 {
-    while (isspace(*s))
-        s++;
-    return s;
+    va_list ap;
+    va_start(ap, format);
+    vfprintf(stderr, format, ap);
+    va_end(ap);
+}
+
+bool prompt(const char *format, ...)
+{
+    int code;
+
+    if (isatty(fileno(stdin))
+     && isatty(fileno(stdout))) {
+        va_list ap;
+        for(;;) {
+            fprintf(stderr, "\n");
+            va_start(ap, format);
+            vfprintf(stderr, format, ap);
+            va_end(ap);
+            fprintf(stderr, " [y/n] ? ");
+            fflush(stderr);
+            code = getc(stdin);
+            if (code == 'y' || code == 'Y')
+                return True;
+            if (code == 'n' || code == 'n')
+                break;
+        }
+    }
+    return False;
 }
