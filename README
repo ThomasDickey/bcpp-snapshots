@@ -1,9 +1,0 @@
-$Id: README,v 6.0 1991/10/22 16:28:52 dickey Rel $
-
-CONFLICT
-
---------------------------------------------------------------------------------
-
-CONFLICT examines the user-specifiable list of programs, looking for instances
-in the user's path which conflict (i.e., the name appears in more than one
-point in the path).
