@@ -17,7 +17,7 @@
 // OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR   *
 // PERFORMANCE OF THIS SOFTWARE.                                               *
 //******************************************************************************
-// $Id: hanging.cpp,v 1.13 1999/01/01 17:05:32 tom Exp $
+// $Id: hanging.cpp,v 1.14 1999/08/10 23:04:32 tom Exp $
 // Compute hanging-indent for most multiline statements.
 
 #include <stdlib.h>
@@ -148,7 +148,7 @@ void
 HangStruct::IndentHanging(OutputStruct *pOut)
 {
 #ifdef DEBUG2
-    traceOutput(__LINE__, pOut);
+    traceOutput(__FILE__, __LINE__, pOut);
     TRACE(("state:%d/%d, parn:%d/%d, curl:%d, agg:%d/%d\n",
         indent,
         stmt_level,

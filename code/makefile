@@ -1,6 +1,6 @@
 # Make file supplied by Piercarlo Grandi <piercarl@sabi.demon.co.uk>
 
-D		=../code/
+D		=./
 
 CXX		=gcc
 CPPFLAGS	=-I$(D) -O2 -Wall #-DDEBUG -DDEBUG2
@@ -28,7 +28,7 @@ BCPP.o	= \
         $(D)verbose.o
 
 bcpp:		$(BCPP.o)
-	$(CXX) $(BCPP.o) -o $@ -lg++
+	$(CXX) $(BCPP.o) -o $@
 
 clean::
 	rm -f *.o bcpp *~ *# *.bak

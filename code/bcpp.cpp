@@ -163,6 +163,7 @@
 // ----------------------------------------------------------------------------
 
 const char *ccom_begin = "/*";
+const char *ccom_end = "*/";
 
 const IndentwordStruct pIndentWords[] = {
     { "if",         oneLine },
@@ -206,6 +207,39 @@ static Boolean IsStartOfComment(char *pLineData, char *pLineState)
     {
         if (!strncmp(pLineData, ccom_begin, 2))
             return True;
+    }
+    return False;
+}
+
+static Boolean IsEndOfComment(char *pLineData, char *pLineState)
+{
+    while (*pLineState++ == Comment)
+    {
+        if (!strncmp(pLineData++, ccom_end, 2))
+            return True;
+    }
+    return False;
+}
+
+static Boolean IsLeadingCommentFragment(char *pLineData, char *pLineState)
+{
+    if (IsStartOfComment(pLineData, pLineState)
+     && !IsEndOfComment(pLineData+2, pLineState+2))
+        return True;
+    return False;
+}
+
+// Check if we've just extracted a comment fragment, i.e., a C comment
+// beginning on the current line that doesn't end there.  We'll have to defer
+// the comment til after the code is flushed out, otherwise we end up
+// commenting it out.
+static Boolean ExtractedCCmtFragment(char *pLineData, InputStruct* pItem)
+{
+    if (*SkipBlanks(pLineData)
+     && IsLeadingCommentFragment(pItem->pData, pItem->pState)) {
+        pItem->comWcode = False;
+        pItem->offset = 0;
+        return True;
     }
     return False;
 }
@@ -675,8 +709,19 @@ static int DecodeLine (bool afterSlash, int offset, char* pLineData, char *pLine
             if (pItem == NULL)
                 return DecodeLineCleanUp (pInputQueue);
 
-            TRACE_INPUT(pItem)
-            pInputQueue->putLast (pItem);
+            if (ExtractedCCmtFragment(pLineData, pItem))
+            {
+                if (DecodeLine (afterSlash, offset, pLineData, pLineState, pInputQueue) != 0)
+                    return DecodeLineCleanUp(pInputQueue);
+                TRACE_INPUT(pItem)
+                pInputQueue->putLast (pItem);
+                return 0;
+            }
+            else
+            {
+                TRACE_INPUT(pItem)
+                pInputQueue->putLast (pItem);
+            }
 
         } //##### else
 
@@ -695,8 +740,19 @@ static int DecodeLine (bool afterSlash, int offset, char* pLineData, char *pLine
         if (pItem == NULL)
             return DecodeLineCleanUp (pInputQueue);
 
-        TRACE_INPUT(pItem)
-        pInputQueue->putLast (pItem);
+        if (ExtractedCCmtFragment(pLineData, pItem))
+        {
+            if (DecodeLine (afterSlash, offset, pLineData, pLineState, pInputQueue) != 0)
+                return DecodeLineCleanUp(pInputQueue);
+            TRACE_INPUT(pItem)
+            pInputQueue->putLast (pItem);
+            return 0;
+        }
+        else
+        {
+            TRACE_INPUT(pItem)
+            pInputQueue->putLast (pItem);
+        }
     }
 
     //##### Remove blank spacing from left & right of string
@@ -1156,6 +1212,8 @@ int ConstructLine (
 {
     InputStruct* pTestType = NULL;
     char *pendingComment = NULL;
+
+    TRACE(("ConstructLine indentStack=%d\n", indentStack))
 
     while ( pInputQueue->status() > 0 )
     {
@@ -1807,29 +1865,39 @@ QueueList* IndentNonBraces (StackList* pIMode, QueueList* pLines, const Config& 
 
         // Test if code not NULL, and No Hidden Open Braces
         // FIXME: punctuation need not be at end of line
-        switch (lastChar(pTestCode))
+        if (findWord >= 0)
         {
-            case L_CURL:
-            case SEMICOLON:
-            case R_CURL:
-                pTestCode = NULL;
-                break;
-            default:
-                break;
+            if (pIndentWords[findWord].code == multiLine)
+            {
+                const char *pTmp = SkipBlanks(pTestCode
+                                 + strlen(pIndentWords[findWord].name));
+                if (*pTmp != '\0'
+                 && *pTmp != ':'
+                 && lastChar(pTestCode) != ':')
+                    findWord = -1;
+            }
+            switch (lastChar(pTestCode))
+            {
+                case L_CURL:
+                case SEMICOLON:
+                case R_CURL:
+                    findWord = -1;
+                    break;
+                default:
+                    break;
+            }
         }
 
         // Test if open brace not located on next line
-        if ((pTestCode != NULL) && (findWord >= 0))
+        if (findWord >= 0)
         {
             pTestCode = ((OutputStruct*) pLines -> peek (minLimit)) -> pBrace;
 
             if ((pTestCode != NULL) && (pTestCode[0] == L_CURL))
-                pTestCode = NULL;    // Don't process line as a single indentation !
-            else
-                pTestCode = "E";     // make sure pointer is not null !
+                findWord = -1;    // Don't process line as a single indentation !
         }
 
-        if ((findWord >= 0) && (pTestCode != NULL))
+        if (findWord >= 0)
         // create new structure !
         {
             IndentStruct* pIndent = new IndentStruct();
@@ -1845,8 +1913,6 @@ QueueList* IndentNonBraces (StackList* pIMode, QueueList* pLines, const Config& 
             // do indent mode for (if, while, for, else)
             if (pIndentWords[findWord].code == oneLine)
             {
-                pTestCode = ((OutputStruct*) pLines -> peek (1)) -> pCode;
-
                 pIndent -> attrib = oneLine; // single indent !
 
                 // determine how much to indent the next line of code !

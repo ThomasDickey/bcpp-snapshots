@@ -17,7 +17,7 @@
 // OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR   *
 // PERFORMANCE OF THIS SOFTWARE.                                               *
 //******************************************************************************
-// $Id: strings.cpp,v 1.9 1999/01/04 14:13:28 tom Exp $
+// $Id: strings.cpp,v 1.10 1999/08/10 23:04:32 tom Exp $
 // strings.cpp
 
 #include <stdlib.h>
@@ -37,7 +37,7 @@ bool CompareKeyword(const char *tst, const char *ref)
    for (n = 0; ref[n] != NULLC; n++)
       if (tst[n] != ref[n])
          return False;
-   TRACE(("Match (%s,%s)\n", tst, ref))
+   TRACE(("Match (\"%s\",\"%s\")\n", tst, ref))
    return !isName(tst[n]);
 }
 
