@@ -1,3 +1,4 @@
+// $Id: debug.cpp,v 1.6 1996/12/10 01:29:26 tom Exp $
 // Debug/trace functions for BCPP
 
 #include <stdlib.h>
@@ -36,9 +37,10 @@ void traceInput(int line, InputStruct *pIn)
 
 void traceOutput(int line, OutputStruct *pOut)
 {
-    TRACE((stderr, "@%d, indent %d, fill %d, OUT #%d:%s:%s:%s:\n",
+    TRACE((stderr, "@%d, indent %d(%d), fill %d, OUT #%d:%s:%s:%s:\n",
         line,
         pOut->indentSpace,
+        pOut->indentHangs,
         pOut->filler,
         pOut->thisToken,
         pOut->pCode ? "code" : "",

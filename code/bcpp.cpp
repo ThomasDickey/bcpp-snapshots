@@ -1014,7 +1014,7 @@ int ConstructLine (
     int &prepStack,
     int& indentStack,
     bool& pendingElse,
-    int& hang_state,
+    HangStruct& hang_state,
     int& sql_state,
     QueueList* pInputQueue,
     QueueList* pOutputQueue,
@@ -1164,7 +1164,8 @@ int ConstructLine (
             // @@@@@@ Preprocessor Line !
             case (PreP):
             {
-                pOut -> pCode       = pTestType -> pData;
+                pOut -> pCode = pTestType -> pData;
+                delete pTestType -> pState;
                 if (userS.indentPreP) {
                     switch (typeOfPreP(pTestType))
                     {
@@ -1212,7 +1213,7 @@ int ConstructLine (
          && pOut -> pBrace == 0)
             delete pTestType -> pState;
 
-        IndentHanging(pOut, hang_state);
+        hang_state.IndentHanging(pOut);
 
         if (userS.indent_sql)
             IndentSQL(pOut, sql_state);
@@ -1298,6 +1299,7 @@ void shiftToMatchSingleIndent(QueueList* pLines, int indention, int first)
 {
     int baseIn = ((OutputStruct*) pLines -> peek (first)) -> indentSpace;
     int adjust = indention - baseIn;
+    int state = 0;
 
     if (adjust > 0)
     {
@@ -1308,12 +1310,23 @@ void shiftToMatchSingleIndent(QueueList* pLines, int indention, int first)
             if (pAlterLine == 0)
                 break;
 
+            // If there's an "else" immediately after the block-else, shift
+            // it also.
+            if (state == 1)
+            {
+                if (pAlterLine -> pCode == 0
+                 || strcmp(pAlterLine -> pCode, "else"))
+                    break;
+                state = 2;
+            }
+            else
             if (pAlterLine -> pCode != 0)
             {
                 if (pAlterLine -> pType == PreP)
                     continue;
             }
-            else if (pAlterLine -> pBrace == 0)
+            else
+            if (pAlterLine -> pBrace == 0)
             {
                 continue;
             }
@@ -1333,7 +1346,12 @@ void shiftToMatchSingleIndent(QueueList* pLines, int indention, int first)
             if (pAlterLine -> indentSpace <= baseIn + adjust
              && pAlterLine -> pBrace != 0
              && pAlterLine -> pBrace[0] == R_CURL)
-                break;
+            {
+                if (state == 0)
+                    state = 1;
+                else
+                    break;
+            }
         }
     }
 }
@@ -1393,7 +1411,7 @@ QueueList* IndentNonBraceCode (QueueList* pLines, StackList* pIMode, const Confi
     {
         bool adjusted = False;
 
-        TRACE((stderr, "#%d, attrib=%d\n", pAlterLine->thisToken, pIndentItem->attrib))
+        TRACE_OUTPUT(pAlterLine)
         switch (pIndentItem -> attrib)
         {
             case (blockLine):
@@ -1405,17 +1423,13 @@ QueueList* IndentNonBraceCode (QueueList* pLines, StackList* pIMode, const Confi
             {
                 int indentAmount;
 
-                // Test if current code has a ';' char at end of line,
-                // if so then do full indent, else do 3 char indent!
+                // Test for continued statements, suppressing indent until
+                // it's complete.
                 if (ContinuedQuote(pAlterLine))
                     indentAmount = 0;
                 else
-                if ((pAlterLine -> pCode != NULL) &&
-                    lastChar(pAlterLine -> pCode) != SEMICOLON)
-                {
-                    indentAmount = pIndentItem -> singleIndentLen;
-                    TRACE((stderr, "#%d, use single-indent %d\n", pAlterLine->thisToken, pIndentItem->singleIndentLen))
-                }
+                if (pAlterLine -> indentHangs != 0)
+                    indentAmount = 0;
                 else
                     indentAmount = userS.tabSpaceSize;
 
@@ -2223,7 +2237,7 @@ int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
     bool                indentPreP   = False;
     bool                pendingElse  = False;
     int                 prepStack    = 0;
-    int                 hang_state   = 0;
+    HangStruct          hang_state;
     int                 sql_state    = 0;
 
     // Check memory allocated !

@@ -1,3 +1,4 @@
+// $Id: strings.cpp,v 1.4 1996/11/08 01:30:11 tom Exp $
 // strings.cpp
 
 #include <stdlib.h>
