@@ -1,0 +1,89 @@
+# $Id: makefile.in,v 1.3 2002/11/23 17:42:39 tom Exp $
+# Makefile-template for 'bcpp'
+
+THIS		= bcpp
+
+#### Start of system configuration section. ####
+
+srcdir		= @srcdir@
+VPATH		= @srcdir@
+
+CXX		= @CXX@
+CXXFLAGS	= @CXXFLAGS@
+EXTRA_CFLAGS	= @EXTRA_CFLAGS@
+
+INSTALL		= @INSTALL@
+INSTALL_PROGRAM	= @INSTALL_PROGRAM@
+INSTALL_DATA	= @INSTALL_DATA@
+
+LINK		= $(CXX)
+LIBS		= @LIBS@
+LDFLAGS		= @LDFLAGS@
+
+prefix		= @prefix@
+exec_prefix	= @exec_prefix@
+
+bindir		= $(DESTDIR)@bindir@
+
+#### End of system configuration section. ####
+
+SHELL		= /bin/sh
+
+OBJS	= \
+	bcpp.o \
+	anyobj.o \
+	backup.o \
+	baseq.o \
+	cmdline.o \
+	config.o \
+	debug.o \
+	execsql.o \
+	hanging.o \
+	html.o \
+	stacklis.o \
+	strings.o \
+	tabs.o \
+	verbose.o
+
+CPPFLAGS	= -I. -I$(srcdir) -DHAVE_CONFIG_H -DVERSION=\"`cat $(srcdir)/../VERSION`\"
+
+.cpp.o:
+@RULE_CC@
+	@ECHO_CC@$(CXX) $(CXXFLAGS) $(EXTRA_CFLAGS) $(CPPFLAGS) -c $< -o $@
+
+all:	$(THIS)
+
+$(THIS): $(OBJS)
+	@ECHO_LD@$(LINK) $(LDFLAGS) -o $(THIS) $(OBJS) $(LIBS)
+
+install: all installdirs
+	$(INSTALL_PROGRAM) $(THIS) $(bindir)/$(THIS)
+
+installdirs:
+	$(SHELL) ${srcdir}/../mkdirs.sh $(bindir)
+
+uninstall:
+	rm -f $(bindir)/$(THIS)
+
+mostlyclean:
+	rm -f *.o core *~ *.out *.BAK *.atac
+
+clean: mostlyclean
+	rm -f $(THIS)
+
+distclean: clean
+	rm -f makefile config.log config.cache config.status autoconf.h
+
+realclean: distclean
+	rm -f tags TAGS # don't remove configure!
+
+check:
+	$(SHELL) ./run-test
+
+tags:
+	ctags *.cpp *.h
+
+TAGS:
+	etags *.cpp *.h
+
+$(OBJS):	autoconf.h bcpp.h

@@ -1,6 +1,7 @@
 #ifndef _CMDLINE_CODE
 #define _CMDLINE_CODE
 
+// $Id: cmdline.cpp,v 1.18 2002/11/23 17:41:18 tom Exp $
 // Program C(++) Beautifier Written By Steven De Toni ACBC 11 12/94
 // Revised 1999 - Thomas Dickey
 //
@@ -32,7 +33,7 @@ void StrUpr (char* pUpCase)
 void PrintProgramHelp (char* argv[])
 {
     static const char *help[] = {
-        "C(++) Beautifier     V1.8",
+        "C(++) Beautifier     " VERSION,
         "",
         "Program Was Written By Steven De Toni, December 1995",
         "Modified/revised by Thomas E. Dickey 1996-1999,2002",
@@ -53,7 +54,8 @@ void PrintProgramHelp (char* argv[])
         "",
         "* Support For I/O Redirection Is Provided *",
     };
-    for (unsigned n = 0; n < TABLESIZE(help); n++)
+    unsigned n;
+    for (n = 0; n < TABLESIZE(help); n++)
         verbose("%s\n", help[n]);
 
     if (prompt("More Detail"))
@@ -83,7 +85,7 @@ void PrintProgramHelp (char* argv[])
             "  o           : Program output",
             "  q           : Change non-ASCII chars in quotes to octal",
         };
-        for (unsigned n = 0; n < TABLESIZE(details); n++)
+        for (n = 0; n < TABLESIZE(details); n++)
             verbose("%s\n", details[n]);
     }
 }
