@@ -1,4 +1,4 @@
-.\" $Id: c_count.1,v 7.5 1998/07/02 23:43:27 tom Exp $
+.\" $Id: c_count.1,v 7.6 2002/11/23 01:32:22 tom Exp $
 .de EX
 .RS
 .nf
@@ -119,7 +119,7 @@ and "statements" respectively).
 display line-level statistics.
 .TP
 .BI \-o " file"
-write the report to the specifed file,
+write the report to the specified file,
 rather than to the standard output.
 .TP
 .B \-p
@@ -146,6 +146,9 @@ If you set any of the options "\fB\-c\fR", "\fB\-i\fR",
 "\fB\-l\fR" or "\fB\-s\fR", \fBc_count\fR generates these statistics.
 Otherwise it generates only the lines/statements.
 .TP
+.B \-V
+print the version number.
+.TP
 .B \-v
 direct \fBc_count\fR not only
 to print a summary line for each file, but also to print a running
@@ -156,7 +159,6 @@ and statement numbers, as well as the cumulative flags.
 specify the length for identifiers beyond which we should report an error.
 If this option is not given, \fBc_count\fR reports identifiers longer than
 31 characters.
-..
 .SH OPERATIONS
 .PP
 \fBC_count\fR reads one or more C language source files and writes
@@ -228,7 +230,7 @@ files (e.g., \fBC_COUNT.EXE\fR on VAX/VMS).
 .
 .SH AUTHOR
 .PP
-Thomas Dickey (dickey@clark.net).
+Thomas Dickey.
 .
 .SH SEE ALSO
 .PP

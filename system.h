@@ -1,4 +1,4 @@
-/* $Id: system.h,v 7.12 2001/02/27 19:47:20 tom Exp $ */
+/* $Id: system.h,v 7.13 2002/11/22 22:36:55 tom Exp $ */
 
 #ifdef HAVE_CONFIG_H
 
@@ -19,17 +19,12 @@
 # endif
 
 # if !defined(SYS_VMS) || !defined(SYS_MSDOS) || defined(WIN32)
-#  define SYS_UNIX 1	/* assume we're autoconfiguring */
+#  define SYS_UNIX 1		/* assume we're autoconfiguring */
 # endif
 
-#define CC_HAS_PROTOS 1
 #define HAVE_STRCHR 1
 
 #endif /* HAVE_CONFIG_H */
-
-#ifndef CC_HAS_PROTOS
-#define CC_HAS_PROTOS 0
-#endif
 
 #ifndef HAVE_GETOPT_H
 #define HAVE_GETOPT_H 0
@@ -67,19 +62,6 @@
 #define PRINT_ROUNDS_DOWN 0
 #endif
 
-	/* Macros that ought to be defined on every system */
-#if CC_HAS_PROTOS
-#define ARGS(p) p
-#define _ARG(type,name) type name
-#define _DCL(type,name)
-#define NO_ARGS void
-#else
-#define ARGS(p) ()
-#define _ARG(type,name) name
-#define _DCL(type,name) type name;
-#define NO_ARGS
-#endif
-
 #ifdef lint
 #define typeCalloc(type,elts) (type *)(elts)
 #else
@@ -98,6 +80,6 @@
 	 * scanning loop...
 	 */
 #if !SYS_UNIX
-extern	int	has_wildcard ARGS((char *));
-extern	int	expand_wildcard ARGS((char *, int));
+extern int has_wildcard(char *);
+extern int expand_wildcard(char *, int);
 #endif
