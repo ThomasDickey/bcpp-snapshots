@@ -1,3 +1,4 @@
+// $Id: config.cpp,v 1.22 2003/04/22 22:54:38 tom Exp $
 // Program C(++) beautifier Written By Steven De Toni ACBC 11 11/94
 //
 // This program module contains routines to read data from a text file a 
@@ -12,7 +13,7 @@
 
 enum ConfigWords {ANYT = 0, FSPC, UTAB, ISPC, IPRO, ISQL,
                   NAQTOOCT, COMWC, COMNC, LCNC,
-                  LGRAPHC, ASCIIO, BI, BI2, PBNLINE, PROGO, QBUF, BUF,
+                  LGRAPHC, ASCIIO, BI, BI2, PTBNLINE, PBNLINE, PROGO, QBUF, BUF,
                   EQUAL, YES, ON, NO, OFF};
 
 static const struct { ConfigWords code; const char *name; }
@@ -31,6 +32,7 @@ static const struct { ConfigWords code; const char *name; }
     { ASCIIO,   "ASCII_CHARS_ONLY" },
     { BI,       "BRACE_INDENT" },
     { BI2,      "INDENT_BOTH_BRACES" },
+    { PTBNLINE, "PLACE_TOP_BRACE_ON_NEW_LINE" },
     { PBNLINE,  "PLACE_BRACE_ON_NEW_LINE" },
     { PROGO,    "PROGRAM_OUTPUT" },
     { QBUF,     "QUEUE_BUFFER" },
@@ -74,7 +76,7 @@ char* ReadLine (FILE *pInFile, int& EndOfFile)
             char *temp = new char [used];
             for (int n = 0; n < need; n++)
                 temp[n] = pLineBuffer[n];
-            delete pLineBuffer;
+            delete[] pLineBuffer;
             pLineBuffer = temp;
         }
         pLineBuffer[need++] = ch;
@@ -383,6 +385,10 @@ int SetConfig (FILE* pConfigFile, Config& userSettings)
                 DecodeIt (userSettings.braceIndent2);
                 break;
 
+             case (PTBNLINE): // PLACE_TOP_BRACE_ON_NEW_LINE = {on, off, yes, no}
+                DecodeIt (userSettings.topBraceLoc);
+                break;
+
              case (PBNLINE): // PLACE_BRACE_ON_NEW_LINE = {on, off, yes, no}
                 DecodeIt (userSettings.braceLoc);
                 break;
@@ -410,7 +416,7 @@ int SetConfig (FILE* pConfigFile, Config& userSettings)
                 break;
         }// switch
 
-        delete pLineOfConfig;
+        delete[] pLineOfConfig;
   }// while
 
   return configError;
@@ -458,6 +464,7 @@ int ShowConfig (Config& userSettings)
     }
 
     verbose ("Non-ASCII Chars In Quotes To Octal : %s\n", choices[userSettings.quoteChars+1]);
+    verbose ("Top-level Open Braces On New Line  : %s\n", choices[userSettings.topBraceLoc+1]);
     verbose ("Open Braces On New Line            : %s\n", choices[userSettings.braceLoc+1]);
     verbose ("Program Output                     : %s\n", choices[userSettings.output+1]);
     verbose ("Internal Queue Buffer Size         : %d\n", userSettings.queueBuffer);

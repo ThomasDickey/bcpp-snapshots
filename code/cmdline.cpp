@@ -1,7 +1,7 @@
 #ifndef _CMDLINE_CODE
 #define _CMDLINE_CODE
 
-// $Id: cmdline.cpp,v 1.18 2002/11/23 17:41:18 tom Exp $
+// $Id: cmdline.cpp,v 1.21 2003/04/24 00:34:40 tom Exp $
 // Program C(++) Beautifier Written By Steven De Toni ACBC 11 12/94
 // Revised 1999 - Thomas Dickey
 //
@@ -30,13 +30,13 @@ void StrUpr (char* pUpCase)
 // Parameters:
 // char* argv[]     : Pointer to command line parameter pointer array
 //
-void PrintProgramHelp (char* argv[])
+void PrintProgramHelp (void)
 {
     static const char *help[] = {
         "C(++) Beautifier     " VERSION,
         "",
         "Program Was Written By Steven De Toni, December 1995",
-        "Modified/revised by Thomas E. Dickey 1996-1999,2002",
+        "Modified/revised by Thomas E. Dickey 1996-2002,2003",
         "All Parts Of This Program Are Freely Distributable.",
         "",
         "Usage: bcpp [Parameters] [Input File Name] [Output File Name]",
@@ -75,6 +75,8 @@ void PrintProgramHelp (char* argv[])
             "-qb  <num>    : Define internal queue buffer size",
             "-s            : Use spaces in indenting",
             "-t            : Use tabs in indenting",
+            "-tbcl         : Top-level open braces on code line",
+            "-tbnl         : Top-level open braces on new line",
             "",
             "Options beginning with -n or -y disable/enable functions:",
             "  a           : Remove non-ASCII chars",
@@ -100,7 +102,7 @@ void intOption (int& cmdCount, int argc, char* argv[], int &result )
     else
     {
         warning ("Expected Another Integer Parameter For Command Directive %s\n", argv[cmdCount]);
-        PrintProgramHelp (argv);
+        PrintProgramHelp ();
     }
 }
 
@@ -114,7 +116,7 @@ void strOption (int& cmdCount, int argc, char* argv[], char * &result)
     else
     {
         warning ("Expected Another String Parameter For Command Directive %s\n", argv[cmdCount]);
-        PrintProgramHelp (argv);
+        PrintProgramHelp ();
     }
 }
 
@@ -165,9 +167,24 @@ int ProcessCommandLine (int argc, char* argv[], Config& settings,
 
             cmdRead++;
 
+            // miscellaneous flags, "sort +1"
             DecodeFlg ("BCL",   settings.braceLoc,        False);
             DecodeFlg ("BNL",   settings.braceLoc,        True);
+            DecodeInt ("CC",    settings.posOfCommentsWC);
+            DecodeInt ("F",     settings.numOfLineFunc);
+            DecodeStr ("FI",    pInFile);
+            DecodeStr ("FNC",   pConfig);
+            DecodeStr ("FO",    pOutFile);
+            DecodeInt ("I",     settings.tabSpaceSize);
             DecodeFlg ("LG",    settings.deleteHighChars, 3);
+            DecodeInt ("NC",    settings.posOfCommentsNC);
+            DecodeInt ("QB",    settings.queueBuffer);
+            DecodeFlg ("S",     settings.useTabs,         False);
+            DecodeFlg ("T",     settings.useTabs,         True);
+            DecodeFlg ("TBCL",  settings.topBraceLoc,     False);
+            DecodeFlg ("TBNL",  settings.topBraceLoc,     True);
+
+            // "No" flags
             DecodeFlg ("NA",    settings.deleteHighChars, 0);
             DecodeFlg ("NB",    settings.backUp,          False);
             DecodeFlg ("NBBI",  settings.braceIndent2,    False);
@@ -175,8 +192,8 @@ int ProcessCommandLine (int argc, char* argv[], Config& settings,
             DecodeFlg ("NLCNC", settings.leaveCommentsNC, False);
             DecodeFlg ("NO",    settings.output,          False);
             DecodeFlg ("NQ",    settings.quoteChars,      False);
-            DecodeFlg ("S",     settings.useTabs,         False);
-            DecodeFlg ("T",     settings.useTabs,         True);
+
+            // "Yes" flags
             DecodeFlg ("YA",    settings.deleteHighChars, 1);
             DecodeFlg ("YB",    settings.backUp,          True);
             DecodeFlg ("YBBI",  settings.braceIndent2,    True);
@@ -184,26 +201,18 @@ int ProcessCommandLine (int argc, char* argv[], Config& settings,
             DecodeFlg ("YLCNC", settings.leaveCommentsNC, True);
             DecodeFlg ("YO",    settings.output,          True);
             DecodeFlg ("YQ",    settings.quoteChars,      True);
-            DecodeInt ("CC",    settings.posOfCommentsWC);
-            DecodeInt ("F",     settings.numOfLineFunc);
-            DecodeInt ("I",     settings.tabSpaceSize);
-            DecodeInt ("NC",    settings.posOfCommentsNC);
-            DecodeInt ("QB",    settings.queueBuffer);
-            DecodeStr ("FI",    pInFile);
-            DecodeStr ("FNC",   pConfig);
-            DecodeStr ("FO",    pOutFile);
 
             // ### display help ###
             if( (strcmp ("?", cmdRead) == 0) ||
                 (strcmp ("H", cmdRead) == 0) )
             {
                 verbose ("*** Displaying Brief Help ***\n");
-                PrintProgramHelp (argv);
+                PrintProgramHelp ();
                 return -1;
             }
 
             warning ("Unknown Command Directive %s \n", cmdRead);
-            PrintProgramHelp (argv);
+            PrintProgramHelp ();
             return -1;
         }
         else if (pInFile == NULL)
@@ -213,7 +222,7 @@ int ProcessCommandLine (int argc, char* argv[], Config& settings,
         else
         {
             warning ("Command Line Error : Expected Command Directive, Not %s\n", argv[cmdCount]);
-            PrintProgramHelp (argv);
+            PrintProgramHelp ();
             return -1;
         }
     }

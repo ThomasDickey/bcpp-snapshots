@@ -1,5 +1,15 @@
--- $Id: CHANGES,v 1.23 2002/11/24 22:31:41 tom Exp $
+-- $Id: CHANGES,v 1.24 2003/04/24 00:28:32 tom Exp $
 -- Thomas E. Dickey <dickey@invisible-island.net>
+
+2003/04/23
+	+ fix several mismatches between new and delete (versus delete[])
+	  reported by valgrind.
+	+ add place_top_brace_on_new_line to config, with corresponding
+	  command-line options -tbcl and tbnl to disable or enable it
+	  respectively.  This is for the special case of the top-level
+	  brace, e.g., at the function-level, to better match K&R style
+	  braces (request by Daniel Lin).
+	+ modified run-test script to facilitate testing variations of bcpp.cfg
 
 2002/11/24
 	+ check in OutputToOutFile() for a trailing C-comment fragment which

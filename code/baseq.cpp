@@ -1,6 +1,7 @@
 #ifndef _QUEUE_LIST_CODE
 #define _QUEUE_LIST_CODE
 
+// $Id: baseq.cpp,v 1.4 2003/04/22 22:53:39 tom Exp $
 // Code written by Steven De Toni ACBC 11
 
 // These class methods used to implement a object that holds other objects
@@ -27,7 +28,7 @@
 // Return Values:
 //     LinkItem : returns pointer to newly added item in list,
 //                NULL if operation failed. However items within list
-//                before hand still exist.  
+//                before hand still exist.
 LinkItem* QueueList::newItem (ANYOBJECT* pItem, LinkItem* pEndList)
 {
     LinkItem*  pNewStruct = new LinkItem;
@@ -76,7 +77,7 @@ QueueList::QueueList       (ANYOBJECT* pItem)
 //                Values:
 //                    0 = No Worries
 //                   -1 = Arrgh ... No memory
-//                        
+//
 int       QueueList::putLast   (ANYOBJECT* pItem)
 {
     LinkItem*   pNewItem = newItem (pItem, pEndPos);
@@ -91,8 +92,8 @@ int       QueueList::putLast   (ANYOBJECT* pItem)
 }
 
 
-// Take first item placed in Queue, out and return it. 
-// Type casting is required to return object back to it's original
+// Take first item placed in Queue, out and return it.
+// Type casting is required to return object back to its original
 // state.
 //
 // Return Values:
@@ -125,7 +126,7 @@ ANYOBJECT*   QueueList::takeNext         (void)
         delete pStartPos;                           // delete object
         itemCount--;                                // one less
         if (spaceAvailable)                         // if no memory available before...
-                spaceAvailable = 0;     // there is now!
+            spaceAvailable = 0;     // there is now!
         return pTemp;
       }
       else
@@ -137,7 +138,7 @@ ANYOBJECT*   QueueList::takeNext         (void)
 // Returns Values:
 //     int :    Num of items within queue.
 //
-int      QueueList::status (void)    // return number of item in Queue
+int     QueueList::status (void)    // return number of item in Queue
 {
         return itemCount;
 }
@@ -150,19 +151,19 @@ int      QueueList::status (void)    // return number of item in Queue
 //            Values:
 //              0  =  memory available
 //             -1  =  Last memory allocation failed.
-//       
+//
 int      QueueList::space  (void)     // return Queue space left
 {
         return spaceAvailable;       // return -1 if no space available
 }
 
-// Methods is used to peek within the queue at objects, and return there 
+// Methods is used to peek within the queue at objects, and return their
 // pointer without taking them out of the queue.
 //
 // Parameters:
-//     NumFromNext : The object number to look at from the start of the 
+//     NumFromNext : The object number to look at from the start of the
 //                   queue. The start of the queue is 1, not 0.
-//   
+//
 // Return Values:
 //     ANYOBJECT* : Pointer to the object that is stored within queue,
 //                  at said position. Returns NULL if operation failed.
@@ -206,7 +207,7 @@ QueueList::~QueueList      (void)
         while (pEndPos != NULL)
         {
               pEndPos = pEndPos->pLinkedItem;   // advance to next item
-              delete    pTemp  ->pStoredItem;     // kill data contained
+              delete    pTemp  ->pStoredItem;   // kill data contained
               delete    pTemp;                  // kill item
               pTemp   = pEndPos;
         }

@@ -1,9 +1,9 @@
 // C(++) Beautifier V1.61 Unix/MS-DOS update !
 // -----------------------------------------
-// $Id: bcpp.cpp,v 1.91 2002/11/24 18:30:06 tom Exp $
+// $Id: bcpp.cpp,v 1.99 2003/04/23 23:54:34 tom Exp $
 //
 // Program was written by Steven De Toni 1994 (CBC, ACBC).
-// Modified/revised by Thomas E. Dickey 1996-1999,2002.
+// Modified/revised by Thomas E. Dickey 1996-2002,2003.
 //
 // Steven's original notes follow:
 // ----------------------------------------------------------------------------
@@ -525,8 +525,8 @@ inline void CleanInputStruct (InputStruct* pDelStruct)
 {
     if (pDelStruct != NULL)
     {
-        delete pDelStruct -> pState;
-        delete pDelStruct -> pData;
+        delete[] pDelStruct -> pState;
+        delete[] pDelStruct -> pData;
         delete pDelStruct;
     }
 }
@@ -620,7 +620,7 @@ static void splitContinuation(InputStruct *pItem, char *pLineData, char *pLineSt
         char *s = new char[len + 4];
         strcpy(s, pItem->pData);
         strcat(s, " \\");
-        delete pItem->pData;
+        delete[] pItem->pData;
         pItem->pData = s;
 
         s = new char[len + 4];
@@ -628,7 +628,7 @@ static void splitContinuation(InputStruct *pItem, char *pLineData, char *pLineSt
         s[++len] = Blank;
         s[++len] = Normal;
         s[++len] = NullC;
-        delete pItem->pState;
+        delete[] pItem->pState;
         pItem->pState = s;
     }
 }
@@ -724,7 +724,7 @@ static int DecodeLine (bool afterSlash, int offset, char* pLineData, char *pLine
             if (DecodeLine (afterSlash, offset, pLineData, pLineState, pInputQueue) != 0)
             {
                 // problems !
-                delete pItem -> pData;
+                delete[] pItem -> pData;
                 delete pItem;
                 return -1;
             }
@@ -918,7 +918,7 @@ static int DecodeLine (bool afterSlash, int offset, char* pLineData, char *pLine
 
            TRACE_INPUT(pLeadCode)
            pInputQueue->putLast (pLeadCode);
-           delete pTemp;
+           delete[] pTemp;
         }
 
         //##### Update main string
@@ -1189,17 +1189,16 @@ bool ContinuedQuote(OutputStruct *pOut)
 // isn't quoted, and not within parentheses
 bool EndsStatement(OutputStruct *pOut)
 {
-    const char left = '(', right = ')';
     int nested = 0;
 
     for (int n = 0; pOut -> pCode[n] != NULLC; n++)
     {
         if (pOut -> pCFlag[n] == Normal)
         {
-            if (pOut -> pCode[n] == left)
+            if (pOut -> pCode[n] == L_PAREN)
                 nested++;
             else
-            if (pOut -> pCode[n] == right)
+            if (pOut -> pCode[n] == R_PAREN)
                 nested--;
             else
             if (nested == 0
@@ -1213,7 +1212,7 @@ bool EndsStatement(OutputStruct *pOut)
 // ----------------------------------------------------------------------------
 // Check for an "else" or "else if" that doesn't finish the statement on the
 // given fragment.
-bool BeginsElseClause(OutputStruct *pOut)
+static bool BeginsElseClause(OutputStruct *pOut)
 {
     if (CompareKeyword(pOut -> pCode, "else"))
     {
@@ -1223,13 +1222,48 @@ bool BeginsElseClause(OutputStruct *pOut)
 }
 
 // ----------------------------------------------------------------------------
+// Compute next curly-brace level after the given line
+static void computeBraces(OutputStruct *pOut, int& level)
+{
+    TRACE_OUTPUT(pOut);
+    if (pOut->pCode != 0
+     && pOut->pCFlag != 0)
+    {
+        for (int n = 0; pOut->pCFlag[n] != NullC; ++n)
+        {
+            if (pOut->pCFlag[n] == Normal)
+            {
+                if (pOut->pCode[n] == L_CURL)
+                    ++level;
+                else if (pOut->pCode[n] == R_CURL)
+                    --level;
+            }
+        }
+    }
+    else if (pOut->pBrace != 0
+          && pOut->pBFlag != 0)
+    {
+        for (int n = 0; pOut->pBFlag[n] != NullC; ++n)
+        {
+            if (pOut->pBFlag[n] == Normal)
+            {
+                if (pOut->pBrace[n] == L_CURL)
+                    ++level;
+                else if (pOut->pBrace[n] == R_CURL)
+                    --level;
+            }
+        }
+    }
+}
+
+// ----------------------------------------------------------------------------
 // Function takes a QueueList object that contains InputStructure items, and
 // uses these items to reconstruct a compressed version of a output line of
 // code, comment, or both.
 //
 // Parameters:
 // indentStack : Variable used to show how many spaces/tabs to indent when
-//              creating a new OutputStructure.
+//               creating a new OutputStructure.
 // pInputQueue : Pointer to the InputStructure queue object.
 // pOutputQueue: Pointer to the OutputStructure queue object.
 // userS       : Structure that contains the users config settings.
@@ -1241,7 +1275,8 @@ bool BeginsElseClause(OutputStruct *pOut)
 //        -2 = Line construction error, unexpected type found.
 int ConstructLine (
     bool &indentPreP,
-    int &prepStack,
+    int &prepStack,             // level of preprocessor-stack
+    int& bracesLevel,           // curly-brace level
     int& indentStack,
     bool& pendingElse,
     HangStruct& hang_state,
@@ -1322,7 +1357,7 @@ int ConstructLine (
                     {
                         pendingComment = pTestType -> pData;
                         TRACE(("@%d, Pending Comment = %s:%d\n", __LINE__, pendingComment, pOut->thisToken))
-                        delete pTestType -> pState;
+                        delete[] pTestType -> pState;
                         delete pTestType;
                         delete pOut;
                         continue;
@@ -1414,7 +1449,7 @@ int ConstructLine (
             // @@@@@@ Blank Line spacing
             case (ELine):
             {
-                delete pTestType -> pData;
+                delete[] pTestType -> pData;
                 break;
             }
 
@@ -1422,7 +1457,7 @@ int ConstructLine (
             case (PreP):
             {
                 pOut -> pCode = pTestType -> pData;
-                delete pTestType -> pState;
+                pOut -> pCFlag = pTestType -> pState;
                 if (userS.indentPreP) {
                     switch (typeOfPreP(pTestType))
                     {
@@ -1468,12 +1503,15 @@ int ConstructLine (
         }
         if (pOut -> pCode == 0
          && pOut -> pBrace == 0)
-            delete pTestType -> pState;
+            delete[] pTestType -> pState;
 
         hang_state.IndentHanging(pOut);
 
         if (userS.indent_sql)
             sql_state.IndentSQL(pOut);
+
+        pOut->bracesLevel = bracesLevel;
+        computeBraces(pOut, bracesLevel);
 
         pOutputQueue -> putLast (pOut);
 
@@ -2024,6 +2062,23 @@ QueueList* IndentNonBraces (StackList* pIMode, QueueList* pLines, const Config& 
 
 
 // ----------------------------------------------------------------------------
+// Check for a keyword which can precede a left curly-brace.
+static bool KeyBeforeBrace (const char *word, int length)
+{
+    switch (length)
+    {
+    case 2:
+        return (strncmp(word, "do", length)) ? False : True;
+    case 4:
+        return (strncmp(word, "else", length)
+             && strncmp(word, "enum", length)) ? False : True;
+    case 5:
+        return (strncmp(word, "while", length)) ? False : True;
+    }
+    return False;
+}
+
+// ----------------------------------------------------------------------------
 // Function reformats open braces to be on the same lines as the
 // code that it's assigned (if possible).
 //
@@ -2033,76 +2088,141 @@ QueueList* IndentNonBraces (StackList* pIMode, QueueList* pLines, const Config& 
 //
 // Return Values:
 // QueueList* : Returns a pointer to a newly constructed OutputStructure
-//              queue.
+//              queue, or the value of pLines if no work is needed.
+//              The input pLines is freed unless it is the return-value.
 //
-QueueList* ReformatBraces (QueueList* pLines, const Config& userS)
+static QueueList* ReformatBraces (QueueList* pLines, int first, const Config& userS)
 {
-    QueueList*    pNewLines     = new QueueList();
-
     int           queueNum      = pLines -> status (); // get queue number
+
     int           findBrace;    // position in queue where first brace line is located
     int           findCode ;    // position in queue where next code line is located
 
     OutputStruct* pBraceLine    = NULL;
     OutputStruct* pCodeLine     = NULL;
 
-    if (pNewLines == NULL)
-    {
-        delete pLines;
-        return NULL;     // out of memory
-    }
+    TRACE(("ReformatBraces(%d:%d)\n", first, queueNum));
 
-    // Cant process less than two items (i.e. move brace from one line to next line to make one line )
-    if (queueNum  < 2)
+    // Can't process less than two items (i.e. move brace from one line to next line to make one line )
+    if (queueNum < 2 || first > queueNum)
     {
-        delete pNewLines; // free object that wasn't used !
         return pLines;
     }
 
     // search forward through queue to find the first appearance of a brace !
-    findBrace = 1;
+    findBrace = first;
     while (findBrace <= queueNum)
     {
         pBraceLine = (OutputStruct*) pLines -> peek (findBrace);
 
         if ((pBraceLine -> pBrace != NULL) && (pBraceLine -> pBrace[0] == L_CURL))
-            break;                 // leave queue search !
+            break;              // leave queue search !
         else
             findBrace++;
     }
 
-    if (findBrace > queueNum)      // open brace not found in queue !
+    if (findBrace > queueNum)   // open brace not found in queue !
     {
-        delete pNewLines;
         return pLines;
     }
 
     // find out if there is a place to place the brace in the code that
     // is currently stored !
-    for (findCode = findBrace-1; findCode >= 1; findCode--)
+    for (findCode = findBrace-1; findCode >= first; findCode--)
     {
         if (((OutputStruct*) pLines -> peek (findCode)) -> pCode != NULL)
-                             break; // found a code Line !
+            break;              // found a code Line
     }
 
-    if (findCode > 0)   // o.k found a line that has code !
+    if (findCode >= first)      // o.k found a line that has code !
     {
         OutputStruct* pNewItem   = NULL;
         char*         pNewMem    = NULL;
+
+        // we're here to join braces, but must check if this instance must
+        // remain split:
+        bool splitBraces = False;
+        if (pBraceLine->bracesLevel == 0
+         && userS.topBraceLoc != False)
+        {
+            splitBraces = True;
+        }
+        else
+        {
+            int lastword = -1;
+            int wordsize = 0;
+            char lastchar = NullC;
+
+            pCodeLine = (OutputStruct*) pLines -> peek(findCode);
+            if (pCodeLine->pCode != 0
+             && pCodeLine->pCFlag != 0)
+            {
+                for (int n = 0; pCodeLine->pCode[n] != NullC; ++n)
+                {
+                    if (pCodeLine->pCFlag[n] == PreProc)
+                    {
+                        lastchar = NullC;
+                        lastword = -1;
+                        break;
+                    }
+                    else if (pCodeLine->pCFlag[n] == Normal)
+                    {
+                        lastchar = pCodeLine->pCode[n];
+                        if (n > 0 && !isName(pCodeLine->pCode[n-1]))
+                        {
+                            lastword = -1;
+                            wordsize = 0;
+                        }
+                        if (!isName(pCodeLine->pCode[n]))
+                        {
+                            lastword = -1;
+                            wordsize = 0;
+                        }
+                        else if (lastword < 0 && isName(pCodeLine->pCode[n]))
+                        {
+                            lastword = n;
+                            wordsize = 0;
+                        }
+                        if (lastword >= 0)
+                            ++wordsize;
+                    }
+                    else if (pCodeLine->pCFlag[n] == DQuoted
+                          || pCodeLine->pCFlag[n] == SQuoted)
+                    {
+                        lastchar = NullC;
+                        lastword = -1;
+                        wordsize = 0;
+                    }
+                }
+                // we can join a left-curly after a right-paren, equals, or "else"
+                if (lastchar != R_PAREN
+                 && lastchar != '='
+                 && (lastword < 0
+                  || KeyBeforeBrace(pCodeLine->pCode + lastword, wordsize) == False))
+                    splitBraces = True;
+            }
+        }
+
+        // place top-level open braces on same line as code
+        if (splitBraces || userS.braceLoc == True)
+        {
+            TRACE(("...leave brace, restart\n"));
+
+            return ReformatBraces (pLines, findBrace + 1, userS);
+        }
+
+        QueueList* pNewLines = new QueueList();
+        if (pNewLines == NULL)
+        {
+            return NULL;        // out of memory
+        }
 
         // load newQueue with lines up to code line found !
         for (int loadNew = 1; loadNew < findCode; loadNew++)
             pNewLines -> putLast (pLines -> takeNext());
 
         // take code line that is going to be altered !
-        pCodeLine  = (OutputStruct*) pLines -> takeNext ();
-
-        // calculate new brace position in queue
-        findBrace                = findBrace - (queueNum - pLines -> status ());
-
-        // get a pointer to the brace line, this is because of code lines that may still
-        // exist within queue.
-        pBraceLine = (OutputStruct*) pLines -> peek (findBrace);
+        pCodeLine = (OutputStruct*) pLines -> takeNext ();
 
         // if code has comments, then it's placed on a new line !
         if (pCodeLine -> pComment != NULL)
@@ -2134,13 +2254,13 @@ QueueList* ReformatBraces (QueueList* pLines, const Config& userS)
             delete pBraceLine;
             delete pLines;
             delete pNewLines;
-            return NULL;// out of memory
+            return NULL;        // out of memory
         }
 
         // concatenate code + space + brace // ### CHECK IT
-        pNewMem = strcpy  (pNewMem, pCodeLine -> pCode);          // copy code
-        strcpy (endOf(pNewMem), " ");                 // copy space
-        strcpy (endOf(pNewMem), pBraceLine -> pBrace);// copy brace
+        pNewMem = strcpy (pNewMem, pCodeLine -> pCode); // copy code
+        strcpy (endOf(pNewMem), " ");                   // copy space
+        strcpy (endOf(pNewMem), pBraceLine -> pBrace);  // copy brace
 
         // place attributes into queue
         pNewItem -> indentSpace = pCodeLine -> indentSpace;
@@ -2160,6 +2280,8 @@ QueueList* ReformatBraces (QueueList* pLines, const Config& userS)
         // store newly constructed output structure
         pNewLines -> putLast (pNewItem);
 
+        int start = pNewLines->status();
+
         // process brace Line !, create new output structure for brace comment
         if (pBraceLine -> pComment != NULL)
         {
@@ -2174,12 +2296,11 @@ QueueList* ReformatBraces (QueueList* pLines, const Config& userS)
                 return NULL;// out of memory
             }
 
-
             // load comment
             pNewItem   -> pComment = pBraceLine -> pComment;
             pBraceLine -> pComment = NULL;
 
-            // positioning comment, use filler no indentSpace as this
+            // positioning comment, use filler - not indentSpace - as this
             // will become screw when using tabs ... fillers use spaces!
             pNewItem   -> filler  = userS.posOfCommentsWC;
 
@@ -2190,7 +2311,7 @@ QueueList* ReformatBraces (QueueList* pLines, const Config& userS)
 
         // copy existing lines from old queue, into the newly created queue !
 
-        // copy one all objects on pLines up to pBraceLine
+        // copy all objects from pLines up to pBraceLine
         pCodeLine = (OutputStruct*) pLines -> takeNext(); // read ahead rule
         while (pCodeLine != pBraceLine)
         {
@@ -2207,13 +2328,10 @@ QueueList* ReformatBraces (QueueList* pLines, const Config& userS)
         // remove old queue object from memory, return newly constructed one
         delete pLines;
 
-        // Test if there are any more L_CURL open brace lines in pNewLine queue,
-        // do a recursive call to check ! :-)
-        pLines = ReformatBraces (pNewLines, userS);
-        return pLines;
+        // Test if there are any more open brace lines in pNewLine queue.
+        // Do a recursive call to check.
+        pLines = ReformatBraces (pNewLines, start, userS);
     }
-    else
-        delete pNewLines;   // couldn't find a code line in queue buffer!
 
     return pLines;
 }
@@ -2227,6 +2345,8 @@ QueueList* ReformatBraces (QueueList* pLines, const Config& userS)
 // pLines   : Pointer to the OutputStructure queue object.
 // userS    : Users configuration settings.
 // FuncVar  : Defines what type of mode the function is operating in.
+// inBraces : Set to true if we're within curly-braces.
+// pendingBlank : is used to control consecutive blank lines
 //
 // Return Values:
 // QueueList*   : Pointer to the OutputStructure (sometimes altered)
@@ -2235,14 +2355,17 @@ QueueList* ReformatBraces (QueueList* pLines, const Config& userS)
 //                1 = output blank lines
 //                2 = delete blank OutputStructures in queue until code is reached.
 //
-void FunctionSpacing (QueueList* pLines, const Config& userS, int& FuncVar, int &pendingBlank )
+void FunctionSpacing (QueueList* pLines, const Config& userS, int& FuncVar, int &pendingBlank, bool& inBraces )
 {
+    inBraces = False;
     if (pLines -> status () > 0) // if there are items in the queue !
     {
         OutputStruct* pTestLine      =  (OutputStruct*) pLines -> peek (1);
 
+        inBraces = (pTestLine -> indentSpace > 0) ? True : False;
+
         // check if end of function, structure, class has been reached !
-        if ( ((FuncVar == 0) && (pTestLine -> indentSpace <= 0 )) &&
+        if ( ((FuncVar == 0) && (inBraces == False)) &&
              (pTestLine -> pBrace != NULL) )
         {
              if (pTestLine -> pBrace[0] == R_CURL
@@ -2336,7 +2459,7 @@ static Boolean adjustLeadingSpaces(int fillMode, char *&notes, int &leading)
 
 // ----------------------------------------------------------------------------
 // Function is used to expand OutputStructures contained within a queue to the
-// users output file. Function also reformats braces, function spacing,
+// user's output file.  Function also reformats braces, function spacing,
 // braces indenting.
 //
 // Parameters:
@@ -2346,6 +2469,7 @@ static Boolean adjustLeadingSpaces(int fillMode, char *&notes, int &leading)
 // userS     : Users configuration settings.
 // stopLimit : Defines how many OutputStructures remain within the Queue not
 //             processed.
+// pendingBlank : is used to control consecutive blank lines
 //
 // Return Values:
 // FuncVar   : See FunctionSpacing()
@@ -2359,6 +2483,7 @@ QueueList* OutputToOutFile (FILE* pOutFile, QueueList* pLines, StackList* pIMode
     char*         pIndentation = NULL;
     char*         pFiller      = NULL;
     int           fillMode     = 2; // we can always use spaces
+    bool          inBraces;
 
     // determine fill mode
     if (userS.useTabs == True)
@@ -2369,7 +2494,7 @@ QueueList* OutputToOutFile (FILE* pOutFile, QueueList* pLines, StackList* pIMode
         // process function spacing !!!!!
         int testProcessing = pLines -> status();
 
-        FunctionSpacing (pLines, userS, FuncVar, pendingBlank );
+        FunctionSpacing (pLines, userS, FuncVar, pendingBlank, inBraces );
 
         if (pLines -> status () < testProcessing) // line removed, test next line in buffer
              continue;
@@ -2380,9 +2505,10 @@ QueueList* OutputToOutFile (FILE* pOutFile, QueueList* pLines, StackList* pIMode
              return NULL;               //#### Memory Allocation Failure
 
         // reformat open braces if user option set !
-        if (userS.braceLoc == False)    // place open braces on same line as code
+        if (userS.topBraceLoc == False  // place open braces on same line as code
+         || userS.braceLoc == False)    // place open braces on same line as code
         {
-            pLines = ReformatBraces (pLines, userS);
+            pLines = ReformatBraces (pLines, 1, userS);
             if (pLines == NULL)
                return NULL;
         }
@@ -2416,7 +2542,7 @@ QueueList* OutputToOutFile (FILE* pOutFile, QueueList* pLines, StackList* pIMode
                 adjustLeadingSpaces(fillMode, notes, leading);
                 pIndentation = TabSpacing (fillMode,  0, leading, userS.tabSpaceSize);
                 fprintf (pOutFile, "%s", pIndentation);
-                delete pIndentation;
+                delete[] pIndentation;
 
                 fprintf (pOutFile, "%s\n", notes);
                 notes = NULL;
@@ -2479,7 +2605,7 @@ QueueList* OutputToOutFile (FILE* pOutFile, QueueList* pLines, StackList* pIMode
                 if (pIndentation != NULL)
                 {
                     fprintf (pOutFile, "%s", pIndentation);
-                    delete pIndentation;
+                    delete[] pIndentation;
                 }
 
                 if (pOut -> pCode != NULL)
@@ -2491,7 +2617,7 @@ QueueList* OutputToOutFile (FILE* pOutFile, QueueList* pLines, StackList* pIMode
                 if (pFiller != NULL)
                 {
                     fprintf (pOutFile, "%s", pFiller);
-                    delete pFiller;
+                    delete[] pFiller;
                 }
 
                 if (notes != NULL)
@@ -2578,7 +2704,7 @@ int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
 
     int                 pendingBlank = 0;      // var used to control blank lines
     int                 indentStack  = 0;      // var used for brace spacing
-    int                 indentStack2 = 0;
+    int                 indentStack2 = 0;      // save/restore "indentStack" for preprocessor lines
 
     QueueList*          pOutputQueue = new QueueList();
     StackList*          pIMode       = new StackList();
@@ -2592,6 +2718,7 @@ int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
     bool                indentPreP   = False;
     bool                pendingElse  = False;
     int                 prepStack    = 0;
+    int                 bracesLevel  = 0;
     int                 in_prepro    = 0;
     HangStruct          hang_state;
     HtmlStruct          html_state;
@@ -2622,13 +2749,13 @@ int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
     while (! EndOfFile)
     {
         if (pData != 0)
-            delete pData;
+            delete[] pData;
 
         pData = ReadLine (pInFile, EndOfFile);
 
         if (lineState != 0)
         {
-            delete lineState;
+            delete[] lineState;
             lineState = NULL;
         }
 
@@ -2706,6 +2833,7 @@ int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
                 int errorCode = ConstructLine (
                         indentPreP,
                         prepStack,
+                        bracesLevel,
                         indentStack,
                         pendingElse,
                         hang_state,
@@ -2797,8 +2925,8 @@ int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
     delete pIMode;
     delete pOutputQueue;
     delete pInputQueue;
-    delete pData;
-    delete lineState;
+    delete[] pData;
+    delete[] lineState;
 
     if (userS.output != False)
     {
@@ -2921,6 +3049,7 @@ int LoadnRun (int argc, char* argv[])
                               False,  // leaveCommentsNC
                               False,  // quoteChars
                               3,      // deleteHighChars
+                              True,   // topBraceLoc
                               True,   // braceLoc
                               True,   // output
                               10,     // queueBuffer
@@ -2941,6 +3070,7 @@ int LoadnRun (int argc, char* argv[])
     settings.quoteChars       = False;// use tabs to indents rather than spaces
     settings.deleteHighChars  = 3;    // 0  = no check         , 1 = delete high chars,
                                       // 3  = delete high chars, but not graphics
+    settings.topBraceLoc      = True; // Start top-level open braces on new line
     settings.braceLoc         = True; // Start open braces on new line
     settings.output           = True; // Set this true for normal program output
     settings.queueBuffer      = 10;   // Set the number if lines to store in memory at a time !
@@ -3049,6 +3179,9 @@ int LoadnRun (int argc, char* argv[])
 
     if (renamed)
         RestoreIfUnchanged(pInFile, pOutFile);
+
+    if (pInFile != NULL)
+        delete[] pInFile;
 
     if (settings.output != False)
         verbose ("Done !\n");

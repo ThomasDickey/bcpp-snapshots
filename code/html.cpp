@@ -1,5 +1,5 @@
 //******************************************************************************
-// Copyright 1999 by Thomas E. Dickey                                          *
+// Copyright 1999-2002,2003 by Thomas E. Dickey                                          *
 // All Rights Reserved.                                                        *
 //                                                                             *
 // Permission to use, copy, modify, and distribute this software and its       *
@@ -17,7 +17,7 @@
 // OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR   *
 // PERFORMANCE OF THIS SOFTWARE.                                               *
 //******************************************************************************
-// $Id: html.cpp,v 1.3 2002/05/18 17:46:46 tom Exp $
+// $Id: html.cpp,v 1.5 2003/04/22 22:58:57 tom Exp $
 
 #include "bcpp.h"
 #include "cmdline.h"
@@ -44,7 +44,7 @@ BeginScript(const char *text)
 {
     char *temp = UpperCase (text);
     bool code = !strcmp("<SERVER>", temp) || !strcmp("<SCRIPT>", temp);
-    delete temp;
+    delete[] temp;
     return code;
 }
 
@@ -53,7 +53,7 @@ EndScript(const char *text)
 {
     char *temp = UpperCase (text);
     bool code = !strcmp("</SERVER>", temp) || !strcmp("</SCRIPT>", temp);
-    delete temp;
+    delete[] temp;
     return code;
 }
 
