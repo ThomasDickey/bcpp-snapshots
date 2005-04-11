@@ -1,5 +1,5 @@
 //******************************************************************************
-// Copyright 1996-2002,2003 by Thomas E. Dickey                                *
+// Copyright 1996-2003,2005 by Thomas E. Dickey                                *
 // All Rights Reserved.                                                        *
 //                                                                             *
 // Permission to use, copy, modify, and distribute this software and its       *
@@ -17,7 +17,7 @@
 // OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR   *
 // PERFORMANCE OF THIS SOFTWARE.                                               *
 //******************************************************************************
-// $Id: tabs.cpp,v 1.22 2003/04/22 18:45:36 tom Exp $
+// $Id: tabs.cpp,v 1.24 2005/04/11 00:20:18 tom Exp $
 // Tab conversion & first-pass scanning
 
 #include <ctype.h>
@@ -212,7 +212,7 @@ static void nextCharState(char * &String, CharState &theState, int &skip)
 static int NonPrintable(char c, int mode)
 {
     int it = False;
-    unsigned char check = (unsigned char)c;
+    unsigned char check = static_cast<unsigned char>(c);
 
     // remove chars below a space, but not if char is a TAB.
     if (check < SPACE && check != TAB) {
@@ -435,9 +435,9 @@ void ExpandTabs (char* &pString,
         lineState[last] = NullC;
     }
 
-    TRACE((" Expanded  (%s)\n", pString))
-    TRACE((" lineState (%s)\n", lineState))
-    TRACE(("%s %d/%d %s\n", last > strlen(pString)+1 ? "FIXME" : "", last, strlen(pString), showCharState(curState)))
+    TRACE((" Expanded  (%s)\n", pString));
+    TRACE((" lineState (%s)\n", lineState));
+    TRACE(("%s %d/%d %s\n", last > strlen(pString)+1 ? "FIXME" : "", last, strlen(pString), showCharState(curState)));
 }
 
 // ----------------------------------------------------------------------------

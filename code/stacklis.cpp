@@ -1,3 +1,4 @@
+// $Id: stacklis.cpp,v 1.3 2005/04/10 18:31:34 tom Exp $
 #ifndef _STACK_LIST_CODE
 #define _STACK_LIST_CODE
 
@@ -16,31 +17,32 @@
 // ############################## Public Methods ##############################
 // ############################### Constructors ###############################
 
+#define MY_DEFAULT \
+      pCurrentPos(NULL), \
+      itemCount(0), \
+      spaceAvailable(0)
+
 // Initialise internal variables.
 //
 StackList::StackList (void)
+    : MY_DEFAULT
 {
-    pCurrentPos    = NULL;
-    itemCount      = 0;
-    spaceAvailable = 0; // space is available
 }
 
 // Initalise variables, and place item passed in a new list
-//     
+//
 // Parameters:
 //     pItem    : Pointer to the object that is will to be stored.
 //                Item must be of descendant ANYOBJECT.
 //
 StackList::StackList (ANYOBJECT* pItem)
+    : MY_DEFAULT
 {
-    pCurrentPos    = NULL;
-    itemCount      = 0;
-    spaceAvailable = 0; // space is available
     push (pItem);
 }
 
 
-// Places a new item in the list (i.e on the stack). 
+// Places a new item in the list (i.e on the stack).
 //
 // Parameters:
 //     pItem    : Pointer to the object that is will to be stored.
@@ -48,7 +50,7 @@ StackList::StackList (ANYOBJECT* pItem)
 //
 // Return Values:
 //     int      : Returns a error code value to indicate whether operation
-//                was successful or not.  
+//                was successful or not.
 //                Value:
 //                0  =  No Worries, item stacked.
 //               -1  =  Item not stacked, memory allocation failure
@@ -83,7 +85,7 @@ int StackList::push (ANYOBJECT* pItem)
 // within the list.
 //
 // Return Values:
-//     ANYOBJECT* : Pointer to the object last object that was placed 
+//     ANYOBJECT* : Pointer to the object last object that was placed
 //                  on the stack. Returns NULL pointer if operation
 //                  failed.
 //
@@ -100,7 +102,7 @@ ANYOBJECT* StackList::pop (void)
          return pTemp;
     }
     else
-        return NULL;    
+        return NULL;
 }
 
 // Peeks at items within the linked list without removing
@@ -139,7 +141,7 @@ ANYOBJECT* StackList::peek (int item)
 //            Values:
 //              0  =  memory available
 //             -1  =  Last memory allocation failed.
-//       
+//
 int  StackList::space (void)
 {
     return spaceAvailable;
@@ -163,12 +165,12 @@ int  StackList::status (void)
 StackList::~StackList  (void)
 {
     ANYOBJECT* pTest = pop();
+
     while (pTest != NULL)
     {
         delete pTest;
         pTest = pop();
     }
-
 }
 
 #endif

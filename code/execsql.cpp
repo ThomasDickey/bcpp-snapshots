@@ -1,5 +1,5 @@
 //******************************************************************************
-// Copyright 1996-2002,2003 by Thomas E. Dickey                                *
+// Copyright 1996-2003,2005 by Thomas E. Dickey                                *
 // All Rights Reserved.                                                        *
 //                                                                             *
 // Permission to use, copy, modify, and distribute this software and its       *
@@ -17,7 +17,7 @@
 // OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR   *
 // PERFORMANCE OF THIS SOFTWARE.                                               *
 //******************************************************************************
-// $Id: execsql.cpp,v 1.14 2003/04/22 17:21:59 tom Exp $
+// $Id: execsql.cpp,v 1.16 2005/04/11 00:19:30 tom Exp $
 // EXEC SQL parsing & indention
 
 #include <ctype.h>
@@ -33,7 +33,7 @@ SqlStruct::NextWord(int start, OutputStruct *pOut)
     int n = start;
     bool reset = False;
 
-    TRACE(("next:%s\n", pOut -> pCode+start))
+    TRACE(("next:%s\n", pOut -> pCode+start));
     while (pOut -> pCode[n] != NULLC
       &&  (pOut -> pCFlag[n] != Normal || !isName(pOut -> pCode[n])))
     {
@@ -67,7 +67,7 @@ SqlStruct::SkipWord(int start, OutputStruct *pOut)
 {
     int n = start;
 
-    TRACE(("skip:%s\n", pOut -> pCode+start))
+    TRACE(("skip:%s\n", pOut -> pCode+start));
     // skip the current word
     while (pOut -> pCode[n] != NULLC
       &&  (ispunct(pOut -> pCFlag[n]) && isName(pOut -> pCode[n])))
@@ -244,8 +244,8 @@ SqlStruct::IndentSQL(OutputStruct *pOut)
             return;
 
         StrUpr (strcpy(pUprString, pOut->pCode));
-        TRACE(("HERE:%s\n", pUprString))
-        TRACE(("FLAG:%s\n", pOut->pCFlag))
+        TRACE(("HERE:%s\n", pUprString));
+        TRACE(("FLAG:%s\n", pOut->pCFlag));
 
         for (int n = NextWord(0, pOut);
             pOut -> pCode[n] != NULLC;
@@ -284,7 +284,7 @@ SqlStruct::IndentSQL(OutputStruct *pOut)
                 }
                 matched[level = 0] = NULLC;
             }
-            TRACE(("TEST:%d:%d:%s:%s\n", state, level, matched, pUprString+n))
+            TRACE(("TEST:%d:%d:%s:%s\n", state, level, matched, pUprString+n));
             n = SkipWord(n, pOut);
             if (pOut -> pCode[n] == NULLC)
             {
