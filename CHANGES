@@ -1,7 +1,14 @@
--- $Id: CHANGES,v 1.27 2004/10/27 00:00:27 tom Exp $
+-- $Id: CHANGES,v 1.29 2005/04/10 23:20:50 tom Exp $
 -- Thomas E. Dickey <dickey@invisible-island.net>
 
-2004/10/26
+2005/04/10
+	+ correct some regressions introduced by 2004/10/27:
+	  + check if a line began as part of a quoted string string before
+	    computing its indentation.
+	  + count indent-level for curly-braces within #define's.
+	+ improve configure check for g++ warnings (from ncurses).
+
+2004/10/27
 	+ correct logic that tracks state of preprocessor lines that continue
 	  from one line to the next.  The additional lines were not marked
 	  as preprocessor lines (report by Edward Bishop).

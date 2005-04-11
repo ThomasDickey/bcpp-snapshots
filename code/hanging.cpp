@@ -1,5 +1,5 @@
 //******************************************************************************
-// Copyright 1996-2002,2003 by Thomas E. Dickey                                *
+// Copyright 1996-2003,2005 by Thomas E. Dickey                                *
 // All Rights Reserved.                                                        *
 //                                                                             *
 // Permission to use, copy, modify, and distribute this software and its       *
@@ -17,7 +17,7 @@
 // OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR   *
 // PERFORMANCE OF THIS SOFTWARE.                                               *
 //******************************************************************************
-// $Id: hanging.cpp,v 1.16 2003/04/23 20:10:48 tom Exp $
+// $Id: hanging.cpp,v 1.18 2005/04/11 00:19:35 tom Exp $
 // Compute hanging-indent for most multiline statements.
 
 #include <stdlib.h>
@@ -156,7 +156,7 @@ HangStruct::IndentHanging(OutputStruct *pOut)
         parn_level,
         curl_level,
         do_aggreg,
-        in_aggreg))
+        in_aggreg));
 #endif
 
     if (indent != 0
@@ -171,7 +171,7 @@ HangStruct::IndentHanging(OutputStruct *pOut)
         pOut -> indentHangs = indent;
         if (stmt_level && !until_parn)
             pOut -> indentHangs += stmt_level;
-        TRACE(("HANG:%d\n", pOut -> indentHangs))
+        TRACE(("HANG:%d\n", pOut -> indentHangs));
     }
 
     if (pOut -> pType != PreP)

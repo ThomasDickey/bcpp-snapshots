@@ -1,7 +1,7 @@
 #ifndef _QUEUE_LIST_CODE
 #define _QUEUE_LIST_CODE
 
-// $Id: baseq.cpp,v 1.4 2003/04/22 22:53:39 tom Exp $
+// $Id: baseq.cpp,v 1.5 2005/04/10 18:29:14 tom Exp $
 // Code written by Steven De Toni ACBC 11
 
 // These class methods used to implement a object that holds other objects
@@ -45,23 +45,26 @@ LinkItem* QueueList::newItem (ANYOBJECT* pItem, LinkItem* pEndList)
 
 // ############################## Public Methods ##############################
 // ############################### Constructors ###############################
-QueueList::QueueList       (void)
+#define MY_DEFAULT \
+   itemCount(0), \
+   pEndPos(NULL), \
+   spaceAvailable(0)
+
+QueueList::QueueList (void)
+    : MY_DEFAULT
 {
-   itemCount      = 0;
-   spaceAvailable = 0;
-   pEndPos        = NULL;
 }
 
 // Parameters:
 //     pItem    : Pointer to a object to be stored, must be descendant of
 //                base class ANYOBJECT.
-QueueList::QueueList       (ANYOBJECT* pItem)
+QueueList::QueueList (ANYOBJECT* pItem)
+    : MY_DEFAULT
 {
-   itemCount      = 0;
-   spaceAvailable = 0;
-   pEndPos        = NULL;
    putLast(pItem);
 }
+
+#undef MY_DEFAULT
 
 // ########################### User Methods ###################################
 
@@ -78,7 +81,7 @@ QueueList::QueueList       (ANYOBJECT* pItem)
 //                    0 = No Worries
 //                   -1 = Arrgh ... No memory
 //
-int       QueueList::putLast   (ANYOBJECT* pItem)
+int QueueList::putLast (ANYOBJECT* pItem)
 {
     LinkItem*   pNewItem = newItem (pItem, pEndPos);
     if (pNewItem != NULL)
@@ -99,26 +102,26 @@ int       QueueList::putLast   (ANYOBJECT* pItem)
 // Return Values:
 //     ANYOBJECT* : Pointer to the object that was stored within queue.
 //
-ANYOBJECT*   QueueList::takeNext         (void)
+ANYOBJECT* QueueList::takeNext (void)
 {
-      if (pEndPos != NULL)
-      {
+    if (pEndPos != NULL)
+    {
         LinkItem* pUpDateList = pEndPos;
         LinkItem* pStartPos   = pEndPos;
 
         // move down list until start has been reached
         while (pStartPos->pLinkedItem != NULL)
-              pStartPos = pStartPos->pLinkedItem;
+            pStartPos = pStartPos->pLinkedItem;
 
         if (pStartPos != pUpDateList) // if not the last item in list
         {
             // retrieve data and delete item from list
             while (pUpDateList->pLinkedItem != pStartPos)
-                  pUpDateList = pUpDateList->pLinkedItem;
+            pUpDateList = pUpDateList->pLinkedItem;
         }
         else
         {
-            pEndPos = NULL;             // start new list after all items gone
+            pEndPos = NULL;     // start new list after all items gone
         }
 
         ANYOBJECT* pTemp = pStartPos->pStoredItem;  // copy value to user
@@ -126,11 +129,11 @@ ANYOBJECT*   QueueList::takeNext         (void)
         delete pStartPos;                           // delete object
         itemCount--;                                // one less
         if (spaceAvailable)                         // if no memory available before...
-            spaceAvailable = 0;     // there is now!
+            spaceAvailable = 0; // there is now!
         return pTemp;
-      }
-      else
-          return NULL;
+    }
+    else
+        return NULL;
 }
 
 // Returns the number of items contained within the queue.
@@ -138,9 +141,9 @@ ANYOBJECT*   QueueList::takeNext         (void)
 // Returns Values:
 //     int :    Num of items within queue.
 //
-int     QueueList::status (void)    // return number of item in Queue
+int QueueList::status (void)        // return number of item in Queue
 {
-        return itemCount;
+    return itemCount;
 }
 
 // Method returns whether last operation failed due to memory allocation
@@ -152,9 +155,9 @@ int     QueueList::status (void)    // return number of item in Queue
 //              0  =  memory available
 //             -1  =  Last memory allocation failed.
 //
-int      QueueList::space  (void)     // return Queue space left
+int QueueList::space (void)     // return Queue space left
 {
-        return spaceAvailable;       // return -1 if no space available
+    return spaceAvailable;      // return -1 if no space available
 }
 
 // Methods is used to peek within the queue at objects, and return their
@@ -200,17 +203,17 @@ ANYOBJECT*   QueueList::peek (int numFromNext)
 // Method will remove all list items from memory if they still exist,
 // no garbage collection provided, or used.
 //
-QueueList::~QueueList      (void)
+QueueList::~QueueList (void)
 {
-        LinkItem* pTemp = pEndPos;
+    LinkItem* pTemp = pEndPos;
 
-        while (pEndPos != NULL)
-        {
-              pEndPos = pEndPos->pLinkedItem;   // advance to next item
-              delete    pTemp  ->pStoredItem;   // kill data contained
-              delete    pTemp;                  // kill item
-              pTemp   = pEndPos;
-        }
+    while (pEndPos != NULL)
+    {
+        pEndPos = pEndPos->pLinkedItem;   // advance to next item
+        delete    pTemp  ->pStoredItem;   // kill data contained
+        delete    pTemp;                  // kill item
+        pTemp   = pEndPos;
+    }
 }
 
 #endif

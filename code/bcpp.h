@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 1996-2002,2003 by Thomas E. Dickey                               *
+ * Copyright 1996-2004,2005 by Thomas E. Dickey                               *
  * All Rights Reserved.                                                       *
  *                                                                            *
  * Permission to use, copy, modify, and distribute this software and its      *
@@ -17,7 +17,7 @@
  * CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN        *
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.                   *
  ******************************************************************************/
-// $Id: bcpp.h,v 1.37 2004/10/25 23:17:46 tom Exp $
+// $Id: bcpp.h,v 1.43 2005/04/11 00:18:38 tom Exp $
 
 #ifndef _BCPP_HEADER
 #define _BCPP_HEADER
@@ -39,7 +39,7 @@
 #endif
 
 #ifdef DEBUG
-#define TRACE(p) trace p;
+#define TRACE(p) trace p
 #else
 #define TRACE(p) /*nothing*/
 #endif
@@ -91,6 +91,14 @@ extern const IndentwordStruct pIndentWords[];
 // ----------------------------------------------------------------------------
 // This structure is used to store line data that is de-constructed from the
 // user's input file.
+
+#define MY_DEFAULT \
+        dataType(), \
+        comWcode(), \
+        offset(), \
+        pData(), \
+        pState()
+
 class InputStruct : public ANYOBJECT
 {
     public:
@@ -112,13 +120,20 @@ class InputStruct : public ANYOBJECT
         char* pState;         // pointer to corresponding parse-state
 
         inline InputStruct (DataTypes theType, int theOffset)
+            : MY_DEFAULT
         {
             dataType = theType;
             offset = theOffset;
             comWcode = False;
             pState = 0;       // only non-null for code
         }
+
+        // use defaults here:
+        InputStruct(const InputStruct&);
+        InputStruct& operator=(const InputStruct&);
 };
+
+#undef MY_DEFAULT
 
 #if defined(DEBUG) || defined(DEBUG2)
 extern int   totalTokens;            // token count, for debugging
@@ -127,81 +142,102 @@ extern int   totalTokens;            // token count, for debugging
 // ----------------------------------------------------------------------------
 // The output structure is used to hold an entire output line. The structure is
 // expanded with its real tabs/spaces within the output function of the program.
+
+#if defined(DEBUG) || defined(DEBUG2)
+#define DBG_DEFAULT , thisToken(totalTokens++)
+#else
+#define DBG_DEFAULT
+#endif
+
+#define MY_DEFAULT \
+           pType(ELine), \
+           offset(0), \
+           bracesLevel(0), \
+           preproLevel(0), \
+           indentSpace(0), \
+           indentHangs(0), \
+           splitElseIf(False), \
+           pCode(NULL), \
+           pCFlag(NULL), \
+           pBrace(NULL), \
+           pBFlag(NULL), \
+           filler(0), \
+           pComment(NULL) DBG_DEFAULT
+
 class OutputStruct : public ANYOBJECT
 {
     public:
-           DataTypes pType;
+        DataTypes pType;
+        int   offset;        // offset within original line's text
+        int   bracesLevel;   // curly-brace level at beginning of line
+        int   preproLevel;   // curly-brace level for preprocessor lines
+        int   indentSpace;   // num of spaces
+        int   indentHangs;   // num of indents for continuation
+        bool  splitElseIf;   // special case for aligning else/if
+        char* pCode;
+        char* pCFlag;        // state-flags for pCode
+        char* pBrace;        // "}" or "{", with possible code-fragment
+        char* pBFlag;        // state-flags for pBrace
+        int   filler;        // num of spaces
+        char* pComment;
 #if defined(DEBUG) || defined(DEBUG2)
-           int   thisToken;     // current token number
+        int   thisToken;     // current token number
 #endif
-           int   offset;        // offset within original line's text
-           int   bracesLevel;   // curly-brace level at beginning of line
-           int   indentSpace;   // num of spaces
-           int   indentHangs;   // num of indents for continuation
-           bool  splitElseIf;   // special case for aligning else/if
-           char* pCode;
-           char* pCFlag;        // state-flags for pCode
-           char* pBrace;        // "}" or "{", with possible code-fragment
-           char* pBFlag;        // state-flags for pBrace
-           int   filler;        // num of spaces
-           char* pComment;
-
-    private:
-           void Initialize()
-           {
-                pType = ELine;
-#if defined(DEBUG) || defined(DEBUG2)
-                thisToken      = totalTokens++;
-#endif
-                pCode =
-                pCFlag =
-                pBrace =
-                pBFlag =
-                pComment = NULL;
-                bracesLevel =
-                indentSpace =
-                indentHangs =
-                filler =
-                offset = 0;
-                splitElseIf = False;
-           }
 
     public:
-           // Constructor
-           // Automate initalisation
-           inline  OutputStruct  (DataTypes theType)
-           {
-                Initialize();
-                pType          = theType;
-           }
+        // Constructor
+        // Automate initalisation
+        inline OutputStruct (DataTypes theType)
+            : MY_DEFAULT
+        {
+            pType          = theType;
+        }
 
-           inline  OutputStruct  (InputStruct* theIn)
-           {
-                Initialize();
-                pType          = theIn -> dataType;
-                offset         = theIn -> offset;
-           }
+        inline OutputStruct (InputStruct* theIn)
+            : MY_DEFAULT
+        {
+            pType          = theIn -> dataType;
+            offset         = theIn -> offset;
+        }
 
-           inline  OutputStruct  (OutputStruct* theIn)
-           {
-                Initialize();
-                pType          = theIn -> pType;
-                offset         = theIn -> offset;
-           }
+        inline OutputStruct (OutputStruct* theIn)
+            : MY_DEFAULT
+        {
+            pType          = theIn -> pType;
+            offset         = theIn -> offset;
+        }
 
-           // Destructor
-           // Automate destruction
-           inline ~OutputStruct (void)
-           {
-                delete[] pCode;
-                delete[] pCFlag;
-                delete[] pBrace;
-                delete[] pBFlag;
-                delete[] pComment;
-           }
+        // use defaults here
+        OutputStruct(const OutputStruct &);
+        OutputStruct& operator=(const OutputStruct&);
+
+        // Destructor
+        // Automate destruction
+        inline ~OutputStruct (void)
+        {
+            delete[] pCode;
+            delete[] pCFlag;
+            delete[] pBrace;
+            delete[] pBFlag;
+            delete[] pComment;
+        }
 };
 
+#undef MY_DEFAULT
+#undef DBG_DEFAULT
+
 // ----------------------------------------------------------------------------
+
+#define MY_DEFAULT \
+        stmt_level(0), \
+        until_parn(0), \
+        parn_level(0), \
+        until_curl(0), \
+        curl_level(0), \
+        in_aggreg(0), \
+        do_aggreg(False), \
+        indent(0)
+
 class HangStruct : public ANYOBJECT
 {
     private:
@@ -220,16 +256,8 @@ class HangStruct : public ANYOBJECT
         int  indent;
 
         HangStruct()
+            : MY_DEFAULT
         {
-            stmt_level = 0;
-            until_parn = 0;
-            parn_level = 0;
-            until_curl = 0;
-            curl_level = 0;
-            in_aggreg  = 0;
-            do_aggreg  = False;
-
-            indent = 0;
         }
 
         void IndentHanging (OutputStruct *pOut);
@@ -238,19 +266,27 @@ class HangStruct : public ANYOBJECT
         void ScanState(const char *code, const char *state);
 };
 
+#undef MY_DEFAULT
+
 // ----------------------------------------------------------------------------
 class HtmlStruct : public ANYOBJECT
 {
         int state;
     public:
         HtmlStruct(void)
+            : state(0)
         {
-            state = 0;
         }
         bool Active(const char *pLineData);
 };
 
 // ----------------------------------------------------------------------------
+
+#define MY_DEFAULT \
+        state(0), \
+        level(0), \
+        matched()
+
 class SqlStruct : public ANYOBJECT
 {
         int state;
@@ -259,9 +295,9 @@ class SqlStruct : public ANYOBJECT
 
     public:
         SqlStruct(void)
+            : MY_DEFAULT
         {
-            state = 0;
-            matched[level = 0] = 0;
+            matched[0] = 0;
         }
         void IndentSQL(OutputStruct *pOut);
 
@@ -271,9 +307,17 @@ class SqlStruct : public ANYOBJECT
         bool SqlVerb(const char *code);
 };
 
+#undef MY_DEFAULT
+
 // ----------------------------------------------------------------------------
 // This structure is used to hold indent data on non-brace code.
 // This includes case statements, single line if's, while's, for statements...
+
+#define MY_DEFAULT \
+           attrib(), \
+           pos(), \
+           singleIndentLen()
+
 class IndentStruct : public ANYOBJECT
 {
     public:
@@ -289,12 +333,15 @@ class IndentStruct : public ANYOBJECT
 
     // constructor
     IndentStruct (void)
+        : MY_DEFAULT
     {
         attrib          = noIndent;
         pos             = 0;
         singleIndentLen = 0; // number of spaces to indent !
     }
 };
+
+#undef MY_DEFAULT
 
 //-----------------------------------------------------------------------------
 // debug.cpp

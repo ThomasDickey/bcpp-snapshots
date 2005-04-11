@@ -1,5 +1,5 @@
 //******************************************************************************
-// Copyright 1996-2003,2004 by Thomas E. Dickey                                *
+// Copyright 1996-2004,2005 by Thomas E. Dickey                                *
 // All Rights Reserved.                                                        *
 //                                                                             *
 // Permission to use, copy, modify, and distribute this software and its       *
@@ -17,7 +17,7 @@
 // OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR   *
 // PERFORMANCE OF THIS SOFTWARE.                                               *
 //******************************************************************************
-// $Id: debug.cpp,v 1.16 2004/10/26 23:54:09 tom Exp $
+// $Id: debug.cpp,v 1.17 2005/04/11 00:18:05 tom Exp $
 // Debug/trace functions for BCPP
 
 #include <stdlib.h>
@@ -59,9 +59,9 @@ void traceInput(const char *file, int line, InputStruct *pIn)
             file, line,
             traceDataType(pIn->dataType),
             pIn->comWcode ? " comWcode" : "",
-            pIn->offset))
-        if (pIn->pData  != 0) TRACE(("---- data:%s\n", pIn->pData))
-        if (pIn->pState != 0) TRACE(("---- flag:%s\n", pIn->pState))
+            pIn->offset));
+        if (pIn->pData  != 0) TRACE(("---- data:%s\n", pIn->pData));
+        if (pIn->pState != 0) TRACE(("---- flag:%s\n", pIn->pState));
     }
 }
 
@@ -78,12 +78,12 @@ void traceOutput(const char *file, int line, OutputStruct *pOut)
             pOut->thisToken,
             pOut->pCode ? "code" : "",
             pOut->pBrace ? "brace" : "",
-            pOut->pComment ? "comment" : ""))
-        if (pOut->pCode)    TRACE(("----- code:%s\n", pOut->pCode))
-        if (pOut->pCFlag)   TRACE(("---- state:%s\n", pOut->pCFlag))
-        if (pOut->pBrace)   TRACE(("---- brace:%s\n", pOut->pBrace))
-        if (pOut->pBFlag)   TRACE(("---- state:%s\n", pOut->pBFlag))
-        if (pOut->pComment) TRACE(("-- comment:%s\n", pOut->pComment))
+            pOut->pComment ? "comment" : ""));
+        if (pOut->pCode)    TRACE(("----- code:%s\n", pOut->pCode));
+        if (pOut->pCFlag)   TRACE(("---- state:%s\n", pOut->pCFlag));
+        if (pOut->pBrace)   TRACE(("---- brace:%s\n", pOut->pBrace));
+        if (pOut->pBFlag)   TRACE(("---- state:%s\n", pOut->pBFlag));
+        if (pOut->pComment) TRACE(("-- comment:%s\n", pOut->pComment));
     }
 }
 #endif

@@ -1,7 +1,7 @@
 #ifndef _CMDLINE_CODE
 #define _CMDLINE_CODE
 
-// $Id: cmdline.cpp,v 1.21 2003/04/24 00:34:40 tom Exp $
+// $Id: cmdline.cpp,v 1.23 2005/04/11 00:28:56 tom Exp $
 // Program C(++) Beautifier Written By Steven De Toni ACBC 11 12/94
 // Revised 1999 - Thomas Dickey
 //
@@ -36,7 +36,7 @@ void PrintProgramHelp (void)
         "C(++) Beautifier     " VERSION,
         "",
         "Program Was Written By Steven De Toni, December 1995",
-        "Modified/revised by Thomas E. Dickey 1996-2002,2003",
+        "Modified/revised by Thomas E. Dickey 1996-2003,2004",
         "All Parts Of This Program Are Freely Distributable.",
         "",
         "Usage: bcpp [Parameters] [Input File Name] [Output File Name]",
@@ -93,7 +93,7 @@ void PrintProgramHelp (void)
 }
 
 // integer assignment
-void intOption (int& cmdCount, int argc, char* argv[], int &result )
+static void intOption (int& cmdCount, int argc, char* argv[], int &result )
 {
     if (cmdCount++ <= (argc-1))
     {
@@ -107,7 +107,7 @@ void intOption (int& cmdCount, int argc, char* argv[], int &result )
 }
 
 // string assignment
-void strOption (int& cmdCount, int argc, char* argv[], char * &result)
+static void strOption (int& cmdCount, int argc, char* argv[], char * &result)
 {
     if (cmdCount++ <= (argc-1))
     {
