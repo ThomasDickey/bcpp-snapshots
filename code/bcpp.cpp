@@ -1,6 +1,6 @@
 // C(++) Beautifier V1.61 Unix/MS-DOS update !
 // -----------------------------------------
-// $Id: bcpp.cpp,v 1.113 2005/04/11 00:19:21 tom Exp $
+// $Id: bcpp.cpp,v 1.114 2005/05/16 19:52:52 tom Exp $
 //
 // Program was written by Steven De Toni 1994 (CBC, ACBC).
 // Modified/revised by Thomas E. Dickey 1996-2002,2003.
@@ -1181,6 +1181,7 @@ static bool inputIsCode(InputStruct *pItem)
             case CCom:
             case CppCom:
             case ELine:
+            case NoType:
                 break;
         }
     }
