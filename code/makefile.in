@@ -1,4 +1,4 @@
-# $Id: makefile.in,v 1.6 2004/10/26 23:57:38 tom Exp $
+# $Id: makefile.in,v 1.7 2005/05/16 19:46:01 tom Exp $
 # Makefile-template for 'bcpp'
 
 THIS		= bcpp
@@ -48,6 +48,8 @@ OBJS	= \
 CPPFLAGS	= -I. -I$(srcdir) \
 		-DVERSION=\"`cat $(srcdir)/../VERSION`\" \
 		-DHAVE_CONFIG_H # -DDEBUG -DDEBUG2
+
+.SUFFIXES: .cpp
 
 .cpp.o:
 @RULE_CC@

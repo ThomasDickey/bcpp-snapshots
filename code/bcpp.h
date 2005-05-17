@@ -17,13 +17,17 @@
  * CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN        *
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.                   *
  ******************************************************************************/
-// $Id: bcpp.h,v 1.43 2005/04/11 00:18:38 tom Exp $
+// $Id: bcpp.h,v 1.45 2005/05/16 22:40:30 tom Exp $
 
 #ifndef _BCPP_HEADER
 #define _BCPP_HEADER
 
 #include <string.h>
 #include <sys/types.h>
+
+#ifdef HAVE_CONFIG_H
+#include "autoconf.h"
+#endif
 
 #include "config.h"
 #include "anyobj.h"            // Use ANYOBJECT base class
@@ -73,7 +77,7 @@ enum CharState {
     };
 
 // ----------------------------------------------------------------------------
-enum  DataTypes { CCom = 1,   CppCom = 2, Code  = 3,
+enum  DataTypes { NoType = 0, CCom = 1,   CppCom = 2, Code  = 3,
                   OBrace = 4, CBrace = 5, PreP = 6, ELine = 7
                 };
 
@@ -93,9 +97,9 @@ extern const IndentwordStruct pIndentWords[];
 // user's input file.
 
 #define MY_DEFAULT \
-        dataType(), \
-        comWcode(), \
-        offset(), \
+        dataType(NoType), \
+        comWcode(False), \
+        offset(0), \
         pData(), \
         pState()
 
@@ -314,7 +318,7 @@ class SqlStruct : public ANYOBJECT
 // This includes case statements, single line if's, while's, for statements...
 
 #define MY_DEFAULT \
-           attrib(), \
+           attrib(noIndent), \
            pos(), \
            singleIndentLen()
 
