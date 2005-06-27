@@ -1,28 +1,28 @@
      5     1   |test1.c
-     6     2?  |test2.c
+    32    20?  |test2.c
 ----------------
-    11     3    total lines/statements
+    37    21    total lines/statements
 
      0	lines had comments         0.0 %
      0	comments are inline        0.0 %
-     1	lines were blank           9.1 %
-     1	lines for preprocessor     9.1 %
-     9	lines containing code     81.8 %
-    11	total lines              100.0 %
+     3	lines were blank           8.1 %
+     6	lines for preprocessor    16.2 %
+    28	lines containing code     75.7 %
+    37	total lines              100.0 %
 
      0	comment-chars              0.0 %
      0	nontext-comment-chars      0.0 %
-    19	whitespace-chars          10.2 %
-    19	preprocessor-chars        10.2 %
-   149	statement-chars           79.7 %
-   187	total characters         100.0 %
+   170	whitespace-chars          24.5 %
+    83	preprocessor-chars        12.0 %
+   441	statement-chars           63.5 %
+   694	total characters         100.0 %
 
-     9	tokens, average length 4.67
+    51	tokens, average length 3.51
 
   0.00	ratio of comment:code
-     1	?:illegal characters found
+     3	?:illegal characters found
 
      3	top-level blocks/statements
      2	maximum blocklevel
-  1.68	ratio of blocklevel:code
+  1.89	ratio of blocklevel:code
 

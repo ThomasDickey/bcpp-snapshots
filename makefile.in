@@ -1,4 +1,4 @@
-# $Id: makefile.in,v 7.8 2002/11/23 01:47:44 tom Exp $
+# $Id: makefile.in,v 7.10 2005/06/26 21:21:20 tom Exp $
 # Makefile-template for 'c_count'
 
 SHELL		= /bin/sh
@@ -13,9 +13,11 @@ VPATH  		= @srcdir@
 
 CC		= @CC@
 LINK		= $(CC)
+
 INSTALL		= @INSTALL@
 INSTALL_PROGRAM	= @INSTALL_PROGRAM@
 INSTALL_DATA	= @INSTALL_DATA@
+transform	= @program_transform_name@
 
 CFLAGS		= @CFLAGS@ @EXTRA_CFLAGS@
 CPPFLAGS	= -I. -I$(srcdir) -DHAVE_CONFIG_H @CPPFLAGS@
@@ -33,40 +35,45 @@ libdir		= @libdir@
 mandir		= @mandir@/man1
 manext		= 1
 
+x		= @EXEEXT@
+o		= .@OBJEXT@
+
 #### End of system configuration section. ####
 
-.c.o:
-	$(CC) -c $(CPPFLAGS) $(CFLAGS) $<
+.c$o:
+	@RULE_CC@
+	@ECHO_CC@$(CC) -c $(CPPFLAGS) $(CFLAGS) $<
 
-SRC = CHANGES patchlev.h \
-	README $(THIS).c $(THIS).1 \
-	config_h.in install.sh mkdirs.sh makefile.in configure.in
+OBJ = $(THIS)$o
 
-OBJ = $(THIS).o
+TRANSFORM_BIN = sed 's/$x$$//'       |sed '$(transform)'|sed 's/$$/$x/'
+TRANSFORM_MAN = sed 's/$(manext)$$//'|sed '$(transform)'|sed 's/$$/$(manext)/'
 
-DISTFILES = configure $(SRC)
+actual_bin = `echo $(THIS)$x        | $(TRANSFORM_BIN)`
+actual_man = `echo $(THIS).$(manext)| $(TRANSFORM_MAN)`
 
-all:	$(THIS)
+all:	$(THIS)$x
 
-$(THIS): $(OBJ)
-	$(LINK) $(LDFLAGS) -o $(THIS) $(OBJ) $(LDFLAGS) $(LIBS)
+$(THIS)$x : $(OBJ)
+	@ECHO_LD@$(LINK) $(LDFLAGS) -o $@ $(OBJ) $(LDFLAGS) $(LIBS)
 
 install: all installdirs
-	$(INSTALL_PROGRAM) $(THIS) $(bindir)/$(THIS)
-	$(INSTALL_DATA) $(srcdir)/$(THIS).1 $(mandir)/$(THIS).$(manext)
+	$(INSTALL_PROGRAM) $(THIS)$x $(bindir)/$(actual_bin)
+	$(INSTALL_DATA) $(srcdir)/$(THIS).1 $(mandir)/$(actual_man)
 
 installdirs:
 	$(SHELL) ${srcdir}/mkdirs.sh $(bindir) $(libdir) $(mandir)
 
 uninstall:
-	rm -f $(bindir)/$(THIS) $(mandir)/$(THIS).$(manext)
+	rm -f $(bindir)/$(actual_bin)
+	rm -f $(mandir)/$(actual_man)
 
 mostlyclean:
-	- rm -f *.o core *~ *.BAK
+	- rm -f *$o core *~ *.BAK
 	- rm -f Part?? part.*
 
 clean: mostlyclean
-	- rm -f $(THIS)
+	- rm -f $(THIS)$x
 
 distclean: clean
 	- rm -f makefile config.log config.cache config.status config.h
@@ -74,7 +81,7 @@ distclean: clean
 realclean: distclean
 	- rm -f tags TAGS # don't remove configure!
 
-check: $(THIS)
+check: $(THIS)$x
 	cd testing; $(MAKE) run_test
 
 lint:
@@ -110,19 +117,4 @@ dist: MANIFEST
 	tar -cf - `cat .fname` | gzip >`cat .fname`.tgz
 	rm -rf `cat .fname` .fname .files
 
-# Some of the output will be uuencoded because the test scripts include
-# <CR><LF> terminated ".bat" files for MS-DOS.
-dist-shar: MANIFEST
-	- rm -f .fname .files
-	echo "$(THIS)-$(RELEASE).$(PATCHLEV)" >.fname
-	cat MANIFEST | grep ' ' | egrep -v ' subdirectory$$' | sed -e 's/\ .*//' | uniq >.files
-	shar -M -n`cat .fname` -opart -l50 `cat .files`
-	- rm -f .fname .files
-
-# This uses Rick Salz's cshar to make a set of shar-files.
-# (It'll clobber the version info in MANIFEST, and doesn't restore timestamps,
-# but that's another bag of worms).
-dist-cshar: MANIFEST
-	makekit -m
-
-$(THIS).o:	config.h
+$(THIS)$o:	config.h

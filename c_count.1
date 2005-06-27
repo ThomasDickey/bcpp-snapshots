@@ -1,4 +1,4 @@
-.\" $Id: c_count.1,v 7.6 2002/11/23 01:32:22 tom Exp $
+.\" $Id: c_count.1,v 7.7 2005/06/26 11:37:02 tom Exp $
 .de EX
 .RS
 .nf
@@ -95,37 +95,40 @@ unbalanced quote marks.
 .SH OPTIONS
 Command line options of \fBc_count\fR are:
 .TP
-.B \-b
+.B -b
 display block-level statistics.
 The total number of top-level blocks (or statements),
 the maximum blocklevel, counting the top as 1,
 and the weighted average blocklevel for code.
 .TP
-.B \-c
+.B -c
 display character-level statistics.
 .TP
-.B \-d
+.B -d
 show each token as \fBc_count\fR parses it from the input stream.
 .TP
-.B \-i
+.B -i
 display identifier-level statistics.
 .TP
-.B \-j
+.B -j
 annotate summary in technical format (i.e., "physical
 source statements" and "logical source statements" for "lines"
 and "statements" respectively).
 .TP
-.B \-l
+.B -l
 display line-level statistics.
 .TP
-.BI \-o " file"
+.B -n
+suppress summary statistics.
+.TP
+.BI -o " file"
 write the report to the specified file,
 rather than to the standard output.
 .TP
-.B \-p
+.B -p
 display statistics on a per-file basis.
 .TP
-.BI \-q " define"
+.BI -q " define"
 define tokens which may
 evaluate with an unbalanced quote mark '\fB"\fR'.
 For example,
@@ -137,25 +140,25 @@ For example,
 tells \fBc_count\fR that the token "WARN" contains a quote mark.
 .RE
 .TP
-.B \-s
+.B -s
 display specialized statistics (e.g., code:comment ratio).
 .TP
-.B \-t
+.B -t
 generate output in spreadsheet format (e.g., comma-separated columns).
-If you set any of the options "\fB\-c\fR", "\fB\-i\fR",
-"\fB\-l\fR" or "\fB\-s\fR", \fBc_count\fR generates these statistics.
+If you set any of the options "\fB-c\fR", "\fB-i\fR",
+"\fB-l\fR" or "\fB-s\fR", \fBc_count\fR generates these statistics.
 Otherwise it generates only the lines/statements.
 .TP
-.B \-V
+.B -V
 print the version number.
 .TP
-.B \-v
+.B -v
 direct \fBc_count\fR not only
 to print a summary line for each file, but also to print a running
 summary showing each source line, together with the current line
 and statement numbers, as well as the cumulative flags.
 .TP
-.BI \-w " LEN"
+.BI -w " LEN"
 specify the length for identifiers beyond which we should report an error.
 If this option is not given, \fBc_count\fR reports identifiers longer than
 31 characters.
@@ -214,7 +217,7 @@ The percentages add up to 100%, since overlapping data are discounted.
   2.67	ratio of blocklevel:code
 .EE
 .PP
-If you use the "\fB\-p\fR" option,
+If you use the "\fB-p\fR" option,
 \fBc_count\fR prints the detailed information
 for each file, as well as for all files together.
 .
