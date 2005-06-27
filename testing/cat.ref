@@ -1,33 +1,59 @@
      1         |#define	LEFT	printf("
-     2      ?" |main()
+     2      "  |main()
      3         |{
      4         |	LEFT junk, ending with \n");
-     5      ?" |}
-     6         |static	char	what[] = "@(#)filename	";
-     7     1   |
-     8         |main()
-     9         |{
-    10         |printf("test with a tab:	:embedded (not considered legal by C_COUNT)\n");
-    11     2?  |}
-    11     2   |-
+     5      "  |}
+     6         |#include "foobar.h"
+     7         |#define FOO this\
+     8         |		& that
+     9         |#define BAR "this\
+    10         |		& that"
+    11      ?  |
+    12         |static	char	what[] = "@(#)filename	";
+    13     1   |
+    14         |main()
+    15         |{
+    16         |    float x = 0.0;
+    17     2   |    float x0 = 0e0;
+    18     3   |    float x1 = .0;
+    19     4   |    float x2 = .0e1;
+    20     5   |    float x3 = .0e+1;
+    21     6   |    float x4 = .0e-1;
+    22     7   |    float x5 = 1.23456789e+123L;
+    23     8   |    float x6 = 1.23456789e-123;
+    24     9   |    int y = 1;
+    25    10   |    int y1 = 1L;
+    26    11   |    int y2 = 1ul;
+    27    12   |    int y3 = 12345678u;
+    28    13   |    int z = 0x1;
+    29    14   |    int z1 = 0X1L;
+    30    15   |    int z2 = 0X1ul;
+    31    16   |    int z3 = 0X12345678u;
+    32    17   |    char *a = "aaa""bbb";
+    33    18   |
+    34         |printf("test with a tab:	:embedded (not considered legal by C_COUNT)\n");
+    35    19?  |printf("test with embedded pound\
+    36         |        # like this\n");
+    37    20   |}
+    37    20   |-
 ----------------
-    11     2    total lines/statements
+    37    20    total lines/statements
 
      0	lines had comments         0.0 %
      0	comments are inline        0.0 %
-     1	lines were blank           9.1 %
-     1	lines for preprocessor     9.1 %
-     9	lines containing code     81.8 %
-    11	total lines              100.0 %
+     3	lines were blank           8.1 %
+     6	lines for preprocessor    16.2 %
+    28	lines containing code     75.7 %
+    37	total lines              100.0 %
 
      0	comment-chars              0.0 %
      0	nontext-comment-chars      0.0 %
-     9	whitespace-chars           4.8 %
-    19	preprocessor-chars        10.2 %
-   159	statement-chars           85.0 %
-   187	total characters         100.0 %
+   172	whitespace-chars          24.8 %
+    83	preprocessor-chars        12.0 %
+   439	statement-chars           63.3 %
+   694	total characters         100.0 %
 
-    14	tokens, average length 4.50
+    56	tokens, average length 3.57
 
   0.00	ratio of comment:code
      3	?:illegal characters found
@@ -35,5 +61,5 @@
 
      3	top-level blocks/statements
      2	maximum blocklevel
-  1.67	ratio of blocklevel:code
+  1.89	ratio of blocklevel:code
 

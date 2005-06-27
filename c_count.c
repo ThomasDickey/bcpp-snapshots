@@ -3,6 +3,14 @@
  * Author:	T.E.Dickey
  * Created:	04 Dec 1985
  * Modified:
+ *		26 Jun 2005, add -n option.  Correct treatment of "#" in
+ *			     quotes (could be confused with preprocessor).
+ *			     Correct treatment of blanks in quoted string in
+ *			     preprocessor statement (was counted in statement).
+ *			     Modify check for SCCS tag to allow it to be past
+ *			     the beginning of a string.  Improve parsing so
+ *			     numbers are not treated as tokens (for average
+ *			     length computation).  Add parsing for \x escapes.
  *		22 Nov 2002, Convert to ANSI C, indent'd.  Fix a bug in -q/-d
  *			     logic.  Parse filename after #include as a string.
  *		27 Feb 2001, expand wildcards on WIN32 with _setargv().
@@ -76,7 +84,7 @@
 #include "patchlev.h"
 
 #ifndef	NO_IDENT
-static const char Id[] = "$Id: c_count.c,v 7.33 2002/11/23 01:30:14 tom Exp $";
+static const char Id[] = "$Id: c_count.c,v 7.46 2005/06/26 21:01:35 tom Exp $";
 #endif
 
 #include <stdio.h>
@@ -121,12 +129,23 @@ extern char *optarg;
 #define FOPEN_MODE "r"
 #endif
 
-#define	OCTAL	3		/* # of octal digits permissible in escape */
+#define	ESC_OCTAL	10	/* # of octal digits permissible in escape */
+#define	ESC_HEX		8	/* # of hex digits permissible in escape */
 
-#define PRINTF  (void)printf
-#define	DEBUG	if (debug) PRINTF
-#define	TOKEN(c)	((c) == '_' || (c) == '$' || isalnum(c))
-#define LVL_WEIGHT(n) if (opt_blok) One.lvl_weights += (n) * (One.nesting_lvl+1)
+#ifndef isoctal
+#define isoctal(c) ((c) >= '0' && (c) <= '7')
+#endif
+
+#define PRINTF  	(void)printf
+#define	DEBUG		if (debug) PRINTF
+
+#define	TOKEN(c)	((c) == '_' || (c) == '$' || isalpha(c))
+#define TOKEN2(c)	(TOKEN(c) || isdigit(c))
+
+#define	NUMBER(c)	(isdigit(c) || (c) == '.')
+#define NUMBER2(c)	(NUMBER(c) || strchr("+-eEpPlLuUxX", c) != 0)
+
+#define LVL_WEIGHT(n)	if (opt_blok) One.lvl_weights += (n) * (One.nesting_lvl+1)
 
 static int inFile(void);
 static int Comment(int cpp);
@@ -185,9 +204,9 @@ static long old_unlvl;
 static long old_uncmt;
 
 enum PSTATE {
-    code,
-    comment,
-    preprocessor
+    pCode,
+    pComment,
+    pPreprocessor
 };
 static enum PSTATE pstate;
 
@@ -197,14 +216,15 @@ static int jargon = FALSE;
 static int per_file = FALSE;
 static int debug = FALSE;
 static int opt_all = -1;
-static int opt_blok;
-static int opt_line;
-static int opt_char;
-static int opt_name;
-static int opt_stat;
+static int opt_blok = FALSE;	/* "-b" option */
+static int opt_line = FALSE;	/* "-l" option */
+static int opt_char = FALSE;	/* "-c" option */
+static int opt_name = FALSE;	/* "-i" option */
+static int opt_stat = FALSE;	/* "-s" option */
+static int opt_summary = TRUE;	/* "-n" option */
 static int spreadsheet = FALSE;
-static int cms_history;
-static int files_total;
+static int cms_history = FALSE;
+static int files_total = 0;
 static int limit_name = 32;
 static int read_last;
 static int wrote_last;
@@ -527,6 +547,7 @@ Token(int c)
     static unsigned used = 0;
     static unsigned have = 0;
 
+    enum PSTATE bstate = pstate;
     int j = 0;
 
     if (bfr == 0)
@@ -541,16 +562,16 @@ Token(int c)
 	    bfr[used++] = c;
 	    word_length++;
 	    c = inFile();
-	} while (TOKEN(c));
+	} while (TOKEN2(c));
 	bfr[used] = EOS;
 
-	DEBUG("%s\n", bfr);
+	DEBUG("name\t%s\n", bfr);
 
 	One.words_length += word_length;
 	if (word_length >= limit_name)
 	    One.flags_2long++;
 
-	if (pstate == preprocessor && !strcmp(bfr, "include")) {
+	if (pstate == pPreprocessor && !strcmp(bfr, "include")) {
 	    c = IncludeFile(c);
 	} else if (quotdef) {
 	    if (c == ' ' || c == '\t' || c == '(') {
@@ -563,10 +584,28 @@ Token(int c)
 		}
 	    }
 	}
+    } else if (NUMBER(c)) {
+	do {
+	    if (used + 2 >= have)
+		bfr = realloc(bfr, have *= 2);
+	    bfr[used++] = c;
+	    c = inFile();
+	} while (NUMBER2(c));
+	bfr[used] = EOS;
+
+	DEBUG("number\t%s\n", bfr);
     } else {			/* punctuation */
+	if (debug) {
+	    if (isgraph(c) && strchr("{};/\\", c) == 0)
+		DEBUG("char\t%c\n", c);
+	}
 	c = inFile();
     }
     used = 0;
+
+    if ((c == '\n') && pstate == pCode && bstate != pCode)
+	DEBUG("\n");
+
     return (c);
 }
 
@@ -583,7 +622,7 @@ countChar(int ch)
     static enum PSTATE bstate;
 
     if (ch < 0) {
-	bstate = code;
+	bstate = pCode;
 	old_block =
 	    old_level =
 	    old_stmts =
@@ -620,13 +659,13 @@ countChar(int ch)
 
 	One.chars_total++;
 
-	if (ch == '#' && is_blank) {
-	    bstate = preprocessor;
-	    pstate = preprocessor;
+	if (ch == '#' && is_blank && !literal) {
+	    bstate = pPreprocessor;
+	    pstate = pPreprocessor;
 	} else if (ch == '\n') {
 	    if (cnt_code) {
-		had_code += (pstate != comment);
-		if (pstate == comment)
+		had_code += (pstate != pComment);
+		if (pstate == pComment)
 		    had_note = TRUE;
 		cnt_code = 0;
 	    }
@@ -634,8 +673,8 @@ countChar(int ch)
 	    if (is_blank) {
 		One.lines_blank++;
 	    } else {
-		if (pstate == preprocessor
-		    || bstate == preprocessor) {
+		if (pstate == pPreprocessor
+		    || bstate == pPreprocessor) {
 		    One.lines_prepro++;
 		    if (had_note) {
 			One.lines_inline++;
@@ -645,34 +684,38 @@ countChar(int ch)
 		    if (had_note) {
 			One.lines_inline++;
 		    }
-		} else if (had_note || pstate == comment) {
+		} else if (had_note || pstate == pComment) {
 		    One.lines_notes++;
 		}
 		had_code =
 		    had_note = FALSE;
 	    }
 	    is_blank = TRUE;
-	    if (pstate == preprocessor && read_last != '\\') {
-		bstate = code;
-		pstate = code;
+	    if (pstate == pPreprocessor && read_last != '\\') {
+		bstate = pCode;
+		pstate = pCode;
 	    }
 	}
 
 	if (isspace(ch)) {
 	    if (cnt_code) {
-		had_code += (pstate == code);
+		had_code += (pstate == pCode);
 		cnt_code = 0;
 	    }
 	    if (literal) {
-		One.chars_code++;
-		LVL_WEIGHT(1);
+		if (pstate == pCode) {
+		    One.chars_code++;
+		    LVL_WEIGHT(1);
+		} else {
+		    One.chars_prepro++;
+		}
 	    } else {
 		One.chars_blank++;
 	    }
 	} else {
 	    is_blank = FALSE;
 	    switch (pstate) {
-	    case comment:
+	    case pComment:
 		if (cnt_code) {
 		    had_code += (cnt_code > 2);
 		    cnt_code = 0;
@@ -683,13 +726,14 @@ countChar(int ch)
 		else
 		    One.chars_ignore++;
 		break;
-	    case preprocessor:
+	    case pPreprocessor:
 		One.chars_prepro++;
 		break;
-	    default:
+	    case pCode:
 		cnt_code++;
 		One.chars_code++;
 		LVL_WEIGHT(1);
+		break;
 	    }
 	}
 	read_last = ch;
@@ -723,7 +767,7 @@ doFile(char *name)
     }
 #endif
 
-    pstate = code;
+    pstate = pCode;
     if (!strcmp(name, "-"))
 	File = stdin;
     else if (!(File = fopen(name, FOPEN_MODE)))
@@ -742,13 +786,16 @@ doFile(char *name)
 		c = Comment(FALSE);
 	    else if (c == '/')
 		c = Comment(TRUE);
+	    else
+		DEBUG("char\t%c\n", c);
 	    break;
 	case '"':
 	case '\'':
 	    c = String(c);
 	    break;
 	case '{':
-	    if (pstate == code) {
+	    DEBUG("char\t%c\n", c);
+	    if (pstate == pCode) {
 		One.nesting_lvl++;
 		if (One.nesting_lvl >
 		    One.max_blk_lvl)
@@ -757,7 +804,8 @@ doFile(char *name)
 	    c = Token(c);
 	    break;
 	case '}':
-	    if (pstate == code) {
+	    DEBUG("char\t%c\n", c);
+	    if (pstate == pCode) {
 		One.nesting_lvl--;
 		if (One.nesting_lvl == 0) {
 		    topblock = TRUE;
@@ -769,8 +817,9 @@ doFile(char *name)
 	    c = Token(c);
 	    break;
 	case ';':
+	    DEBUG("char\t%c\n", c);
 	    One.stmts_total++;
-	    if (pstate == code) {
+	    if (pstate == pCode) {
 		if (One.nesting_lvl == 0) {
 		    One.top_lvl_blk++;
 		}
@@ -779,11 +828,12 @@ doFile(char *name)
 	    c = Token(c);
 	    break;
 	case ',':
+	    DEBUG("char\t%c\n", c);
 	    topblock = FALSE;
 	    c = Token(c);
 	    break;
 	default:
-	    if (pstate == code) {
+	    if (pstate == pCode) {
 		if (One.nesting_lvl == 0
 		    && topblock) {
 		    One.top_lvl_blk++;
@@ -826,38 +876,49 @@ doFile(char *name)
 static int
 String(int mark)
 {
+    enum PSTATE bstate = pstate;
     int c = inFile();
-    char *p = "@(#)";		/* permit literal tab here only! */
+    static const char *sccs_tag = "@(#)";
+    const char *p = sccs_tag;	/* permit literal tab here only! */
 
+    DEBUG("string\t%c", (mark == '>') ? '<' : mark);
     literal = TRUE;
     while (c != EOF) {
-	if (p != 0) {
-	    if (*p == '\0') {
-		if (!isprint(c) && (c != '\t'))
-		    One.flags_unasc++;
-	    } else if (c != *p++)
-		p = 0;
-	}
-	if ((p == 0) && !isprint(c))
-	    One.flags_unasc++;	/* this may duplicate 'unquo'! */
 	if (c == '\n') {	/* this is legal, but not likely */
 	    One.flags_unquo++;	/* ...assume balance is in macro */
-	    return (inFile());
-	} else if (c == mark) {
-	    literal = FALSE;
-	    return (inFile());
-	} else if (c == '\\')
-	    c = Escape();
-	else
-	    c = inFile();
+	    break;
+	} else {
+	    if (!isprint(c)) {
+		if (c != '\t' || *p != '\0')
+		    One.flags_unasc++;
+	    }
+	    if (*p != '\0') {
+		if (c != *p++)
+		    p = sccs_tag;
+	    }
+	    if (c == mark) {
+		DEBUG("%c", c);
+		literal = FALSE;
+		c = inFile();
+		break;
+	    } else if (c == '\\') {
+		c = Escape();
+	    } else {
+		DEBUG("%c", c);
+		c = inFile();
+	    }
+	}
     }
     literal = FALSE;
+    bstate = pstate;
+    DEBUG("\n");
     return (c);
 }
 
 /*
  * Scan over an '\' escape sequence, returning the first character after it.
- * If we start with an octal digit, we may read up to OCTAL of these in a row.
+ * If we start with an octal digit, we may read up to ESC_OCTAL of these in a
+ * row.
  */
 static int
 Escape(void)
@@ -866,10 +927,19 @@ Escape(void)
     int digits = 0;
 
     if (c != EOF) {
-	while (c >= '0' && c <= '7' && digits < OCTAL) {
-	    digits++;
-	    if ((c = inFile()) == EOF)
-		return (c);
+	if (isoctal(c)) {
+	    while (isoctal(c) && digits < ESC_OCTAL) {
+		digits++;
+		if ((c = inFile()) == EOF)
+		    return (c);
+	    }
+	} else if (c == 'x') {
+	    c = inFile();
+	    while (isxdigit(c) && digits < ESC_HEX) {
+		digits++;
+		if ((c = inFile()) == EOF)
+		    return (c);
+	    }
 	}
 	if (!digits)
 	    c = inFile();
@@ -1028,7 +1098,7 @@ Comment(int c_plus_plus)
     int d = 0;
     enum PSTATE save_st = pstate;
 
-    if (pstate == code) {
+    if (pstate == pCode) {
 	One.chars_code -= 2;
 	LVL_WEIGHT(-2);
     } else {
@@ -1036,11 +1106,13 @@ Comment(int c_plus_plus)
     }
     One.chars_ignore += 2;	/* ignore the comment-delimiter */
 
-    pstate = comment;
+    pstate = pComment;
     c = filter_history(TRUE);
     while (c != EOF) {
 	if (c_plus_plus) {
 	    if (c == '\n') {
+		if (save_st == pPreprocessor)
+		    DEBUG("\n");
 		pstate = save_st;
 		return (c);
 	    }
@@ -1050,7 +1122,10 @@ Comment(int c_plus_plus)
 		c = filter_history(FALSE);
 		if (c == '/') {
 		    pstate = save_st;
-		    return (inFile());
+		    c = inFile();
+		    if (c == '\n' && save_st == pPreprocessor)
+			DEBUG("\n");
+		    return c;
 		}
 	    } else {
 		c = filter_history(FALSE);
@@ -1090,6 +1165,24 @@ inFile(void)
     return (c);
 }
 
+#define OPTIONS "\
+b\
+c\
+d\
+i\
+j\
+l\
+n\
+o:\
+p\
+q:\
+s\
+t\
+V\
+v\
+w:\
+"
+
 static void
 usage(void)
 {
@@ -1108,6 +1201,7 @@ usage(void)
 	," -i        identifier-statistics"
 	," -j        annotate summary in technical format"
 	," -l        line-statistics"
+	," -n        do not print summary-statistics"
 	," -o file   specify alternative output-file"
 	," -p        per-file statistics"
 	," -q DEFINE tells c_count that the given name is an unbalanced quote"
@@ -1137,12 +1231,8 @@ main(int argc, char **argv)
     _setargv(&argc, &argv);
 #endif
     quotvec = typeCalloc(char *, (size_t) argc);
-    while ((j = getopt(argc, argv, "bcdijlo:pq:stVvw:")) != EOF) {
+    while ((j = getopt(argc, argv, OPTIONS)) != EOF) {
 	switch (j) {
-	case 'l':
-	    opt_all = FALSE;
-	    opt_line = TRUE;
-	    break;
 	case 'b':
 	    opt_all = FALSE;
 	    opt_blok = TRUE;
@@ -1151,33 +1241,36 @@ main(int argc, char **argv)
 	    opt_all = FALSE;
 	    opt_char = TRUE;
 	    break;
+	case 'd':
+	    debug = TRUE;
+	    break;
 	case 'i':
 	    opt_all = FALSE;
 	    opt_name = TRUE;
 	    break;
-	case 's':
-	    opt_all = FALSE;
-	    opt_stat = TRUE;
-	    break;
-
-	case 'd':
-	    debug = TRUE;
-	    break;
 	case 'j':
 	    jargon = TRUE;
 	    break;
-	case 'p':
-	    per_file = TRUE;
+	case 'l':
+	    opt_all = FALSE;
+	    opt_line = TRUE;
 	    break;
-	case 'v':
-	    verbose++;
+	case 'n':
+	    opt_summary = FALSE;
 	    break;
 	case 'o':
 	    if (!freopen(optarg, "w", stdout))
 		usage();
 	    break;
+	case 'p':
+	    per_file = TRUE;
+	    break;
 	case 'q':
 	    quotvec[quotdef++] = optarg;
+	    break;
+	case 's':
+	    opt_all = FALSE;
+	    opt_stat = TRUE;
 	    break;
 	case 't':
 	    spreadsheet = TRUE;
@@ -1185,6 +1278,9 @@ main(int argc, char **argv)
 	case 'V':
 	    printf("c_count version %d.%d\n", RELEASE, PATCHLEVEL);
 	    return EXIT_SUCCESS;
+	case 'v':
+	    verbose++;
+	    break;
 	case 'w':
 	    limit_name = atoi(optarg);
 	    break;
@@ -1236,8 +1332,9 @@ main(int argc, char **argv)
 		       "MAX-NESTING", comma,
 		       "AVG-NESTING", comma);
 
-	} else
+	} else {
 	    PRINTF("LINES%sSTATEMENTS%s", comma, comma);
+	}
 	PRINTF("FILENAME\n");
     }
 
@@ -1253,7 +1350,7 @@ main(int argc, char **argv)
 	}
     }
 
-    if (!spreadsheet && files_total) {
+    if (!spreadsheet && files_total && opt_summary) {
 	if (verbose > 1 || (opt_blok && !opt_all))
 	    PRINTF("%s", dashes);
 	if (!per_file) {
