@@ -1,3 +1,9 @@
+revision 7.10
+	2005/06/17
+		improve -v option display by showing the statement numbers at
+		the beginning of statements rather than on the terminating
+		semicolon.
+
 revision 7.9
 	2005/06/26
 		add -n option.
