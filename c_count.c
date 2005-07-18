@@ -3,6 +3,14 @@
  * Author:	T.E.Dickey
  * Created:	04 Dec 1985
  * Modified:
+ *		17 Jul 2005, show statement numbers at the beginning of a
+ *			     statement with the -v option, rather than at
+ *			     the terminating ';'.
+ *		16 Jul 2005, modify treatment of -v option so it buffers data
+ *			     to allow reporting the current line, rather than
+ *			     the previous line.  Originally a debugging option,
+ *			     it is useful in itself for making formatted
+ *			     listings.
  *		26 Jun 2005, add -n option.  Correct treatment of "#" in
  *			     quotes (could be confused with preprocessor).
  *			     Correct treatment of blanks in quoted string in
@@ -84,7 +92,7 @@
 #include "patchlev.h"
 
 #ifndef	NO_IDENT
-static const char Id[] = "$Id: c_count.c,v 7.46 2005/06/26 21:01:35 tom Exp $";
+static const char Id[] = "$Id: c_count.c,v 7.49 2005/07/17 21:40:39 tom Exp $";
 #endif
 
 #include <stdio.h>
@@ -136,6 +144,8 @@ extern char *optarg;
 #define isoctal(c) ((c) >= '0' && (c) <= '7')
 #endif
 
+#define isCurly(c) ((c) == '{' || (c) == '}')
+
 #define PRINTF  	(void)printf
 #define	DEBUG		if (debug) PRINTF
 
@@ -146,6 +156,9 @@ extern char *optarg;
 #define NUMBER2(c)	(NUMBER(c) || strchr("+-eEpPlLuUxX", c) != 0)
 
 #define LVL_WEIGHT(n)	if (opt_blok) One.lvl_weights += (n) * (One.nesting_lvl+1)
+
+/* do not count curly-braces as part of statements, for numbering purposes */
+#define CHARS_STMTS(p) ((p)->chars_code - (p)->chars_curly)
 
 static int inFile(void);
 static int Comment(int cpp);
@@ -166,6 +179,7 @@ typedef struct {
     long chars_notes;
     long chars_rlogs;
     long chars_prepro;
+    long chars_curly;
     /* line-counts */
     long lines_total;		/* # of lines */
     long lines_blank;
@@ -194,14 +208,7 @@ typedef struct {
 
 static STATS All, One;		/* total, per-file stats */
 
-static long old_block;
-static long old_level;
-static long old_stmts;
-static long old_unquo;
-static long old_unasc;
-static long old_2long;
-static long old_unlvl;
-static long old_uncmt;
+static STATS Old;		/* previous data for summarize() */
 
 enum PSTATE {
     pCode,
@@ -209,6 +216,8 @@ enum PSTATE {
     pPreprocessor
 };
 static enum PSTATE pstate;
+
+static int within_stmt;		/* nonzero within statements */
 
 static int verbose = FALSE;	/* TRUE iff we echo file, as processed */
 static int quotdef = 0;		/* number of tokens we treat as '"' */
@@ -229,6 +238,11 @@ static int limit_name = 32;
 static int read_last;
 static int wrote_last;
 static int newsum;		/* TRUE iff we need a summary */
+
+/* buffer line for verbose-mode */
+static char *big_line = 0;
+static unsigned big_used = 0;
+static unsigned big_size = 0;
 
 static char *comma = ",";
 static char *dashes = "----------------";
@@ -413,50 +427,64 @@ summarize(STATS * p, int mark, int name)
 	       p->lines_total, comma,
 	       p->stmts_total, comma);
     } else {
+	int showed_stmts = FALSE;
+
+	/* show line- and statement-numbers */
 	PRINTF("%6ld ",
 	       p->lines_total + (mark && !name));
-	if ((p->stmts_total != old_stmts) || !mark || name) {
+	if ((p->stmts_total != Old.stmts_total) || !mark || name) {
 	    PRINTF("%5ld", p->stmts_total);
+	    showed_stmts = TRUE;
 	} else {
 	    PRINTF("%5s", " ");
 	}
+
+	/* show block-level */
 	if (verbose > 1 || (opt_blok && !opt_all)) {
 	    if ((name || !mark)
-		|| (mark && (p->top_lvl_blk != old_block)))
+		|| (mark && (p->top_lvl_blk != Old.top_lvl_blk)))
 		PRINTF("  %5ld ", p->top_lvl_blk);
 	    else
 		PRINTF("%8s", " ");
 	    if (name || !mark)
 		PRINTF(" %5ld  ", p->max_blk_lvl + 1);
-	    else if (mark && (p->nesting_lvl != old_level))
+	    else if (mark && (p->nesting_lvl != Old.nesting_lvl))
 		PRINTF(" %5ld  ", p->nesting_lvl + 1);
 	    else
 		PRINTF("%8s", " ");
 	}
-	if (p->flags_unasc != old_unasc)
+
+	/* show single-character flags */
+	if (p->flags_unasc != Old.flags_unasc)
 	    errors[c++] = '?';
-	if (p->flags_unquo != old_unquo)
+	if (p->flags_unquo != Old.flags_unquo)
 	    errors[c++] = '"';
-	if (p->flags_uncmt != old_uncmt)
+	if (p->flags_uncmt != Old.flags_uncmt)
 	    errors[c++] = '*';
-	if (p->flags_unlvl != old_unlvl)
+	if (p->flags_unlvl != Old.flags_unlvl)
 	    errors[c++] = '+';
-	if (p->flags_2long != old_2long)
+	if (p->flags_2long != Old.flags_2long)
 	    errors[c++] = '>';
+
+	while (c < 2) {
+	    errors[c++] = ' ';
+	}
+	/* If there is room, mark the last flag showing if the line contained
+	 * code or a preprocessor-line.  Normally this shows continuation
+	 * lines.
+	 */
+	if (!showed_stmts && CHARS_STMTS(p) != CHARS_STMTS(&Old)) {
+	    errors[c++] = '.';
+	} else {
+	    errors[c++] = ' ';
+	}
+
 	errors[c] = EOS;
-	PRINTF("%-3.3s%c",
+	PRINTF("%s%c",
 	       errors,
 	       (mark ? '|' : ' '));
     }
-    old_stmts = 0;
-    old_2long = p->flags_2long;
-    old_block = p->top_lvl_blk;
-    old_level = p->nesting_lvl;
-    old_stmts = p->stmts_total;
-    old_unasc = p->flags_unasc;
-    old_uncmt = p->flags_uncmt;
-    old_unlvl = p->flags_unlvl;
-    old_unquo = p->flags_unquo;
+    Old = *p;
 }
 
 static void
@@ -478,6 +506,7 @@ add_totals(void)
     ADD(chars_notes);
     ADD(chars_rlogs);
     ADD(chars_prepro);
+    ADD(chars_curly);
 
     ADD(lines_total);
     ADD(lines_blank);
@@ -622,23 +651,15 @@ countChar(int ch)
     static enum PSTATE bstate;
 
     if (ch < 0) {
+	within_stmt = 0;
 	bstate = pCode;
-	old_block =
-	    old_level =
-	    old_stmts =
-	    old_unquo =
-	    old_unlvl =
-	    old_2long =
-	    old_unasc =
-	    old_uncmt = 0;
+	memset(&Old, 0, sizeof(Old));
 	had_note =
 	    had_code = FALSE;
 	cnt_code = 0;
 	read_last = EOS;
 	is_blank = TRUE;
     } else {
-	if (verbose && (!One.chars_total || read_last == '\n'))
-	    Summary(TRUE);
 	newsum = TRUE;
 	if (!isascii(ch) || (!isprint(ch) && !isspace(ch))) {
 	    ch = '?';		/* protect/flag this */
@@ -649,10 +670,23 @@ countChar(int ch)
 	 * carriage return unless it is embedded in the line.
 	 */
 	if (verbose) {
-	    if (ch != '\r') {
-		if (ch != '\n' && wrote_last == '\r')
-		    (void) putchar('\r');
-		(void) putchar(ch);
+	    if (big_used + 4 >= big_size) {
+		big_line = realloc(big_line, big_size *= 2);
+		if (big_line == 0) {
+		    perror("realloc");
+		    exit(EXIT_FAILURE);
+		}
+	    }
+	    if (wrote_last == '\r' && ch != '\n') {
+		big_line[big_used - 1] = '^';
+		big_line[big_used++] = 'M';
+	    }
+	    big_line[big_used++] = ch;
+	    big_line[big_used] = EOS;
+	    if (ch == '\n') {
+		Summary(TRUE);
+		fputs(big_line, stdout);
+		big_line[big_used = 0] = EOS;
 	    }
 	}
 	wrote_last = ch;
@@ -730,6 +764,14 @@ countChar(int ch)
 		One.chars_prepro++;
 		break;
 	    case pCode:
+		if (!isspace(ch)) {
+		    if (within_stmt) {
+			within_stmt++;
+		    } else if (!isCurly(ch) && !literal) {
+			within_stmt = TRUE;
+			One.stmts_total++;
+		    }
+		}
 		cnt_code++;
 		One.chars_code++;
 		LVL_WEIGHT(1);
@@ -796,6 +838,7 @@ doFile(char *name)
 	case '{':
 	    DEBUG("char\t%c\n", c);
 	    if (pstate == pCode) {
+		One.chars_curly++;
 		One.nesting_lvl++;
 		if (One.nesting_lvl >
 		    One.max_blk_lvl)
@@ -806,6 +849,7 @@ doFile(char *name)
 	case '}':
 	    DEBUG("char\t%c\n", c);
 	    if (pstate == pCode) {
+		One.chars_curly++;
 		One.nesting_lvl--;
 		if (One.nesting_lvl == 0) {
 		    topblock = TRUE;
@@ -818,7 +862,7 @@ doFile(char *name)
 	    break;
 	case ';':
 	    DEBUG("char\t%c\n", c);
-	    One.stmts_total++;
+	    within_stmt = 0;
 	    if (pstate == pCode) {
 		if (One.nesting_lvl == 0) {
 		    One.top_lvl_blk++;
@@ -853,7 +897,7 @@ doFile(char *name)
 	One.chars_blank--;
     }
 
-    old_stmts = 0;		/* force # of statements to display */
+    Old.stmts_total = 0;	/* force # of statements to display */
 
     if (per_file && spreadsheet) {
 	show_totals(&One);
@@ -1098,6 +1142,11 @@ Comment(int c_plus_plus)
     int d = 0;
     enum PSTATE save_st = pstate;
 
+    if (within_stmt == 2) {
+	One.stmts_total--;
+	within_stmt = 0;
+    }
+
     if (pstate == pCode) {
 	One.chars_code -= 2;
 	LVL_WEIGHT(-2);
@@ -1280,6 +1329,7 @@ main(int argc, char **argv)
 	    return EXIT_SUCCESS;
 	case 'v':
 	    verbose++;
+	    big_line = malloc(big_size = 1024);
 	    break;
 	case 'w':
 	    limit_name = atoi(optarg);

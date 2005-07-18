@@ -1,7 +1,7 @@
-     5     0"  |test1.c
+     5     1"  |test1.c
     32    20?  |test2.c
 ----------------
-    37    20"   total lines/statements
+    37    21"   total lines/statements
 
      0	lines had comments         0.0 %
      0	comments are inline        0.0 %
