@@ -1,4 +1,4 @@
-// $Id: config.cpp,v 1.22 2003/04/22 22:54:38 tom Exp $
+// $Id: config.cpp,v 1.23 2005/07/25 20:54:07 tom Exp $
 // Program C(++) beautifier Written By Steven De Toni ACBC 11 11/94
 //
 // This program module contains routines to read data from a text file a 
@@ -88,7 +88,7 @@ char* ReadLine (FILE *pInFile, int& EndOfFile)
 
 // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 // Lookup keyword in ConfigData[]
-const char *ConfigWordOf(ConfigWords code)
+static const char *ConfigWordOf(ConfigWords code)
 {
     for (size_t i = 0; i < SizeofData; i++)
         if (ConfigData[i].code == code)

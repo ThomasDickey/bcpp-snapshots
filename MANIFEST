@@ -1,12 +1,15 @@
-MANIFEST for bcpp, version t2005-05-16
+MANIFEST for bcpp, version t2005-07-25
 --------------------------------------------------------------------------------
 MANIFEST                        this file
 CHANGES                         change-log for BCPP
+COPYING                         copyright and license
 README                          top-level README for bcpp
 VERSION                         version of this package
 aclocal.m4                      autoconf macros for BCPP
 bcpp.cfg                        default configuration for bcpp
 bcppall.bat                     run bcpp for a whole directory
+config.guess                    utility script
+config.sub                      utility script
 config_h.in                     template for config.h
 configure                       configure script for BCPP
 configure.in                    configure-script template for BCPP

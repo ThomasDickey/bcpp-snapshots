@@ -1,6 +1,6 @@
 // C(++) Beautifier V1.61 Unix/MS-DOS update !
 // -----------------------------------------
-// $Id: bcpp.cpp,v 1.114 2005/05/16 19:52:52 tom Exp $
+// $Id: bcpp.cpp,v 1.115 2005/07/25 20:53:34 tom Exp $
 //
 // Program was written by Steven De Toni 1994 (CBC, ACBC).
 // Modified/revised by Thomas E. Dickey 1996-2002,2003.
@@ -165,9 +165,9 @@
 
 // ----------------------------------------------------------------------------
 
-const char *cppc_begin = "//";
-const char *ccom_begin = "/*";
-const char *ccom_end = "*/";
+static const char *cppc_begin = "//";
+static const char *ccom_begin = "/*";
+static const char *ccom_end = "*/";
 
 const IndentwordStruct pIndentWords[] = {
     { "if",         oneLine },
@@ -200,7 +200,7 @@ static inline char *endOf(char *s)
    return (s + strlen(s));
 }
 
-static inline const char lastChar(const char *s)
+static inline char lastChar(const char *s)
 {
    return ((s != NULL) && (*s != NULLC)) ? *(endOf(s)-1) : static_cast<char>(NULLC);
 }
@@ -2910,7 +2910,7 @@ static int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
                 if (lineNo > 0)
                     backSpaceIt (lineNo - lineStep); // reposition cursor ! Don't used gotoxy() for Unix compatibility
 
-                printf ("%ld ", lineNo);
+                printf ("%lu ", lineNo);
             }
 
             if (html_state.Active(pData))
@@ -3062,7 +3062,7 @@ static int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
         if ((lineNo > 0) && (lineNo > lineStep))
            backSpaceIt (lineNo - (lineNo % lineStep)); // reposition cursor
 
-        printf ("%ld ", lineNo);
+        printf ("%lu ", lineNo);
     }
 
     delete pIMode2;
