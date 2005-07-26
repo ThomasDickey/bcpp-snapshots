@@ -1,4 +1,4 @@
-# $Id: makefile.in,v 1.7 2005/05/16 19:46:01 tom Exp $
+# $Id: makefile.in,v 1.8 2005/07/25 19:56:26 tom Exp $
 # Makefile-template for 'bcpp'
 
 THIS		= bcpp
@@ -25,55 +25,60 @@ exec_prefix	= @exec_prefix@
 
 bindir		= $(DESTDIR)@bindir@
 
+x		= @EXEEXT@
+o		= .@OBJEXT@
+
 #### End of system configuration section. ####
 
 SHELL		= /bin/sh
 
 OBJS	= \
-	bcpp.o \
-	anyobj.o \
-	backup.o \
-	baseq.o \
-	cmdline.o \
-	config.o \
-	debug.o \
-	execsql.o \
-	hanging.o \
-	html.o \
-	stacklis.o \
-	strings.o \
-	tabs.o \
-	verbose.o
+	bcpp$o \
+	anyobj$o \
+	backup$o \
+	baseq$o \
+	cmdline$o \
+	config$o \
+	debug$o \
+	execsql$o \
+	hanging$o \
+	html$o \
+	stacklis$o \
+	strings$o \
+	tabs$o \
+	verbose$o
 
 CPPFLAGS	= -I. -I$(srcdir) \
 		-DVERSION=\"`cat $(srcdir)/../VERSION`\" \
 		-DHAVE_CONFIG_H # -DDEBUG -DDEBUG2
 
-.SUFFIXES: .cpp
+PROG	= $(THIS)$x
 
-.cpp.o:
+.SUFFIXES: .cpp $o
+
+.cpp$o:
 @RULE_CC@
 	@ECHO_CC@$(CXX) $(CXXFLAGS) $(EXTRA_CXXFLAGS) $(CPPFLAGS) -c $< -o $@
 
-all:	$(THIS)
+all:	$(PROG)
 
-$(THIS): $(OBJS)
-	@ECHO_LD@$(LINK) $(LDFLAGS) -o $(THIS) $(OBJS) $(LIBS)
+$(PROG): $(OBJS)
+	@ECHO_LD@$(LINK) $(LDFLAGS) -o $(PROG) $(OBJS) $(LIBS)
 
 install: all installdirs
-	$(INSTALL_PROGRAM) $(THIS) $(bindir)/$(THIS)
+	$(INSTALL_PROGRAM) $(PROG) $(bindir)/$(PROG)
 
 installdirs:
 	$(SHELL) ${srcdir}/../mkdirs.sh $(bindir)
 
 uninstall:
-	rm -f $(bindir)/$(THIS)
+	rm -f $(bindir)/$(PROG)
 
 mostlyclean:
-	rm -f *.o core *~ *.out *.BAK *.atac
+	rm -f *$o core *~ *.out *.BAK *.atac
 
 clean: mostlyclean
-	rm -f $(THIS)
+	rm -f $(PROG)
 
 distclean: clean
 	rm -f makefile config.log config.cache config.status autoconf.h

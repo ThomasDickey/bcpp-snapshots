@@ -10,6 +10,6 @@
 // ##############################
 // Set to virtual so that objects can call there own destructors
 // without becoming confused.
-ANYOBJECT::~ANYOBJECT (void) {};
+ANYOBJECT::~ANYOBJECT (void) {}
 
 #endif

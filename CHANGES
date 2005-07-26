@@ -1,5 +1,10 @@
--- $Id: CHANGES,v 1.30 2005/05/16 19:47:54 tom Exp $
+-- $Id: CHANGES,v 1.32 2005/07/25 21:36:34 tom Exp $
 -- Thomas E. Dickey <dickey@invisible-island.net>
+
+2005/07/25
+	+ add COPYING (request by Peter Hille).
+	+ fixes for Intel 9.0 compiler-warnings.
+	+ add AC_EXEEXT and AC_OBJEXT checks to configure properly with cygwin.
 
 2005/05/16
 	+ fixes to build with g++ 2.95.3
