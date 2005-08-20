@@ -1,6 +1,6 @@
 // C(++) Beautifier V1.61 Unix/MS-DOS update !
 // -----------------------------------------
-// $Id: bcpp.cpp,v 1.115 2005/07/25 20:53:34 tom Exp $
+// $Id: bcpp.cpp,v 1.125 2005/08/19 21:11:19 tom Exp $
 //
 // Program was written by Steven De Toni 1994 (CBC, ACBC).
 // Modified/revised by Thomas E. Dickey 1996-2002,2003.
@@ -164,6 +164,8 @@
 #include "bcpp.h"
 
 // ----------------------------------------------------------------------------
+
+static int LookupLastKeyword(OutputStruct* pCodeLine);
 
 static const char *cppc_begin = "//";
 static const char *ccom_begin = "/*";
@@ -951,7 +953,7 @@ static int DecodeLine (bool afterSlash, int offset, char* pLineData, char *pLine
         return DecodeLine (afterSlash, offset, pLineData, pLineState, pInputQueue);
         // end of recursive call !
 
-    } // if L_CURL and R_CURL exit on same line
+    } // if L_CURL and R_CURL exist on same line
 
     //##### Determine extraction precedence !
     if ((SChar >= 0) && (EChar >= 0))
@@ -2082,7 +2084,19 @@ static QueueList* IndentNonBraces (StackList* pIMode, QueueList* pLines, const C
     {
         int     findWord = LookupKeyword(pTestCode);
 
-        // if keyword found, check if next line not a brace or, comment !
+        if (findWord < 0)
+        {
+            findWord = LookupLastKeyword(pOut);
+#if 0
+            if (findWord >= 0)
+            {
+                if (strcmp(pIndentWords[findWord].name, "else"))
+                    findWord = -1;
+            }
+#endif
+        }
+
+        // if keyword found, check if next line not a brace or, comment
 
         // Test if code not NULL, and No Hidden Open Braces
         // FIXME: punctuation need not be at end of line
@@ -2161,7 +2175,7 @@ static QueueList* IndentNonBraces (StackList* pIMode, QueueList* pLines, const C
             // not needed (i.e multi line single if conditions)
             IndentStruct* pThrowOut = NULL;
 
-            // Test code for single indentation, if semi-colon exits
+            // Test code for single indentation, if semi-colon exists
             // within code, remove item from indent stack!
             pTestCode = (reinterpret_cast<OutputStruct*>(pLines -> peek (1))) -> pCode ;
 
@@ -2187,6 +2201,44 @@ static QueueList* IndentNonBraces (StackList* pIMode, QueueList* pLines, const C
     return pLines;
 }
 
+// ----------------------------------------------------------------------------
+static bool isPreProc (OutputStruct *test)
+{
+    bool result = false;
+    if (test->pCFlag != 0) {
+        for (int n = 0; test->pCFlag[n] != '\0'; ++n)
+        {
+            char state = test->pCFlag[n];
+
+            if (state == PreProc)
+            {
+                result = true;
+                break;
+            }
+            else if (state == Normal)
+            {
+                break;
+            }
+        }
+    }
+    return result;
+}
+
+// ----------------------------------------------------------------------------
+// Check for a keyword which can follow a right curly-brace.
+static bool KeyAfterBrace (const char *word, int length)
+{
+    switch (length)
+    {
+    case 4:
+        return (strncmp(word, "else", length)) ? False : True;
+#if 0                           // only if we have more info...
+    case 5:
+        return (strncmp(word, "while", length)) ? False : True;
+#endif
+    }
+    return False;
+}
 
 // ----------------------------------------------------------------------------
 // Check for a keyword which can precede a left curly-brace.
@@ -2206,7 +2258,239 @@ static bool KeyBeforeBrace (const char *word, int length)
 }
 
 // ----------------------------------------------------------------------------
-// Function reformats open braces to be on the same lines as the
+static bool LineContainsBraces(QueueList* pLines, int item)
+{
+    OutputStruct *pItem = reinterpret_cast<OutputStruct*>(pLines->peek (item));
+    bool result = false;
+
+    if (pItem->pBrace != NULL)
+        result = true;
+    else if (pItem->pCode != NULL && pItem->pCFlag != 0)
+    {
+        for (int n = 0; pItem->pCFlag[n] != 0; ++n)
+        {
+            if (pItem->pCFlag[n] == Normal
+             && (pItem->pCode[n] == L_CURL
+              || pItem->pCode[n] == R_CURL))
+            {
+                result = true;
+                break;
+            }
+        }
+    }
+    return result;
+}
+
+// ----------------------------------------------------------------------------
+static OutputStruct* findBraceLine(QueueList* pLines, int &first, int last, char brace, int step)
+{
+    OutputStruct *result        = NULL;
+    OutputStruct *pBraceLine    = NULL;
+
+    // Can't process less than two items (i.e. move brace from one line to next line to make one line)
+    while (first >= 0 && first <= last)
+    {
+        pBraceLine = reinterpret_cast<OutputStruct*>(pLines->peek (first));
+
+        if ((pBraceLine->pBrace != NULL) && (pBraceLine->pBrace[0] == brace))
+        {
+            result = pBraceLine;
+            TRACE_OUTPUT(result);
+            break;
+        }
+        first += step;
+    }
+    TRACE(("...%s brace\n", result ? "found" : "NOT found"));
+    return result;
+}
+
+static OutputStruct* findBraceLine(QueueList* pLines, int &first, int last, char brace)
+{
+    return findBraceLine(pLines, first, last, brace, 1);
+}
+
+// ----------------------------------------------------------------------------
+static OutputStruct* findCodeLine(QueueList* pLines, int &first, int last, int step)
+{
+    OutputStruct *result    = NULL;
+    OutputStruct *pCodeLine = NULL;
+
+    // Can't process less than two items (i.e. move brace from one line to next line to make one line)
+    while (first >= 0 && first <= last)
+    {
+        pCodeLine = reinterpret_cast<OutputStruct*>(pLines->peek (first));
+
+        if (pCodeLine == NULL
+         || isPreProc(pCodeLine))
+        {
+            break;
+        }
+        if (pCodeLine->pCode != NULL)
+        {
+            result = pCodeLine;
+            TRACE_OUTPUT(result);
+            break;
+        }
+        first += step;
+    }
+    TRACE(("...%s code\n", result ? "found" : "NOT found"));
+    return result;
+}
+
+static OutputStruct* findCodeLine(QueueList* pLines, int &first, int last)
+{
+    return findCodeLine(pLines, first, last, 1);
+}
+
+// ----------------------------------------------------------------------------
+// Find the index for the last word on the code line, or the last character
+// if the line does not end with a word.  Returns true if we found something.
+static bool parseLastCode(OutputStruct* pCodeLine, char &lastchar, int &lastword, int &wordsize)
+{
+    bool result = false;
+
+    lastword = -1;
+    wordsize = 0;
+    lastchar = NullC;
+
+    if (pCodeLine->pCode != 0
+     && pCodeLine->pCFlag != 0)
+    {
+        for (int n = 0; pCodeLine->pCode[n] != NullC; ++n)
+        {
+            if (pCodeLine->pCFlag[n] == PreProc)
+            {
+                lastchar = NullC;
+                lastword = -1;
+                break;
+            }
+            else if (pCodeLine->pCFlag[n] == Normal)
+            {
+                if (!isName(pCodeLine->pCode[n]))
+                {
+                    lastchar = pCodeLine->pCode[n];
+                    lastword = -1;
+                    wordsize = 0;
+                }
+                else if (lastword < 0)
+                {
+                    lastchar = NullC;
+                    lastword = n;
+                    wordsize = 0;
+                }
+                if (lastword >= 0)
+                    ++wordsize;
+            }
+            else
+            {
+                lastchar = NullC;
+                lastword = -1;
+                wordsize = 0;
+            }
+        }
+        result = lastchar != NullC
+              || lastword != -1
+              || wordsize > 0;
+    }
+    return result;
+}
+
+static int LookupLastKeyword(OutputStruct* pCodeLine)
+{
+    char lastchar;
+    int lastword;
+    int wordsize;
+
+    int result = -1;
+
+    if (parseLastCode(pCodeLine, lastchar, lastword, wordsize)
+      && wordsize > 0)
+    {
+        lastchar = pCodeLine->pCode[lastword + wordsize];
+        pCodeLine->pCode[lastword + wordsize] = 0;
+
+        result = LookupKeyword(pCodeLine->pCode + lastword);
+
+        pCodeLine->pCode[lastword + wordsize] = lastchar;
+    }
+    return result;
+}
+
+// ----------------------------------------------------------------------------
+// Find the index for the first word on the code line, or the first character
+// if the line does not begin with a word.  Returns true if we found something.
+static bool parseFirstCode(OutputStruct* pCodeLine, char &firstchar, int &firstword, int &wordsize)
+{
+    bool result = false;
+
+    firstword = -1;
+    wordsize = 0;
+    firstchar = NullC;
+
+    if (pCodeLine->pCode != 0
+     && pCodeLine->pCFlag != 0)
+    {
+        for (int n = 0; pCodeLine->pCode[n] != NullC; ++n)
+        {
+            if (pCodeLine->pCFlag[n] == PreProc)
+            {
+                firstchar = NullC;
+                firstword = -1;
+                break;
+            }
+            else if (pCodeLine->pCFlag[n] == Normal)
+            {
+                if ((n > 0 && !isName(pCodeLine->pCode[n-1]))
+                 || !isName(pCodeLine->pCode[n]))
+                {
+                    firstchar = pCodeLine->pCode[n];
+                    firstword = -1;
+                    wordsize = 0;
+                    break;
+                }
+                else if (firstword < 0)
+                {
+                    firstchar = NullC;
+                    firstword = n;
+                    wordsize = 0;
+                }
+                if (firstword >= 0)
+                    ++wordsize;
+            }
+            else if (pCodeLine->pCFlag[n] == DQuoted
+                  || pCodeLine->pCFlag[n] == SQuoted)
+            {
+                firstchar = NullC;
+                firstword = -1;
+                wordsize = 0;
+                break;
+            }
+            else if (wordsize)
+            {
+                break;
+            }
+        }
+        result = firstchar != NullC
+              || firstword != -1
+              || wordsize > 0;
+    }
+    return result;
+}
+
+static void copyLinesUntil(QueueList* dst, QueueList* src, OutputStruct *last)
+{
+    OutputStruct *temp = reinterpret_cast<OutputStruct*>(src->takeNext());
+    while (temp != last)
+    {
+        TRACE(("COPYING ... "));
+        TRACE_OUTPUT(temp);
+        dst -> putLast (temp);
+        temp = reinterpret_cast<OutputStruct*>(src->takeNext());
+    }
+}
+
+// ----------------------------------------------------------------------------
+// Function reformats open braces (left-curly) to be on the same lines as the
 // code that it's assigned (if possible).
 //
 // Parameters:
@@ -2218,17 +2502,11 @@ static bool KeyBeforeBrace (const char *word, int length)
 //              queue, or the value of pLines if no work is needed.
 //              The input pLines is freed unless it is the return-value.
 //
-static QueueList* ReformatBraces (QueueList* pLines, int first, const Config& userS)
+static QueueList* ReformatLCurly (QueueList* pLines, int first, const Config& userS)
 {
     int           queueNum      = pLines -> status (); // get queue number
 
-    int           findBrace;    // position in queue where first brace line is located
-    int           findCode ;    // position in queue where next code line is located
-
-    OutputStruct* pBraceLine    = NULL;
-    OutputStruct* pCodeLine     = NULL;
-
-    TRACE(("ReformatBraces(%d:%d)\n", first, queueNum));
+    TRACE(("ReformatLCurly(%d:%d)\n", first, queueNum));
 
     // Can't process less than two items (i.e. move brace from one line to next line to make one line )
     if (queueNum < 2 || first > queueNum)
@@ -2236,35 +2514,29 @@ static QueueList* ReformatBraces (QueueList* pLines, int first, const Config& us
         return pLines;
     }
 
-    // search forward through queue to find the first appearance of a brace !
+    OutputStruct* pBraceLine    = NULL;
+    OutputStruct* pCodeLine     = NULL;
+
+    int           findBrace;    // position in queue where first brace line is located
+    int           findCode ;    // position in queue where next code line is located
+
+    // search forward through queue to find the first appearance of a brace
     findBrace = first;
-    while (findBrace <= queueNum)
-    {
-        pBraceLine = reinterpret_cast<OutputStruct*>(pLines -> peek (findBrace));
-
-        if ((pBraceLine -> pBrace != NULL) && (pBraceLine -> pBrace[0] == L_CURL))
-            break;              // leave queue search !
-        else
-            findBrace++;
-    }
-
-    if (findBrace > queueNum)   // open brace not found in queue !
-    {
+    pBraceLine = findBraceLine(pLines, findBrace, queueNum, L_CURL);
+    if (pBraceLine == NULL)
         return pLines;
-    }
 
     // find out if there is a place to place the brace in the code that
-    // is currently stored !
-    for (findCode = findBrace-1; findCode >= first; findCode--)
-    {
-        if ((reinterpret_cast<OutputStruct*>(pLines -> peek (findCode))) -> pCode != NULL)
-            break;              // found a code Line
-    }
+    // is currently stored
+    findCode = findBrace - 1;  // position in queue where first brace line is located
+    pCodeLine = findCodeLine(pLines, findCode, queueNum, -1);
+
+    if (pCodeLine == NULL)
+        return pLines;
 
     if (findCode >= first)      // o.k found a line that has code !
     {
         OutputStruct* pNewItem   = NULL;
-        char*         pNewMem    = NULL;
 
         // we're here to join braces, but must check if this instance must
         // remain split:
@@ -2276,51 +2548,12 @@ static QueueList* ReformatBraces (QueueList* pLines, int first, const Config& us
         }
         else
         {
-            int lastword = -1;
-            int wordsize = 0;
-            char lastchar = NullC;
+            int lastword;
+            int wordsize;
+            char lastchar;
 
-            pCodeLine = reinterpret_cast<OutputStruct*>(pLines -> peek(findCode));
-            if (pCodeLine->pCode != 0
-             && pCodeLine->pCFlag != 0)
+            if (parseLastCode(pCodeLine, lastchar, lastword, wordsize))
             {
-                for (int n = 0; pCodeLine->pCode[n] != NullC; ++n)
-                {
-                    if (pCodeLine->pCFlag[n] == PreProc)
-                    {
-                        lastchar = NullC;
-                        lastword = -1;
-                        break;
-                    }
-                    else if (pCodeLine->pCFlag[n] == Normal)
-                    {
-                        lastchar = pCodeLine->pCode[n];
-                        if (n > 0 && !isName(pCodeLine->pCode[n-1]))
-                        {
-                            lastword = -1;
-                            wordsize = 0;
-                        }
-                        if (!isName(pCodeLine->pCode[n]))
-                        {
-                            lastword = -1;
-                            wordsize = 0;
-                        }
-                        else if (lastword < 0 && isName(pCodeLine->pCode[n]))
-                        {
-                            lastword = n;
-                            wordsize = 0;
-                        }
-                        if (lastword >= 0)
-                            ++wordsize;
-                    }
-                    else if (pCodeLine->pCFlag[n] == DQuoted
-                          || pCodeLine->pCFlag[n] == SQuoted)
-                    {
-                        lastchar = NullC;
-                        lastword = -1;
-                        wordsize = 0;
-                    }
-                }
                 // we can join a left-curly after a right-paren, equals, or "else"
                 if (lastchar != R_PAREN
                  && lastchar != '='
@@ -2333,9 +2566,9 @@ static QueueList* ReformatBraces (QueueList* pLines, int first, const Config& us
         // place top-level open braces on same line as code
         if (splitBraces || userS.braceLoc == True)
         {
-            TRACE(("...leave brace, restart\n"));
+            TRACE(("...leave brace, restart (%d,%d)\n", splitBraces, userS.braceLoc));
 
-            return ReformatBraces (pLines, findBrace + 1, userS);
+            return pLines;
         }
 
         QueueList* pNewLines = new QueueList();
@@ -2373,9 +2606,11 @@ static QueueList* ReformatBraces (QueueList* pLines, int first, const Config& us
         // place brace code onto new output structure !
         pNewItem = new OutputStruct(pCodeLine);
         // code + space + brace + nullc
-        pNewMem  = new char [strlen (pCodeLine -> pCode) + strlen (pBraceLine -> pBrace) + 1 + 1];
+        int newLen = (strlen (pCodeLine->pCode) + strlen (pBraceLine->pBrace) + 1 + 1);
+        char *pNewCode  = new char [newLen];
+        char *pNewState  = new char [newLen];
 
-        if ((pNewItem == NULL) || (pNewMem == NULL))
+        if ((pNewItem == NULL) || (pNewCode == NULL))
         {
             delete pCodeLine;
             delete pBraceLine;
@@ -2385,13 +2620,14 @@ static QueueList* ReformatBraces (QueueList* pLines, int first, const Config& us
         }
 
         // concatenate code + space + brace // ### CHECK IT
-        pNewMem = strcpy (pNewMem, pCodeLine -> pCode); // copy code
-        strcpy (endOf(pNewMem), " ");                   // copy space
-        strcpy (endOf(pNewMem), pBraceLine -> pBrace);  // copy brace
+        sprintf (pNewCode, "%s %s", pCodeLine->pCode, pBraceLine->pBrace);
+        sprintf (pNewState, "%s %s", pCodeLine->pCFlag, pBraceLine->pBFlag);
 
         // place attributes into queue
+        pNewItem -> bracesLevel = pCodeLine -> bracesLevel;
         pNewItem -> indentSpace = pCodeLine -> indentSpace;
-        pNewItem -> pCode       = pNewMem;
+        pNewItem -> pCode       = pNewCode;
+        pNewItem -> pCFlag      = pNewState;
 
         // Add comments to new code line if they exist
         if (pCodeLine -> pComment != NULL)
@@ -2404,10 +2640,11 @@ static QueueList* ReformatBraces (QueueList* pLines, int first, const Config& us
             pNewItem  -> filler   = userS.posOfCommentsWC - (pCodeLine -> indentSpace + strlen (pNewItem -> pCode));
         }
 
+        TRACE(("...merged code+brace\n"));
+        TRACE_OUTPUT(pNewItem);
+
         // store newly constructed output structure
         pNewLines -> putLast (pNewItem);
-
-        int start = pNewLines->status();
 
         // process brace Line !, create new output structure for brace comment
         if (pBraceLine -> pComment != NULL)
@@ -2457,14 +2694,220 @@ static QueueList* ReformatBraces (QueueList* pLines, int first, const Config& us
         // remove old queue object from memory, return newly constructed one
         delete pLines;
 
-        // Test if there are any more open brace lines in pNewLine queue.
-        // Do a recursive call to check.
-        pLines = ReformatBraces (pNewLines, start, userS);
+        pLines = pNewLines;
     }
 
     return pLines;
 }
 
+// ----------------------------------------------------------------------------
+// Function reformats closing braces (right-curly) to be on the same lines as
+// the code that it's assigned (if possible).
+//
+// Parameters:
+// pLines     : Pointer to a OutputStructure queue object
+// userS      : Users configuration settings.
+//
+// Return Values:
+// QueueList* : Returns a pointer to a newly constructed OutputStructure
+//              queue, or the value of pLines if no work is needed.
+//              The input pLines is freed unless it is the return-value.
+//
+static QueueList* ReformatRCurly (QueueList* pLines, int first, const Config& userS)
+{
+    int           queueNum      = pLines -> status (); // get queue number
+
+    TRACE(("ReformatRCurly(%d:%d)\n", first, queueNum));
+
+    // Can't process less than two items (i.e. move brace from one line to next line to make one line )
+    if (queueNum < 2 || first > queueNum)
+    {
+        return pLines;
+    }
+
+    // search forward through queue to find the first appearance of a brace
+    int findBrace = first;      // position in queue where first brace line is located
+    OutputStruct* pBraceLine = findBraceLine(pLines, findBrace, queueNum, R_CURL);
+
+    if (pBraceLine == NULL)
+        return pLines;
+
+    int findCode = findBrace + 1; // position in queue where first brace line is located
+    OutputStruct* pCodeLine = findCodeLine(pLines, findCode, queueNum);
+
+    if (pCodeLine == NULL)
+        return pLines;
+
+    for (int n = findBrace + 1; n < findCode; ++n)
+    {
+        if (LineContainsBraces(pLines, n))
+        {
+            TRACE(("...extra brace conflicts\n"));
+            return pLines;
+        }
+    }
+
+    if (findCode >= first)      // o.k found a line that has code !
+    {
+        OutputStruct* pNewItem   = NULL;
+
+        // we're here to join braces, but must check if this instance must
+        // remain split:
+        bool splitBraces = False;
+        if (pBraceLine->bracesLevel == 0
+         && userS.topBraceLoc != False)
+        {
+            splitBraces = True;
+        }
+        else
+        {
+            int lastword = -1;
+            int wordsize = 0;
+            char lastchar = NullC;
+
+            if (parseFirstCode(pCodeLine, lastchar, lastword, wordsize))
+            {
+                TRACE(("lastchar %#x, lastword %d, wordsize %d\n",
+                    lastchar, lastword, wordsize));
+                // we can join a right-curly before "else"
+                if (lastchar != NullC
+                 || KeyAfterBrace(pCodeLine->pCode + lastword, wordsize) == False)
+                    splitBraces = True;
+            }
+        }
+
+        // place top-level close braces on same line as code
+        if (splitBraces || userS.braceLoc == True)
+        {
+            TRACE(("...leave brace, restart (%d,%d)\n", splitBraces, userS.braceLoc));
+
+            return pLines;
+        }
+
+        QueueList* pNewLines = new QueueList();
+        if (pNewLines == NULL)
+        {
+            return NULL;        // out of memory
+        }
+
+        // load newQueue with lines up to first line found
+        for (int loadNew = 1; loadNew < findBrace; loadNew++)
+            pNewLines -> putLast (pLines->takeNext());
+
+        // take the first line that is going to be altered
+        pLines->takeNext ();
+
+        // if code has comments, then it's placed on a new line
+        if (pCodeLine -> pComment != NULL)
+        {
+            // len of indent + code + space + brace
+            int overWrite = pCodeLine -> indentSpace + strlen (pCodeLine -> pCode) + 1 + strlen (pBraceLine -> pBrace);
+            if (overWrite >= userS.posOfCommentsWC) // if true then place comment on new line !
+            {
+                pNewItem = new OutputStruct(pCodeLine);
+                if (pNewItem == NULL)
+                    return NULL;
+
+                pNewItem  -> filler      = userS.posOfCommentsWC;
+                pNewItem  -> pComment    = pCodeLine -> pComment;
+                pCodeLine -> pComment    = NULL;// make this NULL as not to be delete when
+                                                // object destructor is called.
+                pNewLines -> putLast (pNewItem);
+            }
+        }
+
+        // place brace code onto new output structure !
+        pNewItem = new OutputStruct(pCodeLine);
+
+        // code + space + brace + nullc
+        int newLen = (strlen (pCodeLine->pCode) + strlen (pBraceLine->pBrace) + 1 + 1);
+        char *pNewCode  = new char [newLen];
+        char *pNewState  = new char [newLen];
+
+        if ((pNewItem == NULL) || (pNewCode == NULL))
+        {
+            delete pCodeLine;
+            delete pBraceLine;
+            delete pLines;
+            delete pNewLines;
+            return NULL;        // out of memory
+        }
+
+        // concatenate code + space + brace // ### CHECK IT
+        sprintf (pNewCode, "%s %s", pBraceLine->pBrace, pCodeLine->pCode);
+        sprintf (pNewState, "%s %s", pBraceLine->pBFlag, pCodeLine->pCFlag);
+
+        // place attributes into queue
+        pNewItem = pBraceLine;
+        pNewItem->pCode = pNewCode;
+        pNewItem->pCFlag = pNewState;
+        pNewItem->pBrace = NULL;
+        pNewItem->pBFlag = NULL;
+        pNewItem->pComment = NULL;
+
+        // Add comments to new code line if they exist
+        if (pCodeLine -> pComment != NULL)
+        {
+            pNewItem  -> pComment = pCodeLine -> pComment;
+            pCodeLine -> pComment = NULL;// make this NULL as not to be delete when
+                                         // object destructor is called.
+
+            // calculate filler spacing!
+            pNewItem  -> filler   = userS.posOfCommentsWC - (pCodeLine -> indentSpace + strlen (pNewItem -> pCode));
+        }
+
+        TRACE(("...merged brace+code\n"));
+        TRACE_OUTPUT(pNewItem);
+
+        // store newly constructed output structure
+        pNewLines -> putLast (pNewItem);
+
+        // process brace Line !, create new output structure for brace comment
+        if (pBraceLine -> pComment != NULL)
+        {
+            pNewItem = new OutputStruct(pBraceLine);
+
+            if (pNewItem == NULL)
+            {
+                delete pCodeLine;
+                delete pBraceLine;
+                delete pLines;
+                delete pNewLines;
+                return NULL;// out of memory
+            }
+
+            // load comment
+            pNewItem   -> pComment = pBraceLine -> pComment;
+            pBraceLine -> pComment = NULL;
+
+            // positioning comment, use filler - not indentSpace - as this
+            // will become screw when using tabs ... fillers use spaces!
+            pNewItem   -> filler  = userS.posOfCommentsWC;
+
+            pNewLines  -> putLast (pNewItem);
+        }
+
+        delete pCodeLine;
+
+        // copy existing lines from old queue, into the newly created queue !
+        copyLinesUntil(pNewLines, pLines, pCodeLine);
+
+        // FIXME delete pCodeLine;       // remove last line
+
+        // code what's left in pLines queue to pNewLines !
+        while ((pLines -> status ()) > 0 )
+        {
+              pNewLines -> putLast (pLines -> takeNext ());
+        }
+
+        // remove old queue object from memory, return newly constructed one
+        delete pLines;
+
+        pLines = pNewLines;
+    }
+
+    return pLines;
+}
 
 // ----------------------------------------------------------------------------
 // Function reformats the spacing between functions, structures, unions, classes.
@@ -2633,14 +3076,22 @@ static QueueList* OutputToOutFile (FILE* pOutFile, QueueList* pLines, StackList*
         if (pLines == NULL)
              return NULL;               //#### Memory Allocation Failure
 
-        // reformat open braces if user option set !
+        // reformat open braces if user option set
         if (userS.topBraceLoc == False  // place open braces on same line as code
          || userS.braceLoc == False)    // place open braces on same line as code
         {
-            pLines = ReformatBraces (pLines, 1, userS);
+            pLines = ReformatLCurly (pLines, 1, userS);
             if (pLines == NULL)
                return NULL;
         }
+#if 0
+        if (userS.braceLoc == False)    // place closing braces on same line as code
+        {
+            pLines = ReformatRCurly (pLines, 1, userS);
+            if (pLines == NULL)
+               return NULL;
+        }
+#endif
 
         pOut = reinterpret_cast<OutputStruct*>(pLines -> takeNext());
 
