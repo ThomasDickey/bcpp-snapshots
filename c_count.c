@@ -3,6 +3,7 @@
  * Author:	T.E.Dickey
  * Created:	04 Dec 1985
  * Modified:
+ *		08 Jan 2006, correct bookkeeping for unterminated blocks.
  *		17 Jul 2005, show statement numbers at the beginning of a
  *			     statement with the -v option, rather than at
  *			     the terminating ';'.
@@ -92,7 +93,7 @@
 #include "patchlev.h"
 
 #ifndef	NO_IDENT
-static const char Id[] = "$Id: c_count.c,v 7.49 2005/07/17 21:40:39 tom Exp $";
+static const char Id[] = "$Id: c_count.c,v 7.53 2006/01/08 16:21:42 tom Exp $";
 #endif
 
 #include <stdio.h>
@@ -126,6 +127,10 @@ extern char *optarg;
 #define strchr index
 #endif
 
+#ifndef isascii
+#define isascii(c) ((unsigned char)(c) < 128)
+#endif
+
 #ifndef EXIT_SUCCESS		/* normally in <stdlib.h> */
 #define EXIT_SUCCESS 0
 #define EXIT_FAILURE 0
@@ -156,6 +161,15 @@ extern char *optarg;
 #define NUMBER2(c)	(NUMBER(c) || strchr("+-eEpPlLuUxX", c) != 0)
 
 #define LVL_WEIGHT(n)	if (opt_blok) One.lvl_weights += (n) * (One.nesting_lvl+1)
+
+/*
+ * To make the verbose listing look nice (without doing tab-conversion), we
+ * want to have the columns for statements, lines, error flags add up to
+ * a multiple of 8.
+ */
+#define DIGITS_LINES	6
+#define DIGITS_STMTS	5
+#define DIGITS_FLAGS	((DIGITS_LINES + 1 + DIGITS_STMTS + 8) % 8)
 
 /* do not count curly-braces as part of statements, for numbering purposes */
 #define CHARS_STMTS(p) ((p)->chars_code - (p)->chars_curly)
@@ -189,11 +203,11 @@ typedef struct {
     long lines_rlogs;		/* RCS history comments */
     long lines_prepro;
     /* flags */
-    long flags_unquo;
-    long flags_uncmt;
-    long flags_unasc;
-    long flags_unlvl;
-    long flags_2long;
+    long flags_unquo;		/* lines with unterminated quotes */
+    long flags_uncmt;		/* unterminated/nested comments */
+    long flags_unasc;		/* illegal characters found */
+    long flags_unlvl;		/* unterminated blocks */
+    long flags_2long;		/* too-long identifiers */
     /* statement-counts */
     long stmts_total;
     long stmts_latch;
@@ -418,7 +432,7 @@ show_totals(STATS * p)
 static void
 summarize(STATS * p, int mark, int name)
 {
-    char errors[8];
+    char errors[80];
     int c = 0;
 
     newsum = FALSE;
@@ -430,13 +444,13 @@ summarize(STATS * p, int mark, int name)
 	int showed_stmts = FALSE;
 
 	/* show line- and statement-numbers */
-	PRINTF("%6ld ",
-	       p->lines_total + (mark && !name));
+	PRINTF("%*ld ",
+	       DIGITS_LINES, p->lines_total + (mark && !name));
 	if ((p->stmts_total != Old.stmts_total) || !mark || name) {
-	    PRINTF("%5ld", p->stmts_total);
+	    PRINTF("%*ld", DIGITS_STMTS, p->stmts_total);
 	    showed_stmts = TRUE;
 	} else {
-	    PRINTF("%5s", " ");
+	    PRINTF("%*s", DIGITS_STMTS, " ");
 	}
 
 	/* show block-level */
@@ -461,12 +475,12 @@ summarize(STATS * p, int mark, int name)
 	    errors[c++] = '"';
 	if (p->flags_uncmt != Old.flags_uncmt)
 	    errors[c++] = '*';
-	if (p->flags_unlvl != Old.flags_unlvl)
+	if (p->flags_unlvl != 0)
 	    errors[c++] = '+';
 	if (p->flags_2long != Old.flags_2long)
 	    errors[c++] = '>';
 
-	while (c < 2) {
+	while (c < DIGITS_FLAGS - 2) {
 	    errors[c++] = ' ';
 	}
 	/* If there is room, mark the last flag showing if the line contained
@@ -479,6 +493,8 @@ summarize(STATS * p, int mark, int name)
 	    errors[c++] = ' ';
 	}
 
+	if (c > DIGITS_FLAGS)
+	    c = DIGITS_FLAGS;
 	errors[c] = EOS;
 	PRINTF("%s%c",
 	       errors,
@@ -530,13 +546,13 @@ add_totals(void)
     ADD(top_lvl_blk);
     ADD(lvl_weights);
 
-    if (One.nesting_lvl) {
-	One.flags_unlvl += One.nesting_lvl;
-	One.nesting_lvl = 0;
-    }
     if (All.max_blk_lvl < One.max_blk_lvl)
 	All.max_blk_lvl = One.max_blk_lvl;
     One.max_blk_lvl = 0;
+
+    if (One.nesting_lvl > 0)
+	All.flags_unlvl += One.nesting_lvl;
+    One.nesting_lvl = 0;
 
     files_total++;
 }
@@ -635,6 +651,13 @@ Token(int c)
     if ((c == '\n') && pstate == pCode && bstate != pCode)
 	DEBUG("\n");
 
+#ifdef NO_LEAKS2
+    if (bfr != 0) {
+	free(bfr);
+	bfr = 0;
+	have = 0;
+    }
+#endif
     return (c);
 }
 
@@ -901,8 +924,9 @@ doFile(char *name)
 
     if (per_file && spreadsheet) {
 	show_totals(&One);
-    } else if (!per_file)
+    } else if (!per_file) {
 	summarize(&One, TRUE, TRUE);
+    }
     PRINTF("%s\n", name);
     if (per_file && !spreadsheet) {
 	show_totals(&One);
@@ -1325,11 +1349,12 @@ main(int argc, char **argv)
 	    spreadsheet = TRUE;
 	    break;
 	case 'V':
-	    printf("c_count version %d.%d\n", RELEASE, PATCHLEVEL);
+	    PRINTF("c_count version %d.%d\n", RELEASE, PATCHLEVEL);
 	    return EXIT_SUCCESS;
 	case 'v':
 	    verbose++;
-	    big_line = malloc(big_size = 1024);
+	    if (big_line == 0)
+		big_line = malloc(big_size = 1024);
 	    break;
 	case 'w':
 	    limit_name = atoi(optarg);
@@ -1420,5 +1445,11 @@ main(int argc, char **argv)
 	show_totals(&All);
 	PRINTF("\n");
     }
+#ifdef NO_LEAKS
+    if (big_line != 0)
+	free(big_line);
+    free(quotvec);
+#endif
+
     return EXIT_SUCCESS;
 }

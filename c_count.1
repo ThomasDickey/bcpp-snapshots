@@ -1,4 +1,4 @@
-.\" $Id: c_count.1,v 7.7 2005/06/26 11:37:02 tom Exp $
+.\" $Id: c_count.1,v 7.8 2006/01/08 15:33:25 tom Exp $
 .de EX
 .RS
 .nf
@@ -69,15 +69,36 @@ file contains an unbalanced quote (\fB"\fR).
 file contains illegal characters
 (e.g., nonprinting, nonwhitespace characters such as an escape).
 \fBC_count\fR also flags tabs inside quotes.
+Depending on the context, these may indicate a problem with the source code.
 .TP
 .B *
 file contains unterminated or nested comments.
+This usually indicates a problem with the source code.
 .TP
 .B +
 file contains unterminated curly-braces.
+This may be a problem with the source code,
+or a limitation of \fBc_count\fP.
+For example, the source may contain ifdef'd chunks with curly braces
+such as
+.RS
+.nf
+.sp
+#ifdef FOO
+if (first_condition) {
+#elif defined(BAR)
+if (alternate_condition) {
+#else
+if (default_condition) {
+#endif
+.fi
+.RE
+.IP
+If the closing curly brace is not ifdef'd to match, \fBc_count\fP
+will report the mismatch as an unterminated block.
 .TP
 .B >
-file contains identifiers longer than specified.
+file contains identifiers longer than specified by the \fB-w\fP option.
 .PP
 Unbalanced quotes may be legal.
 The C preprocessor permits you to
@@ -157,6 +178,7 @@ direct \fBc_count\fR not only
 to print a summary line for each file, but also to print a running
 summary showing each source line, together with the current line
 and statement numbers, as well as the cumulative flags.
+Repeating the option causes \fBc_count\fP to also show block (curly-brace) levels.
 .TP
 .BI -w " LEN"
 specify the length for identifiers beyond which we should report an error.
@@ -223,7 +245,7 @@ for each file, as well as for all files together.
 .
 .SH ENVIRONMENT
 .PP
-\fBC_count\fR runs in a portable UNIX\*R environment.
+\fBC_count\fR runs in a POSIX environment.
 Execute it on VAX/VMS by defining it as a foreign command.
 .
 .SH FILES

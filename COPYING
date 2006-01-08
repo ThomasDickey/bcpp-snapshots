@@ -1,10 +1,10 @@
-$Id: COPYING,v 7.5 2002/11/23 01:32:54 tom Exp $
+$Id: COPYING,v 7.6 2006/01/08 15:30:34 tom Exp $
 
 C_COUNT
 
 --------------------------------------------------------------------------------
 
-Copyright 1997,2001,2002 by Thomas E. Dickey
+Copyright 1997-2005,2006 by Thomas E. Dickey
 All Rights Reserved.
 
 Permission to use, copy, modify, and distribute this software and its
