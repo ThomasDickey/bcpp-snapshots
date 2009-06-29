@@ -1,5 +1,5 @@
 //******************************************************************************
-// Copyright 1996-2003,2005 by Thomas E. Dickey                                *
+// Copyright 1996-2005,2009 by Thomas E. Dickey                                *
 // All Rights Reserved.                                                        *
 //                                                                             *
 // Permission to use, copy, modify, and distribute this software and its       *
@@ -17,7 +17,7 @@
 // OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR   *
 // PERFORMANCE OF THIS SOFTWARE.                                               *
 //******************************************************************************
-// $Id: execsql.cpp,v 1.16 2005/04/11 00:19:30 tom Exp $
+// $Id: execsql.cpp,v 1.20 2009/06/28 19:44:13 tom Exp $
 // EXEC SQL parsing & indention
 
 #include <ctype.h>
@@ -33,10 +33,22 @@ SqlStruct::NextWord(int start, OutputStruct *pOut)
     int n = start;
     bool reset = False;
 
-    TRACE(("next:%s\n", pOut -> pCode+start));
+    TRACE(("esql next:%s\n", pOut -> pCode+start));
     while (pOut -> pCode[n] != NULLC
       &&  (pOut -> pCFlag[n] != Normal || !isName(pOut -> pCode[n])))
     {
+        if (pOut -> pCFlag[n] == Normal
+            && pOut -> pCode[n] == '-'
+            && pOut -> pCode[n + 1] == '-')
+        {
+            TRACE(("esql found comment:%s\n", pOut->pCode + n));
+            while (pOut -> pCode[n] != NULLC)
+            {
+                pOut -> pCFlag[n++] = Ignore;
+            }
+            break;
+        }
+
         if ((pOut -> pCFlag[n] == Normal && !isName(pOut -> pCode[n]))
           || pOut -> pCFlag[n] == DQuoted
           || pOut -> pCFlag[n] == DQuoted)
@@ -50,12 +62,14 @@ SqlStruct::NextWord(int start, OutputStruct *pOut)
     if (reset)
     {
         matched[level = 0] = NULLC;
-        if (state == 3
-         && pOut -> pCFlag[n-1] == Normal
-         && pOut -> pCode[n-1] == SEMICOLON)
+        if (state == MoreSQL
+         && pOut -> pCFlag[n - 1] == Normal
+         && pOut -> pCode[n - 1] == SEMICOLON)
         {
-            //TRACE(("FIXME2:%s\n", pOut->pCode + n - 1))
-            state = 0;
+            TRACE(("esql NextWord reset:%.*s^%s\n",
+                   n - 1, pOut->pCode,
+                   pOut->pCode + n - 1));
+            state = NotSQL;
         }
     }
 
@@ -67,7 +81,7 @@ SqlStruct::SkipWord(int start, OutputStruct *pOut)
 {
     int n = start;
 
-    TRACE(("skip:%s\n", pOut -> pCode+start));
+    TRACE(("esql skip:%s\n", pOut -> pCode+start));
     // skip the current word
     while (pOut -> pCode[n] != NULLC
       &&  (ispunct(pOut -> pCFlag[n]) && isName(pOut -> pCode[n])))
@@ -222,15 +236,15 @@ SqlStruct::IndentSQL(OutputStruct *pOut)
     };
     const struct {
         const char *text;
-        int code;
+        SqlState code;
     } state_strings[] = {
-        { "+Sbds",  1 },        // begin declaration
-        { "+Seds",  0 },        // end declaration
-        { "+Sxb",   2 },        // begin statement
-        { "E",      0 },        // end statement
+        { "+Sbds",  DeclSQL },  // begin declaration
+        { "+Seds",  NotSQL },   // end declaration
+        { "+Sxb",   BeginSQL }, // begin statement
+        { "E",      NotSQL },   // end statement
     };
 
-    int old_state = state;
+    SqlState old_state = state;
     char* pUprString = NULL;
 
     // First, look for SQL keywords to see when we've entered a block or
@@ -244,8 +258,8 @@ SqlStruct::IndentSQL(OutputStruct *pOut)
             return;
 
         StrUpr (strcpy(pUprString, pOut->pCode));
-        TRACE(("HERE:%s\n", pUprString));
-        TRACE(("FLAG:%s\n", pOut->pCFlag));
+        TRACE(("esql HERE:%s\n", pUprString));
+        TRACE(("esql FLAG:%s\n", pOut->pCFlag));
 
         for (int n = NextWord(0, pOut);
             pOut -> pCode[n] != NULLC;
@@ -275,16 +289,17 @@ SqlStruct::IndentSQL(OutputStruct *pOut)
             }
             if (!found)
             {
-                if (state == 0
+                if (state == NotSQL
                  && level >= 2
                  && !strncmp(matched, "+S", 2))
                 {
-                    state = 3;
-                    //TRACE(("FIXME:%s\n", pOut->pCode + n))
+                    state = MoreSQL;
+                    TRACE(("esql transition to MoreSQL:%s\n", pOut->pCode + n));
                 }
                 matched[level = 0] = NULLC;
             }
-            TRACE(("TEST:%d:%d:%s:%s\n", state, level, matched, pUprString+n));
+            TRACE(("esql TEST:%s\n", pUprString + n));
+            TRACE(("->state:%d, level %d, matched:%s\n", state, level, matched));
             n = SkipWord(n, pOut);
             if (pOut -> pCode[n] == NULLC)
             {
@@ -295,22 +310,22 @@ SqlStruct::IndentSQL(OutputStruct *pOut)
 
     if (pOut -> pType != PreP)
     {
-        if (state != 0
+        if (state != NotSQL
          && old_state != 0)
         {
             pOut -> indentHangs = 1;
-            if ((state == 2 || state == 3) && !SqlVerb(pUprString))
+            if ((state == BeginSQL || state == MoreSQL) && !SqlVerb(pUprString))
                 pOut -> indentHangs = 2;
-            //TRACE(("FIXME-HANG:%d\n", pOut -> indentHangs))
+            TRACE(("esql FIXME-HANG:%d\n", pOut -> indentHangs));
         }
         else
-        if (state == 0
-         && old_state == 3)
+        if (state == NotSQL
+         && old_state == MoreSQL)
         {
             pOut -> indentHangs = 1;
             if (!SqlVerb(pUprString))
                 pOut -> indentHangs = 2;
-            //TRACE(("FIXME-HANG2:%d\n", pOut -> indentHangs))
+            TRACE(("esql FIXME-HANG2:%d\n", pOut -> indentHangs));
         }
     }
 

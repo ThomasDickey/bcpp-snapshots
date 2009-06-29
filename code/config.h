@@ -1,7 +1,7 @@
 #ifndef _CONFIG_HEADER
 #define _CONFIG_HEADER
 
-// $Id: config.h,v 1.14 2003/04/23 20:10:15 tom Exp $
+// $Id: config.h,v 1.15 2009/06/26 00:02:22 tom Exp $
 // Program C(++) beautifier Written By Steven De Toni ACBC 11 10/94
 //
 // This file contains prototypes, constants, enum declarations for the 
@@ -38,9 +38,8 @@ struct Config
   Boolean useTabs        ;  // True = use tabs in indenting, False = use spaces
   int     posOfCommentsWC;  // position of comments on line with code
   int     posOfCommentsNC;  // position of comments on line
-  // JZAS Start
+  Boolean keepCommentsWC ;  // True = keep comments inline with code
   Boolean leaveCommentsNC;  // True = don't change the indentation of comments with code.
-  // JZAS End
   Boolean quoteChars     ;  // change non-ASCII chars in quotes to octal notation
   int     deleteHighChars;  // 0  = no check         , 1 = delete high chars,
                             // 2  = don't delete graphics chars

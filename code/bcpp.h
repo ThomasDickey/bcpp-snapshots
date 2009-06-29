@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 1996-2004,2005 by Thomas E. Dickey                               *
+ * Copyright 1996-2005,2009 by Thomas E. Dickey                               *
  * All Rights Reserved.                                                       *
  *                                                                            *
  * Permission to use, copy, modify, and distribute this software and its      *
@@ -17,7 +17,7 @@
  * CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN        *
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.                   *
  ******************************************************************************/
-// $Id: bcpp.h,v 1.45 2005/05/16 22:40:30 tom Exp $
+// $Id: bcpp.h,v 1.47 2009/06/28 19:21:16 tom Exp $
 
 #ifndef _BCPP_HEADER
 #define _BCPP_HEADER
@@ -82,12 +82,12 @@ enum  DataTypes { NoType = 0, CCom = 1,   CppCom = 2, Code  = 3,
                 };
 
 // ----------------------------------------------------------------------------
-enum indentAttr { noIndent=0, oneLine=1, multiLine=2, blockLine=3 };
+enum IndentAttr { noIndent=0, oneLine=1, multiLine=2, blockLine=3 };
 
 // ----------------------------------------------------------------------------
 typedef struct {
     const char *name;
-    indentAttr code;
+    IndentAttr code;
 } IndentwordStruct;
 
 extern const IndentwordStruct pIndentWords[];
@@ -287,13 +287,20 @@ class HtmlStruct : public ANYOBJECT
 // ----------------------------------------------------------------------------
 
 #define MY_DEFAULT \
-        state(0), \
+        state(NotSQL), \
         level(0), \
         matched()
 
+enum SqlState {
+    NotSQL = 0,
+    DeclSQL = 1,
+    BeginSQL = 2,
+    MoreSQL = 3
+};
+
 class SqlStruct : public ANYOBJECT
 {
-        int state;
+        SqlState state;
         int level;
         char matched[80];
 
@@ -328,7 +335,7 @@ class IndentStruct : public ANYOBJECT
            // attribute values ...
            // value 1 = indent code one position, until a ';' is found !
            //       2 = end on close brace, and at a position "pos"
-           indentAttr    attrib;
+           IndentAttr    attrib;
            int           pos;
 
            // Indent double the amount for multiline single if, while ...
@@ -351,13 +358,15 @@ class IndentStruct : public ANYOBJECT
 // debug.cpp
 extern void trace (const char *format, ...);
 #ifdef DEBUG
-extern const char *traceDataType(DataTypes theType);
 extern void traceInput(const char *file, int line, InputStruct *pIn);
+extern void traceIndent(const char *file, int line, IndentStruct *pIndent);
 extern void traceOutput(const char *file, int line, OutputStruct *pOut);
 #define TRACE_INPUT(pOut)  traceInput(__FILE__, __LINE__, pOut);
+#define TRACE_INDENT(pOut) traceIndent(__FILE__, __LINE__, pOut);
 #define TRACE_OUTPUT(pOut) traceOutput(__FILE__, __LINE__, pOut);
 #else
 #define TRACE_INPUT(pOut)  /* nothing */
+#define TRACE_INDENT(pOut) /* nothing */
 #define TRACE_OUTPUT(pOut) /* nothing */
 #endif
 

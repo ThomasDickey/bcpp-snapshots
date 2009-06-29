@@ -1,7 +1,7 @@
 #ifndef _CMDLINE_CODE
 #define _CMDLINE_CODE
 
-// $Id: cmdline.cpp,v 1.23 2005/04/11 00:28:56 tom Exp $
+// $Id: cmdline.cpp,v 1.24 2009/06/26 00:52:53 tom Exp $
 // Program C(++) Beautifier Written By Steven De Toni ACBC 11 12/94
 // Revised 1999 - Thomas Dickey
 //
@@ -45,9 +45,9 @@ void PrintProgramHelp (void)
         "",
         "[-bcl] [-bnl] [-cc <num>] [-f <num>] [-fi <string>] [-fnc <string>]",
         "[-fo <string>] [-h] [-i <num>] [-lg]",
-        "[-na] [-nb] [-nbbi] [-nbi] [-nc] [-nlcnc] [-no] [-nq]",
+        "[-na] [-nb] [-nbbi] [-nbi] [-nc] [-nkcwc] [-nlcnc] [-no] [-nq]",
         "[-qb] [-s] [-t]",
-        "[-ya] [-yb] [-ybbi] [-ybi] [-ylcnc] [-yo] [-yq]",
+        "[-ya] [-yb] [-ybbi] [-ybi] [-ykcwc] [-ylcnc] [-yo] [-yq]",
         "[<string>] [<string>]",
         "",
         "[] = Optional <> = Parameter Requirement",
@@ -83,6 +83,7 @@ void PrintProgramHelp (void)
             "  b           : Backup input file with .bac extension",
             "  bbi         : Indent both braces of a block",
             "  bi          : Indent trailing brace of block",
+            "  kcwc        : Keep comments with Code",
             "  lcnc        : Leave comments with NoCode",
             "  o           : Program output",
             "  q           : Change non-ASCII chars in quotes to octal",

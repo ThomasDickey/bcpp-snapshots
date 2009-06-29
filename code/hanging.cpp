@@ -17,7 +17,7 @@
 // OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR   *
 // PERFORMANCE OF THIS SOFTWARE.                                               *
 //******************************************************************************
-// $Id: hanging.cpp,v 1.18 2005/04/11 00:19:35 tom Exp $
+// $Id: hanging.cpp,v 1.19 2005/08/19 23:25:43 tom Exp $
 // Compute hanging-indent for most multiline statements.
 
 #include <stdlib.h>
@@ -25,6 +25,27 @@
 #include <ctype.h>
 
 #include "bcpp.h"
+
+static int endOfKeyword(const char *name, int first)
+{
+    int next = first;
+    while (isName(name[next + 1]))
+        ++next;
+    return next;
+}
+
+static char* parseKeyword(const char *name, int &next)
+{
+    int first = next;
+
+    next = endOfKeyword(name, next);
+
+    unsigned len = next + 1 - first;
+    char* string = new char[len + 1];
+    strncpy(string, name + first, len)[len] = 0;
+
+    return string;
+}
 
 // Determine if the current OutputStruct should be indented for hanging
 // indent of a multi-line statement.  Generally, we indent all lines after
@@ -47,13 +68,15 @@ HangStruct::ScanState(const char *code, const char *state)
                 if (isName(c)
                  && (n == 0 || !isName(code[n-1])))
                 {
-                    int findWord = LookupKeyword(code + n);
+                    char *name = parseKeyword(code, n);
+                    int findWord = LookupKeyword(name);
+
+                    TRACE(("lookup '%s' ->%d\n", name, findWord));
                     do_aggreg = False;
                     if (findWord >= 0)
                     {
                         indent = 0;
                         until_parn = 1;
-                        n += strlen(pIndentWords[findWord].name) - 1;
                         if (pIndentWords[findWord].code == oneLine)
                             stmt_level++;
                         else
@@ -61,16 +84,14 @@ HangStruct::ScanState(const char *code, const char *state)
                     }
                     else
                     {
-                        if (CompareKeyword(code+n, "enum"))
+                        if (!strcmp(name, "enum"))
                             until_curl = 1;
 
                         if (parn_level == 0)
                             until_parn = 0;
                         indent = 1;
-                        while (isName(code[n]))
-                            n++;
-                        n--;
                     }
+                    delete[] name;
                 }
                 else if (!isspace(code[n]))
                 {
@@ -147,8 +168,9 @@ HangStruct::ScanState(const char *code, const char *state)
 void
 HangStruct::IndentHanging(OutputStruct *pOut)
 {
-#ifdef DEBUG2
-    traceOutput(__FILE__, __LINE__, pOut);
+#ifdef DEBUG
+    TRACE(("--------------------------------------------------------------\n"));
+    TRACE_OUTPUT(pOut);
     TRACE(("state:%d/%d, parn:%d/%d, curl:%d, agg:%d/%d\n",
         indent,
         stmt_level,

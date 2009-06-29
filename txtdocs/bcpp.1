@@ -1,4 +1,4 @@
-.\" $Id: bcpp.1,v 1.1 2002/11/23 17:18:10 tom Exp $
+.\" $Id: bcpp.1,v 1.2 2009/06/28 19:51:33 tom Exp $
 .TH "C++ Beautifier"
 .SH NAME
 \fBbcpp\fP \- make C++ beautifier
@@ -177,8 +177,13 @@ Indent_Exec_Sql: Boolean
 If true, bcpp looks for embedded SQL statements (e.g., EXEC SQL),
 and formats them specially.
 .TP
+Keep_Comments_With_Code : Boolean
+This option overrides the "Comments_With_Code" option.
+Setting this option On will make comments which do not fit as inline
+comments append to the code anyway.
+.TP
 Leave_Comments_NoCode : Boolean
-This options overrides the "Comments_With_Nocode" option. Setting
+This option overrides the "Comments_With_Nocode" option. Setting
 this option On will indent comments that do not occur on the same
 line as code to the same indention as code.
 

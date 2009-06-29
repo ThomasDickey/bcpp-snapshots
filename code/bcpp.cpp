@@ -1,6 +1,6 @@
 // C(++) Beautifier V1.61 Unix/MS-DOS update !
 // -----------------------------------------
-// $Id: bcpp.cpp,v 1.125 2005/08/19 21:11:19 tom Exp $
+// $Id: bcpp.cpp,v 1.129 2009/06/28 13:27:57 tom Exp $
 //
 // Program was written by Steven De Toni 1994 (CBC, ACBC).
 // Modified/revised by Thomas E. Dickey 1996-2002,2003.
@@ -284,7 +284,11 @@ static bool beginBlockLine(OutputStruct* pItem)
     if (findWord >= 0)
     {
         if (pIndentWords[findWord].code == blockLine)
+        {
+            TRACE(("beginBlockLine -- "));
+            TRACE_OUTPUT(pItem);
             result = True;
+        }
     }
     return result;
 }
@@ -297,7 +301,11 @@ static bool beginMultiLine(OutputStruct* pItem)
     if (findWord >= 0)
     {
         if (pIndentWords[findWord].code == multiLine)
+        {
+            TRACE(("beginMultiLine -- "));
+            TRACE_OUTPUT(pItem);
             result = True;
+        }
     }
     return result;
 }
@@ -1446,7 +1454,8 @@ static int ConstructLine (
                         return -2;      // ##### incorrect dataType expected!
 
                     // if pData length overwrites comments then place comments on new line
-                    if ( (indentStack + static_cast<int>(strlen (pNextItem -> pData))) > (userS.posOfCommentsWC) )
+                    if (!userS.keepCommentsWC
+                        && (indentStack + static_cast<int>(strlen (pNextItem -> pData))) > (userS.posOfCommentsWC) )
                     {
                         /*
                          * Check if this is a comment or fragment which we will
@@ -1476,7 +1485,6 @@ static int ConstructLine (
                 }
                 else
                 {
-                    // JZAS Start
                     if (userS.leaveCommentsNC != False)
                     {
                         pOut -> indentSpace   = combinedIndent(indentStack, prepStack, userS);
@@ -1489,7 +1497,6 @@ static int ConstructLine (
                     }
                     else
                         pOut -> indentSpace   = userS.posOfCommentsNC;
-                    // JZAS End
 
                     pOut -> pComment          = pTestType -> pData;
                     dontHangComment(pTestType, pOut, pOutputQueue);
@@ -1628,6 +1635,9 @@ static int ConstructLine (
             pendingComment = NULL;
         }
 
+        pOut->bracesLevel = bracesLevel;
+        pOut->preproLevel = preproLevel;
+
         hang_state.IndentHanging(pOut);
 
         if (userS.indent_sql)
@@ -1665,29 +1675,6 @@ static int ConstructLine (
 
 }
 
-#if 0
-// purge an Indent-stack
-static void freeIndentStack(StackList* pImode)
-{
-    while ((pImode -> pop()) != 0)
-        TRACE(("freeing...\n"));
-}
-
-// copy one Indent-stack to another.  The 'dst' stack is empty.
-// FIXME: this just copies pointers -- must revise to copy data
-static void copyIndentStack(StackList* src, StackList* dst)
-{
-    int n = 1;
-    ANYOBJECT* temp;
-    while ((temp = src -> peek(n++)) != 0)
-    {
-        //TRACE(("copying %d...\n", ((IndentStruct *)temp) -> pos));
-        TRACE(("copying %d...\n", n-1));
-        dst -> push(temp);
-    }
-}
-#endif
-
 // no extra indent immediately after any brace
 static void resetSingleIndent(StackList* pIMode)
 {
@@ -1721,6 +1708,8 @@ static int peekIndexOBrace(QueueList* pLines, int first)
 // Check for a chain of single-indents
 static bool chainedSingleIndent(StackList* pIMode)
 {
+    bool result = true;
+
     int count;
     for (count = 1; count <= 2; count++)
     {
@@ -1728,9 +1717,13 @@ static bool chainedSingleIndent(StackList* pIMode)
         if (pIndentItem == 0
          || pIndentItem -> attrib != oneLine
          || pIndentItem -> singleIndentLen == 0)
-            return False;
+        {
+            result = false;
+            break;
+        }
     }
-    return True;
+    TRACE(("...chainedSingleIndent %d\n", result));
+    return result;
 }
 
 // If we've had a chain of single indents before a L_CURL, we have to shift
@@ -1819,6 +1812,7 @@ static inline bool OutputContainsCode(OutputStruct *pOut)
 //
 static QueueList* IndentNonBraceCode (QueueList* pLines, StackList* pIMode, const Config& userS, bool top)
 {
+    TRACE(("IndentNonBraceCode\n"));
     // if there are items to check !
     if ((pLines != NULL) && (pLines -> status () <= 0))
         return pLines;
@@ -1840,6 +1834,7 @@ static QueueList* IndentNonBraceCode (QueueList* pLines, StackList* pIMode, cons
         bool adjusted = False;
 
         TRACE_OUTPUT(pAlterLine);
+        TRACE_INDENT(pIndentItem);
         switch (pIndentItem -> attrib)
         {
             case (blockLine):
@@ -1867,19 +1862,21 @@ static QueueList* IndentNonBraceCode (QueueList* pLines, StackList* pIMode, cons
                 break;
             }
 
-            // indent of a case statement !
+            // indent of a case statement
             case (multiLine):
             {
                 // determine how many case-like items are stored within
-                // list to determine how much to indent !
+                // list to determine how much to indent
                 int pTest;
 
                 pAlterLine -> indentSpace += (userS.tabSpaceSize * (pIMode -> status()));
 
-                // test if not another case, or default, if so, don't indent !
+                // test if not another case, or default, if so, don't indent
                 pTest = LookupKeyword(pAlterLine -> pCode);
                 if (pTest >= 0 && pIndentWords[pTest].code != multiLine)
+                {
                     pTest = -1;
+                }
 
                 // check for closing braces to end case indention
                 if ((pTest < 0) && (pAlterLine -> pBrace != NULL))
@@ -1891,26 +1888,29 @@ static QueueList* IndentNonBraceCode (QueueList* pLines, StackList* pIMode, cons
                     }
                 }
 
-                // indent as per normal !
+                // indent as per normal
                 if ((pIndentItem != NULL) && (pTest < 0))
                 {
-                    pIMode -> push (pIndentItem); // ok to indent next item !
-                    if (OutputContainsCode(pAlterLine))
+                    pIMode -> push (pIndentItem); // ok to indent next item
+                    if (OutputContainsCode(pAlterLine)) // FIXME2
                     {
                         pAlterLine -> indentSpace += userS.tabSpaceSize;
                         adjusted = True;
                     }
                     else if (pAlterLine -> pComment != NULL)
                     {
-                        if (pAlterLine -> filler == 0)
+                        if (pAlterLine -> filler == 0
+                            && (pAlterLine -> bracesLevel
+                                || pAlterLine -> preproLevel )) {
                             pAlterLine -> indentSpace += userS.tabSpaceSize;
+                        }
                     }
                     TRACE_OUTPUT(pAlterLine)
                 }
                 else if (pIndentItem != NULL)
                 {
                     // if end single indent keyword found, check to see
-                    // whether it is the correct one before removing it !
+                    // whether it is the correct one before removing it
                     if ((pTest >= 0) && (pIndentItem -> pos+userS.tabSpaceSize < pAlterLine -> indentSpace))
                     {
                         pIMode -> push (pIndentItem); // ok to indent next item !
@@ -2041,6 +2041,7 @@ static QueueList* IndentNonBraces (StackList* pIMode, QueueList* pLines, const C
 {
     const int minLimit = 2;             // used in searching output queue
                                         // for open braces
+    TRACE(("IndentNonBraces: %d\n", pIMode -> status() ));
     // indent Items contained !
     if (pIMode -> status () > 0)
     {
@@ -2062,6 +2063,7 @@ static QueueList* IndentNonBraces (StackList* pIMode, QueueList* pLines, const C
     }
 
     //#### Indent code if code available, in a case statement
+    TRACE(("...IndentNonBraces: %d\n", pIMode -> status() ));
     if (pIMode -> status () > 0)
         pLines = IndentNonBraceCode (pLines, pIMode, userS, True);
 
@@ -2078,7 +2080,7 @@ static QueueList* IndentNonBraces (StackList* pIMode, QueueList* pLines, const C
         return pLines;
     }
 
-    // determine if current line has a single line keyword ! (if, else, while, for, do)
+    // determine if current line has a single line keyword (if, else, while, for, do)
     const char*   pTestCode = pOut -> pCode;
     if (pTestCode != NULL)
     {
@@ -2087,6 +2089,7 @@ static QueueList* IndentNonBraces (StackList* pIMode, QueueList* pLines, const C
         if (findWord < 0)
         {
             findWord = LookupLastKeyword(pOut);
+            // if (findWord >= 0) TRACE(("GOTCHA!\n"));
 #if 0
             if (findWord >= 0)
             {
@@ -2152,14 +2155,18 @@ static QueueList* IndentNonBraces (StackList* pIMode, QueueList* pLines, const C
 
                 // determine how much to indent the next line of code !
                 pIndent -> singleIndentLen = userS.tabSpaceSize;
+                TRACE_INDENT(pIndent);
                 TRACE(("#%d: set single-indent to %d\n",
                       (reinterpret_cast<OutputStruct *>(pLines->peek(1)))->thisToken,
                       pIndent->singleIndentLen));
+                TRACE_OUTPUT(reinterpret_cast<OutputStruct *>(pLines->peek(1)));
+                TRACE_OUTPUT(reinterpret_cast<OutputStruct *>(pLines->peek(2)));
             }
             else // it's a case or other block-statement !
             {
                 pIndent -> attrib = pIndentWords[findWord].code;
                 pIndent -> pos    = ((reinterpret_cast<OutputStruct*>(pLines -> peek (1))) -> indentSpace) - userS.tabSpaceSize;
+                TRACE_INDENT(pIndent);
                 TRACE(("#%d: set multi-indent %d, pos = %d\n",
                       (reinterpret_cast<OutputStruct *>(pLines->peek(1)))->thisToken,
                       pIndent->attrib,
@@ -3007,7 +3014,7 @@ static int beginningPrePro (QueueList *pInputQueue, int Current)
         }
         if (Current && !result)
         {
-            TRACE(("FIXME:PEEK(%d)%s\n", Current, isContinuation(pNextItem) ? " CONT" : ""));
+            TRACE(("PEEK(%d)%s\n", Current, isContinuation(pNextItem) ? " CONT" : ""));
             TRACE_INPUT(pNextItem)
         }
     }
@@ -3084,7 +3091,7 @@ static QueueList* OutputToOutFile (FILE* pOutFile, QueueList* pLines, StackList*
             if (pLines == NULL)
                return NULL;
         }
-#if 0
+#ifdef TEST_BCPP
         if (userS.braceLoc == False)    // place closing braces on same line as code
         {
             pLines = ReformatRCurly (pLines, 1, userS);
@@ -3301,7 +3308,6 @@ static int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
 
     QueueList*          pOutputQueue = new QueueList();
     StackList*          pIMode       = new StackList();
-    StackList*          pIMode2      = new StackList();
     QueueList*          pInputQueue  = new QueueList();
 
     int                 FuncVar      = 0;      // variable used in processing function spacing !
@@ -3407,13 +3413,12 @@ static int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
                 {
                     if (in_prepro == 1)
                     {
-                        TRACE(("FIXME: save indentStack: %d (%d)\n", in_prepro, indentStack));
-                        //copyIndentStack(pIMode, pIMode2);
+                        TRACE(("save indentStack: %d (%d)\n", in_prepro, indentStack));
                         indentStack2 = indentStack;
                     }
                     else if (in_prepro == 2)
                     {
-                        TRACE(("FIXME: increase indentStack\n"));
+                        TRACE(("increase indentStack\n"));
                         indentStack += userS.tabSpaceSize;
                     }
                 }
@@ -3486,9 +3491,11 @@ static int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
 
                 if (restoreit)
                 {
-                    TRACE(("FIXME: restore indentStack (%d) to %d\n", indentStack, indentStack2));
-                    //copyIndentStack(pIMode2, pIMode);
-                    //freeIndentStack(pIMode2);
+                    TRACE(("restore indentStack (%d) to %d\n", indentStack, indentStack2));
+                    if (indentStack != 0)
+                    {
+                        pIMode -> pop();
+                    }
                     indentStack = indentStack2;
                 }
 
@@ -3516,7 +3523,6 @@ static int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
         printf ("%lu ", lineNo);
     }
 
-    delete pIMode2;
     delete pIMode;
     delete pOutputQueue;
     delete pInputQueue;
@@ -3641,6 +3647,7 @@ static int LoadnRun (int argc, char* argv[])
                               False,  // useTabs
                               50,     // posOfCommentsWC
                               0,      // posOfCommentsNC
+                              False,  // keepCommentsWC
                               False,  // leaveCommentsNC
                               False,  // quoteChars
                               3,      // deleteHighChars
