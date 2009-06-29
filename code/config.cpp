@@ -1,18 +1,19 @@
-// $Id: config.cpp,v 1.23 2005/07/25 20:54:07 tom Exp $
+// $Id: config.cpp,v 1.26 2009/06/27 12:57:10 tom Exp $
 // Program C(++) beautifier Written By Steven De Toni ACBC 11 11/94
 //
-// This program module contains routines to read data from a text file a 
+// This program module contains routines to read data from a text file a
 // line at a time, and able to read parameters from a configuration file.
 
 #include <stdlib.h>         // atol(),
 #include <string.h>         // strlen(), strstr(), strcpy(), strcmp(), strpbrk()
 #include <stdio.h>          // NULL constant, printf(), FILE, ftell(), fseek(), fprintf(), stderr
+#include <ctype.h>
 
 #include "bcpp.h"
 #include "cmdline.h"        // StrUpr()
 
 enum ConfigWords {ANYT = 0, FSPC, UTAB, ISPC, IPRO, ISQL,
-                  NAQTOOCT, COMWC, COMNC, LCNC,
+                  NAQTOOCT, COMWC, COMNC, KCWC, LCNC,
                   LGRAPHC, ASCIIO, BI, BI2, PTBNLINE, PBNLINE, PROGO, QBUF, BUF,
                   EQUAL, YES, ON, NO, OFF};
 
@@ -27,6 +28,7 @@ static const struct { ConfigWords code; const char *name; }
     { NAQTOOCT, "NONASCII_QUOTES_TO_OCTAL" },
     { COMWC,    "COMMENTS_WITH_CODE" },
     { COMNC,    "COMMENTS_WITH_NOCODE" },
+    { KCWC,     "KEEP_COMMENTS_WITH_CODE" },
     { LCNC,     "LEAVE_COMMENTS_NOCODE" },
     { LGRAPHC,  "LEAVE_GRAPHIC_CHARS" },
     { ASCIIO,   "ASCII_CHARS_ONLY" },
@@ -48,13 +50,13 @@ static const size_t SizeofData = TABLESIZE(ConfigData);
 
 // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 // Allocates memory for line in file, and places that the data in it.
-// pInFile = the file handle to use when reading the file !
+// pInFile = the file handle to use when reading the file.
 // EndOfFile variable is used to test if the end of the file has been reached.
 //           When  this is true, the variable is changed to -1
 //
 // A string is returned with the contents the current line in the file,
 // memory is allocated via the ReadLine routine, and should be deleted
-// when not needed !
+// when not needed.
 char* ReadLine (FILE *pInFile, int& EndOfFile)
 {
     const int nominal = 80;
@@ -107,7 +109,7 @@ static const char *ConfigWordOf(ConfigWords code)
 //
 //
 // Return Values:
-// errorCount   : This variable is used to show how many errors have occurred!
+// errorCount   : This variable is used to show how many errors have occurred.
 //
 static void ErrorMessage (int lineNo, int errorCode, int& errorCount, const char* pMessage = NULL)
 {
@@ -122,7 +124,7 @@ static void ErrorMessage (int lineNo, int errorCode, int& errorCount, const char
 
         case (2):
         {
-            warning ("Range Error  !");
+            warning ("Range Error !");
             break;
         }
 
@@ -148,9 +150,69 @@ static void ErrorMessage (int lineNo, int errorCode, int& errorCount, const char
     errorCount++;
 }
 
+static void trimConfigLine(char *data)
+{
+    if (data != NULL)
+    {
+        char* pWordLoc = strstr (data, ConfigWordOf(ANYT));
+        if (pWordLoc != NULL)
+            *pWordLoc = NULLC;
+
+        size_t len = strlen(data);
+        while (len != 0 && isspace(data[len - 1]))
+            data[--len] = NULLC;
+    }
+}
+
+static void skipBlanks(const char *& string)
+{
+    while (isspace(*string))
+        ++string;
+}
+
+static void skipKeyword(const char *& string)
+{
+    if (*string == '=')
+    {
+        ++string;           // yes, "=" is a keyword
+    }
+    else
+    {
+        while (isalnum(*string) || *string == '_')
+            ++string;
+    }
+}
+
+// find the next keyword in the data, setting its length as a side-effect.
+static const char *parseKeyword(const char *& from, size_t& len)
+{
+    const char *result;
+
+    skipBlanks(from);
+    result = from;
+
+    skipKeyword(from);
+    len = from - result;
+
+    return result;
+}
+
+// compare a desired keyword 'want' against the actual data 'have'.
+static Boolean matchKeyword(const char *want, const char *have, size_t haveLen)
+{
+    Boolean result = False;
+    size_t wantLen = strlen(want);
+
+    if (haveLen == wantLen
+        && !strncmp(want, have, wantLen))
+    {
+        result = True;
+    }
+    return result;
+}
 
 // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-// Functions finds keywords within a line of data.
+// Function finds keywords within a line of data.
 //
 // Parameters:
 // Type :
@@ -170,48 +232,35 @@ static void ErrorMessage (int lineNo, int errorCode, int& errorCount, const char
 //        searching for any.
 //
 // Char*: Returns a pointer in the string to the next starting location
-//        AFTER the keyword found. Or returns NULL if no keyword found!
+//        AFTER the keyword found. Or returns NULL if no keyword found.
 //
-static char* FindConfigWords (char* pConfigLine, ConfigWords& type)
+static const char* FindConfigWords (const char* pConfigLine, ConfigWords& type)
 {
-   char* pWordLoc = NULL;
+    size_t len;
+    const char* pToMatch = parseKeyword(pConfigLine, len);
 
-   // check is there is a comment in the line, if so then any chars
-   // after a ";" will be ignored !
-   pWordLoc = strstr (pConfigLine, ConfigWordOf(ANYT)); // search for a comment !
-   if (pWordLoc != NULL)
-   {
-        *pWordLoc = NULLC;
-   }
+    if (len != 0)
+    {
+        if (type > ANYT)
+        {
+            if (matchKeyword(ConfigWordOf(type), pToMatch, len))
+            {
+                return pToMatch + len;
+            }
+        }
 
-   if (type > ANYT)
-   {
-         pWordLoc = strstr (pConfigLine, ConfigWordOf(type));
-
-         if  (pWordLoc != NULL)  // if word found
-         {
-                // advance to next word !
-                pWordLoc += strlen (ConfigWordOf(type));
-                return pWordLoc;
-         }
-   }
-
-   for (size_t typeCount = 1; typeCount < SizeofData; typeCount++)
-   {
-         const char *name = ConfigData[typeCount].name;
-         pWordLoc = strstr (pConfigLine, name);
-
-         if (pWordLoc != NULL)
-         {
+        for (size_t typeCount = 1; typeCount < SizeofData; typeCount++)
+        {
+            if (matchKeyword(ConfigData[typeCount].name, pToMatch, len))
+            {
                 type = ConfigData[typeCount].code;
-                // advance to next word !
-                pWordLoc += strlen (name);
-                return pWordLoc;
-         }
-   }
+                return pToMatch + len;
+            }
+        }
+    }
 
-   type   = ANYT; // not a keyword !
-   return NULL;
+    type   = ANYT; // not a keyword
+    return NULL;
 }
 
 
@@ -231,22 +280,22 @@ static char* FindConfigWords (char* pConfigLine, ConfigWords& type)
 // errorCount : If any error occur within variable assignment, the a error
 //              message is displayed, and this variable is incremented.
 // variable   : If no errors have occurred, then this variable will contain the value
-//              that was set by the user !
+//              that was set by the user.
 //
-static void ConfigAssignment (int& errorCount, int& configError, char* pPosInLine, int& variable)
+static void ConfigAssignment (int& errorCount, int& configError, const char* pPosInLine, int& variable)
 {
-    // convert what's left in the string to an INTEGER !
+    // convert what's left in the string to an INTEGER.
     if (strpbrk(pPosInLine, "0123456789") != NULL)
         variable = atoi (pPosInLine);
     else
         ErrorMessage (errorCount, 3, configError);
 
-    // check range of lines numbers between functions!
+    // check range of lines numbers between functions.
     if ( (variable < 0) || (variable > 5000) )
         ErrorMessage (errorCount, 2, configError, " Valid Range = 0 - 5000");
 }
 
-static void ConfigAssignment (int& errorCount, int& configError, char* pPosInLine, Boolean& variable)
+static void ConfigAssignment (int& errorCount, int& configError, const char* pPosInLine, Boolean& variable)
 {
     ConfigWords type = ANYT;
 
@@ -302,7 +351,7 @@ int SetConfig (FILE* pConfigFile, Config& userSettings)
 
   int         noMoreConfig  = 0   ;
   char*       pLineOfConfig = NULL;
-  char*       pPosInLine    = NULL;
+  const char* pPosInLine    = NULL;
   ConfigWords type                ;
   int         lineCount     = 0   ;
   int         configError   = 0   ;
@@ -315,8 +364,10 @@ int SetConfig (FILE* pConfigFile, Config& userSettings)
 
         lineCount++;
 
-        // upcase all characters in string !
+        // upcase all characters in string.
         StrUpr (pLineOfConfig);
+        if (pLineOfConfig != 0)
+            trimConfigLine(pLineOfConfig);
 
         type = ANYT;
         pPosInLine = FindConfigWords (pLineOfConfig, type);
@@ -335,11 +386,11 @@ int SetConfig (FILE* pConfigFile, Config& userSettings)
                 DecodeIt (userSettings.tabSpaceSize);
                 break;
 
-             case (IPRO):   // INDENT_PREPROCESSOR = (%d)
+             case (IPRO):   // INDENT_PREPROCESSOR = {on, off, yes, no}
                 DecodeIt (userSettings.indentPreP);
                 break;
 
-             case (ISQL):   // INDENT_EXEC_SQL = (%d)
+             case (ISQL):   // INDENT_EXEC_SQL = {on, off, yes, no}
                 DecodeIt (userSettings.indent_sql);
                 break;
 
@@ -354,7 +405,11 @@ int SetConfig (FILE* pConfigFile, Config& userSettings)
              case (COMNC):  // COMMENTS_WITH_NOCODE = (%d)
                 DecodeIt (userSettings.posOfCommentsNC);
                 break;
-             
+
+             case (KCWC):   // KEEP_COMMENTS_WITH_CODE = {on, off, yes, no}
+                DecodeIt (userSettings.keepCommentsWC);
+                break;
+
              case (LCNC):   // LEAVE_COMMENTS_NOCODE = {on, off, yes, no}
                 DecodeIt (userSettings.leaveCommentsNC);
                 break;

@@ -1,5 +1,5 @@
 //******************************************************************************
-// Copyright 1996-2004,2005 by Thomas E. Dickey                                *
+// Copyright 1996-2005,2009 by Thomas E. Dickey                                *
 // All Rights Reserved.                                                        *
 //                                                                             *
 // Permission to use, copy, modify, and distribute this software and its       *
@@ -17,7 +17,7 @@
 // OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR   *
 // PERFORMANCE OF THIS SOFTWARE.                                               *
 //******************************************************************************
-// $Id: debug.cpp,v 1.17 2005/04/11 00:18:05 tom Exp $
+// $Id: debug.cpp,v 1.18 2009/06/28 12:50:50 tom Exp $
 // Debug/trace functions for BCPP
 
 #include <stdlib.h>
@@ -34,7 +34,7 @@ void trace(const char *format, ...)
 }
 
 #if defined(DEBUG) || defined(DEBUG2)
-const char *traceDataType(DataTypes theType)
+static const char *traceDataType(DataTypes theType)
 {
     const char *it;
     switch (theType)
@@ -51,6 +51,19 @@ const char *traceDataType(DataTypes theType)
     return it;
 }
 
+static const char *traceIndentAttr(IndentAttr theType)
+{
+    const char *it;
+    switch (theType)
+    {
+        case oneLine:   it = "oneLine";   break;
+        case multiLine: it = "multiLine"; break;
+        case blockLine: it = "blockLine"; break;
+        default:        it = "noIndent";  break;
+    }
+    return it;
+}
+
 void traceInput(const char *file, int line, InputStruct *pIn)
 {
     if (pIn != 0)
@@ -62,6 +75,17 @@ void traceInput(const char *file, int line, InputStruct *pIn)
             pIn->offset));
         if (pIn->pData  != 0) TRACE(("---- data:%s\n", pIn->pData));
         if (pIn->pState != 0) TRACE(("---- flag:%s\n", pIn->pState));
+    }
+}
+
+void traceIndent(const char *file, int line, IndentStruct *pIn)
+{
+    if (pIn != 0)
+    {
+        TRACE(("%s@%d, Indent %s (pos:%d)\n",
+            file, line,
+            traceIndentAttr(pIn->attrib),
+            pIn->pos));
     }
 }
 

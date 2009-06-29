@@ -1,5 +1,19 @@
--- $Id: CHANGES,v 1.32 2005/07/25 21:36:34 tom Exp $
+-- $Id: CHANGES,v 1.37 2009/06/28 19:59:21 tom Exp $
 -- Thomas E. Dickey <dickey@invisible-island.net>
+
+2009/06/30
+	+ update configure scripts
+	+ improve exec-sql parser, detecting inline comments beginning with
+	  "--".
+	+ fix a case where multi-line indent was set during a #define, and
+	  not reset on completion of the #define, causing the following code
+	  to be indented.
+	+ check for braces or preprocessor-level before indenting comments
+	  which are on a line without code.
+	+ improve config-file parser, which used strstr...
+	+ add keep_code_with_comment option, to merge inline-comments with
+	  the code immediately following, rather than merging (for example)
+	  with trailing "}" (request by Daniel Lin).
 
 2005/07/25
 	+ add COPYING (request by Peter Hille).

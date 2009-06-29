@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.9 2005/07/25 20:58:05 tom Exp $
+dnl $Id: aclocal.m4,v 1.10 2009/06/28 20:01:48 tom Exp $
 dnl autoconf macros for BCPP
 dnl ---------------------------------------------------------------------------
 dnl ---------------------------------------------------------------------------
@@ -8,7 +8,7 @@ dnl Allow user to disable a normally-on option.
 AC_DEFUN([CF_ARG_DISABLE],
 [CF_ARG_OPTION($1,[$2],[$3],[$4],yes)])dnl
 dnl ---------------------------------------------------------------------------
-dnl CF_CHECK_CACHE version: 10 updated: 2004/05/23 13:03:31
+dnl CF_CHECK_CACHE version: 11 updated: 2008/03/23 14:45:59
 dnl --------------
 dnl Check if we're accidentally using a cache from a different machine.
 dnl Derive the system name, as a check for reusing the autoconf cache.
@@ -39,7 +39,7 @@ test -n "$cf_cv_system_name" && AC_MSG_RESULT(Configuring for $cf_cv_system_name
 
 if test ".$system_name" != ".$cf_cv_system_name" ; then
 	AC_MSG_RESULT(Cached system name ($system_name) does not agree with actual ($cf_cv_system_name))
-	AC_ERROR("Please remove config.cache and try again.")
+	AC_MSG_ERROR("Please remove config.cache and try again.")
 fi
 ])dnl
 dnl ---------------------------------------------------------------------------
@@ -103,7 +103,7 @@ AC_SUBST(SHOW_CC)
 AC_SUBST(ECHO_CC)
 ])dnl
 dnl ---------------------------------------------------------------------------
-dnl CF_INTEL_COMPILER version: 2 updated: 2005/07/25 16:48:46
+dnl CF_INTEL_COMPILER version: 3 updated: 2005/08/06 18:37:29
 dnl -----------------
 dnl Check if the given compiler is really the Intel compiler for Linux.  It
 dnl tries to imitate gcc, but does not return an error when it finds a mismatch
@@ -122,7 +122,7 @@ ifelse($2,,INTEL_COMPILER,[$2])=no
 if test "$ifelse($1,,[$1],GCC)" = yes ; then
 	case $host_os in
 	linux*|gnu*)
-		AC_MSG_CHECKING(if this is really Intel compiler)
+		AC_MSG_CHECKING(if this is really Intel ifelse($1,GXX,C++,C) compiler)
 		cf_save_CFLAGS="$ifelse($3,,CFLAGS,[$3])"
 		ifelse($3,,CFLAGS,[$3])="$ifelse($3,,CFLAGS,[$3]) -no-gcc"
 		AC_TRY_COMPILE([],[
@@ -140,7 +140,7 @@ cf_save_CFLAGS="$cf_save_CFLAGS -we147 -no-gcc"
 fi
 ])dnl
 dnl ---------------------------------------------------------------------------
-dnl CF_GXX_VERSION version: 4 updated: 2005/07/25 16:58:05
+dnl CF_GXX_VERSION version: 5 updated: 2005/08/27 09:53:42
 dnl --------------
 dnl Check for version of g++
 AC_DEFUN([CF_GXX_VERSION],[
@@ -148,13 +148,13 @@ AC_REQUIRE([AC_PROG_CPP])
 GXX_VERSION=none
 if test "$GXX" = yes; then
 	AC_MSG_CHECKING(version of g++)
-	GXX_VERSION="`${CXX-g++} --version|sed -e '2,$d' -e 's/^[[^0-9.]]*//' -e 's/[[^0-9.]].*//'`"
+	GXX_VERSION="`${CXX-g++} --version| sed -e '2,$d' -e 's/^.*(GCC) //' -e 's/^[[^0-9.]]*//' -e 's/[[^0-9.]].*//'`"
 	test -z "$GXX_VERSION" && GXX_VERSION=unknown
 	AC_MSG_RESULT($GXX_VERSION)
 fi
 ])dnl
 dnl ---------------------------------------------------------------------------
-dnl CF_GXX_WARNINGS version: 4 updated: 2005/07/25 16:48:46
+dnl CF_GXX_WARNINGS version: 5 updated: 2005/08/13 14:54:38
 dnl ---------------
 dnl Check if the compiler supports useful warning options.
 dnl
@@ -205,7 +205,7 @@ then
 	AC_CHECKING([for $CC warning options])
 	cf_save_CXXFLAGS="$CXXFLAGS"
 	EXTRA_CXXFLAGS="-Wall"
-	for cf_opt in $1 \
+	for cf_opt in \
 		wd1419 \
 		wd1682 \
 		wd1683 \
@@ -270,9 +270,10 @@ AC_LANG_RESTORE
 AC_SUBST(EXTRA_CXXFLAGS)
 ])dnl
 dnl ---------------------------------------------------------------------------
-dnl CF_VERBOSE version: 2 updated: 1997/09/05 10:45:14
+dnl CF_VERBOSE version: 3 updated: 2007/07/29 09:55:12
 dnl ----------
 dnl Use AC_VERBOSE w/o the warnings
 AC_DEFUN([CF_VERBOSE],
 [test -n "$verbose" && echo "	$1" 1>&AC_FD_MSG
+CF_MSG_LOG([$1])
 ])dnl

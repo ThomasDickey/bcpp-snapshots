@@ -1,4 +1,4 @@
-# $Id: makefile.in,v 1.8 2005/07/25 19:56:26 tom Exp $
+# $Id: makefile.in,v 1.9 2009/06/26 20:39:23 tom Exp $
 # Makefile-template for 'bcpp'
 
 THIS		= bcpp
@@ -86,7 +86,7 @@ distclean: clean
 realclean: distclean
 	rm -f tags TAGS # don't remove configure!
 
-check:
+check:	$(PROG)
 	$(SHELL) ./run-test
 
 tags:
