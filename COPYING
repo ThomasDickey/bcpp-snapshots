@@ -1,10 +1,10 @@
-$Id: COPYING,v 6.1 2004/06/19 10:34:35 tom Exp $
+$Id: COPYING,v 6.2 2010/06/27 20:29:46 tom Exp $
 
 CONFLICT
 
 --------------------------------------------------------------------------------
 
-Copyright 1995, 2004 by Thomas E. Dickey
+Copyright 1995-2004,2010 by Thomas E. Dickey
 
 Permission to use, copy, modify, and distribute this software and its
 documentation for any purpose and without fee is hereby granted,

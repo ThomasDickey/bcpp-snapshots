@@ -1,21 +1,31 @@
-$Id: CHANGES,v 6.9 2004/09/02 00:49:15 tom Exp $
+$Id: CHANGES,v 6.14 2010/06/27 22:24:49 tom Exp $
 ------------------------------------------------------------------------------
 
-01 Sep 2004
+2010/06/27
+	+ add scripts for RPM and Debian packages.
+	+ add configure checks for ctags and lint.
+	+ add configure --disable-echo option.
+	+ rename DS/DE macros in manpage, since groff changed their meaning.
+	+ add --disable-leaks configure option.
+	+ reformat CHANGES to extract statistics.
+	+ various updates to configure script macros
+	+ update config.guess, config.sub (2009-12-30)
+
+2004/09/01
 	+ for Cygwin, add a check for "check_case:strict" in the $CYGWIN
 	  environment variable.  If it exists, do not ignore case when
 	  comparing filenames (report by Igor Pechtchanski).
-	+ update configure script macros.
+	+ various updates to configure script macros.
 	+ use 'const' in a few places (for gcc -Wwrite-strings).
 	+ update config.guess, config.sub (2004-06-24).
 
-20 Jun 2004
+2004/06/20
 	+ add Cygwin as a special case where filenames are case-insensitive,
 	  and trailing "." is treated like DOS.
 	+ modify to handle case-insensitive filesystems, e.g., OS/2 and Win32.
 	+ modify run_test.sh to use mktemp (suggested by Igor Pechtchanski).
 
-19 Jun 2004
+2004/06/19
 	+ change copyright to BSD-style.
 	+ minor cleanup (indent, ANSI C) to add-on files.
 	+ modify run_test.sh to ensure that Cygwin will recognize a generated
@@ -25,35 +35,62 @@ $Id: CHANGES,v 6.9 2004/09/02 00:49:15 tom Exp $
 	+ use $(DESTDIR) in makefile.in, for packaging (patch by Igor
 	  Pechtchanski).
 
-27 Mar 2004,	updated configure script, use AC_OBJEXT, AC_EXEEXT.
-		Fixes to build/work with OS/2 EMX.
-29 Dec 2002,	indent'd, updated configure script.  Add -V option.
-28 Jul 1999,	port to win32.  drop K&R compatibility.
+2004/03/27
+	+ updated configure script, use AC_OBJEXT, AC_EXEEXT.
+	+ Fixes to build/work with OS/2 EMX.
 
-6.0 posted to comp.sources.misc
----
+2002/12/29
+	+ indent'd, updated configure script.  Add -V option.
 
-18 Mar 1995,	added -p, -I, -L options.  Made -t option work properly on UNIX.
-11 Mar 1995,	use 'txtalloc()' to reduce calls on 'strcmp()', making this
-		faster.
-07 Mar 1995,	absorbed -a, -l options into -v to simplify use for library
-		scanning.
-28 Nov 1993,	adaptation to MS-DOS.
-22 Sep 1993,	gcc-warnings, memory leaks.
-17 Jul 1992,	corrected error parsing pathlist.
-22 Oct 1991,	converted to ANSI
-21 May 1991,	added "-a" option, making default more compact by
-		suppressing directories which contain no conflicts
-07 Dec 1989,	recoded so that we aren't constrained by the number
-		of bits in a long to record information.  A side-
-		effect of this is that we can show instances of
-		files linked (with the same name) to the first
-		instance found.
-07 Dec 1989,	added "-w" option, enhanced usage-message.
-		Corrected bug which caused wrong behavior when
-		options were given w/o names of files-to-find.
-25 Jul 1989,	moved the code which lists the pathnames down past
-		the point at which we have eliminated redundant
-		paths, to avoid a confusing display.
-25 Jan 1989,	corrected array-index variable
-11 Aug 1988,	port to apollo sys5 environment
+1999/07/28
+	+ port to win32.  drop K&R compatibility.
+
+1995/03/18
+	+ 6.0 posted to comp.sources.misc
+	+ added -p, -I, -L options.  Made -t option work properly on UNIX.
+
+1995/03/11
+	+ use 'txtalloc()' to reduce calls on 'strcmp()', making this faster.
+
+1995/03/07
+	+ absorbed -a, -l options into -v to simplify use for library scanning.
+
+1993/11/28
+	+ adaptation to MS-DOS.
+
+1993/09/22
+	+ gcc-warnings, memory leaks.
+
+1992/07/17
+	+ corrected error parsing pathlist.
+
+1991/10/22
+	+ converted to ANSI
+
+1991/05/21
+	+ added "-a" option, making default more compact by
+	  suppressing directories which contain no conflicts
+
+1989/12/07
+	+ recoded so that we aren't constrained by the number of bits in a long
+	  to record information.  A side- effect of this is that we can show
+	  instances of files linked (with the same name) to the first instance
+	  found.
+
+1989/12/07
+	+ added "-w" option, enhanced usage-message.
+	+ Corrected bug which caused wrong behavior when options were given w/o
+	  names of files-to-find.
+
+1989/07/25
+	+ moved the code which lists the pathnames down past the point at which
+	  we have eliminated redundant paths, to avoid a confusing display.
+
+1989/01/25
+	+ corrected array-index variable
+
+1988/10/11
+	+ port to apollo sys5 environment
+
+1988/04/15
+	+ initial version.

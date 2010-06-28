@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 1995,1999,2004 by Thomas E. Dickey.  All Rights Reserved.        *
+ * Copyright 1995-2004,2010 by Thomas E. Dickey.  All Rights Reserved.        *
  *                                                                            *
  * Permission to use, copy, modify, and distribute this software and its      *
  * documentation for any purpose and without fee is hereby granted, provided  *
@@ -19,7 +19,7 @@
  ******************************************************************************/
 
 #ifndef	NO_IDENT
-static const char Id[] = "$Id: txtalloc.c,v 6.3 2004/06/19 14:37:18 tom Exp $";
+static const char Id[] = "$Id: txtalloc.c,v 6.5 2010/06/27 21:58:28 tom Exp $";
 #endif
 
 /*
@@ -119,7 +119,7 @@ txtalloc(char *text)
 
 	    if (B(s) == 0) {
 		/* ...the tree has grown higher */
-		B(s) = a;
+		B(s) = (char) a;
 		head.llink++;
 	    } else if (B(s) == -a) {
 		/* ...the tree has gotten more balanced */
@@ -142,14 +142,14 @@ txtalloc(char *text)
 		    LINK(-a, p) = s;
 
 		    if (B(p) == a) {
-			B(s) = -a;
+			B(s) = (char) -a;
 			B(r) = 0;
 		    } else if (B(p) == 0) {
 			B(s) = 0;
 			B(r) = 0;
 		    } else if (B(p) == -a) {
 			B(s) = 0;
-			B(r) = a;
+			B(r) = (char) a;
 		    }
 
 		    B(p) = 0;
@@ -169,7 +169,7 @@ txtalloc(char *text)
 void
 txtfree(char *text)
 {
-    /* patch */
+    (void) text;
 }
 
 /******************************************************************************/

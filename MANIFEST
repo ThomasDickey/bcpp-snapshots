@@ -1,4 +1,4 @@
-MANIFEST for conflict, version t20040901
+MANIFEST for conflict, version t20100627
 --------------------------------------------------------------------------------
 MANIFEST                        this file
 CHANGES                         change-log for 'conflict'
@@ -22,6 +22,19 @@ os2.c                           OS/2 support functions
 run_test.sh                     UNIX test-script for 'conflict'
 txtalloc.c                      text-allocator
 unix.c                          UNIX support functions
+package                         subdirectory
+package/conflict.spec           build-script for conflict
+package/debian                  subdirectory
+package/debian/changelog        build-script for conflict
+package/debian/compat           build-script for conflict
+package/debian/control          build-script for conflict
+package/debian/copyright        build-script for conflict
+package/debian/docs             build-script for conflict
+package/debian/rules            build-script for conflict
+package/debian/source           subdirectory
+package/debian/source/format    build-script for conflict
+package/debian                  subdirectory
+package/debian/watch            build-script for conflict
 win32                           subdirectory
 win32/conflict.mak              Visual C project
 win32/dirent.c                  dirent replacement for win32

@@ -1,0 +1,15 @@
+Source: conflict
+Maintainer: Thomas E. Dickey <dickey@invisible-island.net>
+Section: devel
+Priority: extra
+Standards-Version: 3.8.4
+Build-Depends: debhelper (>= 5)
+Homepage: http://invisible-island.net/conflict/
+
+Package: conflict
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: conflict - filename conflict listing
+ Conflict displays conflicting filenames in your execution path.  Unlike
+ the csh command which, it displays all of  the  (non-alias)  executable
+ files in your path.
