@@ -1,5 +1,5 @@
 .\"*****************************************************************************
-.\" Copyright 1995-2002,2004 by Thomas E. Dickey.  All Rights Reserved.        *
+.\" Copyright 1995-2004,2010 by Thomas E. Dickey.  All Rights Reserved.        *
 .\"                                                                            *
 .\" Permission to use, copy, modify, and distribute this software and its      *
 .\" documentation for any purpose and without fee is hereby granted, provided  *
@@ -17,13 +17,13 @@
 .\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR *
 .\" IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.                *
 .\"*****************************************************************************
-.\" $Id: conflict.1,v 6.3 2004/06/20 23:30:29 tom Exp $
-.de DS
+.\" $Id: conflict.1,v 6.4 2010/06/27 19:57:28 tom Exp $
+.de ES
 .RS
 .nf
 .sp
 ..
-.de DE
+.de EE
 .fi
 .RE
 .sp .5
@@ -91,9 +91,9 @@ specify a list of file types which are treated as conflicting.
 The option value is a list of file suffixes (a "." followed by
 zero or more other characters).
 The list separator is the "." which begins each suffix, e.g.,
-.DS
+.ES
 	conflict -t.exe.com
-.DE
+.EE
 .IP
 If no \fB-t\fP option is given,
 a built-in list of executable file types is used for systems
@@ -143,12 +143,12 @@ path (if no arguments are given), or to find conflicts for a specified
 name.
 To list only conflicts from a particular directory "path"
 you may type
-.DS
+.ES
 conflict -a path/*
-.DE
+.EE
 .PP
 An example of the use of \fBconflict\fR is shown below
-.DS
+.ES
 bsd4.2(5) conflict
 Current working directory is "/home/dickey/src/conflict"
 -> .
@@ -163,7 +163,7 @@ Current working directory is "/home/dickey/src/conflict"
 ---*--+: cc
 *+-----: conflict
 \&...
-.DE
+.EE
 .
 .SH ENVIRONMENT
 \fBConflict\fR runs in a portable UNIX\*R environment, as well as

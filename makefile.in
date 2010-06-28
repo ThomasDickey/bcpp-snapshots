@@ -1,8 +1,8 @@
-# $Id: makefile.in,v 6.16 2004/09/02 00:44:00 tom Exp $
+# $Id: makefile.in,v 6.19 2010/06/27 22:09:07 tom Exp $
 # Makefile-template for 'conflict'
 
 THIS		= conflict
-RELEASE		= t20040901
+RELEASE		= t20100627
 
 #### Start of system configuration section. ####
 
@@ -15,6 +15,10 @@ LINK		= $(CC)
 INSTALL		= @INSTALL@
 INSTALL_PROGRAM	= @INSTALL_PROGRAM@
 INSTALL_DATA	= @INSTALL_DATA@
+
+CTAGS		= @CTAGS@
+ETAGS		= @ETAGS@
+LINT		= @LINT@
 
 LIBS		= @LIBS@
 CFLAGS		= @CFLAGS@ @EXTRA_CFLAGS@
@@ -34,10 +38,8 @@ o		= .@OBJEXT@
 
 SHELL		= /bin/sh
 
-CPPFLAGS	= -I. -I$(srcdir) -DHAVE_CONFIG_H -DRELEASE=\"$(RELEASE)\" @EXTRA_CPPFLAGS@
+CPPFLAGS	= -I. -I$(srcdir) -DHAVE_CONFIG_H -DRELEASE=\"$(RELEASE)\" @CPPFLAGS@ @EXTRA_CPPFLAGS@
 
-.c$o:
-	$(CC) -c $(CPPFLAGS) $(CFLAGS) $<
 
 SRC =	CHANGES COPYING README \
 	$(THIS).c $(THIS).h $(THIS).1 \
@@ -54,8 +56,12 @@ PROG	= $(THIS)$x
 
 all:	$(PROG)
 
+.c$o:
+	@RULE_CC@
+	@ECHO_CC@$(CC) -c $(CPPFLAGS) $(CFLAGS) $<
+
 $(PROG): $(OBJ)
-	$(LINK) $(CFLAGS) $(LDFLAGS) -o $(PROG) $(OBJ) $(LIBS)
+	@ECHO_LD@$(LINK) $(CFLAGS) $(LDFLAGS) -o $(PROG) $(OBJ) $(LIBS)
 
 $(OBJ) : conflict.h
 
@@ -77,15 +83,19 @@ clean: mostlyclean
 
 distclean: clean
 	rm -f makefile config.log config.cache config.status config.h
-
-realclean: distclean
 	rm -f tags TAGS # don't remove configure!
 
-tags:
-	ctags $(THIS).c $(HDRS)
+realclean: distclean
+	@-
 
-TAGS:
-	etags $(THIS).c $(HDRS)
+lint :
+	$(LINT) $(CPPFLAGS) $(OBJ:o=c)
+
+tags :
+	$(CTAGS) $(THIS).c $(HDRS)
+
+@MAKE_UPPER_TAGS@TAGS:
+@MAKE_UPPER_TAGS@	$(ETAGS) $(THIS).c $(HDRS)
 
 # I keep my sources in RCS, and assign a symbolic release to the current patch
 # level.  The 'manifest' script knows how to build a list of files for a given

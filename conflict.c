@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 1995,1999,2004 by Thomas E. Dickey.  All Rights Reserved.        *
+ * Copyright 1995-2004,2010 by Thomas E. Dickey.  All Rights Reserved.        *
  *                                                                            *
  * Permission to use, copy, modify, and distribute this software and its      *
  * documentation for any purpose and without fee is hereby granted, provided  *
@@ -19,7 +19,7 @@
  ******************************************************************************/
 
 #ifndef	NO_IDENT
-static const char Id[] = "$Header: /users/source/archives/conflict.vcs/RCS/conflict.c,v 6.12 2004/09/02 00:46:40 tom Exp $";
+static const char Id[] = "$Id: conflict.c,v 6.16 2010/06/27 22:35:58 tom Exp $";
 #endif
 
 /*
@@ -185,14 +185,14 @@ ShowConflicts(unsigned len, INPATH * ip)
 	flags[0] = ':';
 	if (ip != 0 && IS_A_NODE(j)) {
 	    for (k = 0; k < num_types; k++) {
-		if ((1 << k) & NODEFLAGS(j)) {
+		if ((type_t) (1 << k) & NODEFLAGS(j)) {
 		    char *s = FileTypes[k];
 		    int c = *s++;
 		    if (c == EOS || *s == EOS)
 			c = '.';
 		    else
 			c = *s;
-		    flags[k + 1] = c;
+		    flags[k + 1] = (char) c;
 		}
 	    }
 	}
@@ -216,7 +216,7 @@ ShowPathnames(INPATH * ip)
 	    if (NODEFLAGS(j) != 0) {
 		if (num_types != 0) {
 		    for (k = 0; k < num_types; k++) {
-			if ((1 << k) & NODEFLAGS(j)) {
+			if ((type_t) (1 << k) & NODEFLAGS(j)) {
 			    (void) printf("%s%c%s%s\n",
 					  dirs[j].name,
 					  PATHNAME_SEP,
@@ -342,7 +342,7 @@ had_conflict(INPATH * ip)
 	    }
 
 	    for (k = 0; k < num_types; k++) {
-		if (mask & (1 << k)) {
+		if (mask & (type_t) (1 << k)) {
 		    if (!first)
 			return TRUE;
 		    first = FALSE;
@@ -367,7 +367,7 @@ LookupType(char *name)
 #endif
     for (k = 0; k < num_types; k++) {
 	if (!strcmp(type, FileTypes[k]))
-	    return (1 << k);
+	    return (type_t) (1 << k);
     }
     return 0;
 }
@@ -517,7 +517,7 @@ ScanConflicts(char *path, unsigned inx, int argc, char **argv)
 		    else
 			inpath = TypeAlloc(INPATH, need);
 		}
-		j = total++;
+		j = (int) total++;
 		inpath[j].ip_name = the_name;
 		inpath[j].ip_NAME = the_NAME;
 		inpath[j].node = TypeAlloc(NODE, path_len);
@@ -630,7 +630,7 @@ main(int argc, char *argv[])
 	    value = (int) strtol(optarg, &t, 0);
 	    if (*t != EOS || value < 0)
 		usage();
-	    value = strlen(w_opt_text) - value;
+	    value = (int) strlen(w_opt_text) - value;
 	    if (value < 0)
 		value = 0;
 	    w_opt = w_opt_text + value;
@@ -748,7 +748,7 @@ main(int argc, char *argv[])
 	    exit(EXIT_FAILURE);
 	}
 	FileTypes = TypeAlloc(char *, num_types);
-	j = num_types;
+	j = (int) num_types;
 	do {
 	    if (*--s == '.') {
 		FileTypes[--j] = strdup(s);
@@ -835,7 +835,7 @@ main(int argc, char *argv[])
 	for (k = 0; k < total; k++) {
 	    if ((v_opt > 1) || had_conflict(&inpath[k])) {
 		if (!p_opt)
-		    ShowConflicts(path_len, &inpath[k]);
+		    ShowConflicts((unsigned) path_len, &inpath[k]);
 		ShowPathnames(&inpath[k]);
 	    }
 	}
