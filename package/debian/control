@@ -1,0 +1,16 @@
+Source: ccount
+Maintainer: Thomas E. Dickey <dickey@invisible-island.net>
+Section: devel
+Priority: extra
+Standards-Version: 3.8.4
+Build-Depends: debhelper (>= 5)
+Homepage: http://invisible-island.net/c_count/
+
+Package: ccount
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: c_count - C-language line counter
+ C_count  counts  lines  and  statements in C-language source files.  It
+ provides related statistics on the amount of whitespace,  comments  and
+ code.   C_count  also  shows  the  presence  of  unbalanced (or nested)
+ comments, unbalanced quotation marks and illegal characters.
