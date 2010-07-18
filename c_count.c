@@ -3,6 +3,7 @@
  * Author:	T.E.Dickey
  * Created:	04 Dec 1985
  * Modified:
+ *		16 Jul 2010, fix strict compiler warnings, e.g., with const.
  *		08 Jan 2006, correct bookkeeping for unterminated blocks.
  *		17 Jul 2005, show statement numbers at the beginning of a
  *			     statement with the -v option, rather than at
@@ -93,7 +94,7 @@
 #include "patchlev.h"
 
 #ifndef	NO_IDENT
-static const char Id[] = "$Id: c_count.c,v 7.53 2006/01/08 16:21:42 tom Exp $";
+static const char Id[] = "$Id: c_count.c,v 7.55 2010/07/18 00:12:14 tom Exp $";
 #endif
 
 #include <stdio.h>
@@ -127,8 +128,9 @@ extern char *optarg;
 #define strchr index
 #endif
 
+#define UCH(c)     ((unsigned char)(c))
 #ifndef isascii
-#define isascii(c) ((unsigned char)(c) < 128)
+#define isascii(c) (UCH(c) < 128)
 #endif
 
 #ifndef EXIT_SUCCESS		/* normally in <stdlib.h> */
@@ -255,11 +257,11 @@ static int newsum;		/* TRUE iff we need a summary */
 
 /* buffer line for verbose-mode */
 static char *big_line = 0;
-static unsigned big_used = 0;
-static unsigned big_size = 0;
+static size_t big_used = 0;
+static size_t big_size = 0;
 
-static char *comma = ",";
-static char *dashes = "----------------";
+static const char *comma = ",";
+static const char *dashes = "----------------";
 
 /************************************************************************
  *	local procedures						*
@@ -291,7 +293,7 @@ new_summary(void)
 }
 
 static void
-per_cent(char *text, long num, long den)
+per_cent(const char *text, long num, long den)
 {
     double value;
     if (spreadsheet) {
@@ -301,12 +303,12 @@ per_cent(char *text, long num, long den)
     if (num == 0 || den == 0)
 	value = 0.0;
     else
-	value = RoundUp((num * 100.0) / den, 10.0);
+	value = RoundUp(((double) num * 100.0) / (double) den, 10.0);
     PRINTF("%6ld\t%-24s%6.1f %%\n", num, text, value);
 }
 
 static void
-show_a_flag(char *text, long flag)
+show_a_flag(const char *text, long flag)
 {
     if (spreadsheet)
 	PRINTF("%ld%s", flag, comma);
@@ -315,15 +317,15 @@ show_a_flag(char *text, long flag)
 }
 
 static void
-ratio(char *text, long num, long den)
+ratio(const char *text, long num, long den)
 {
     if (den == 0)
 	den = 1;
     if (spreadsheet) {
-	PRINTF("%.2f%s", (float) (num) / den, comma);
+	PRINTF("%.2f%s", (float) num / (float) den, comma);
 	return;
     }
-    PRINTF("%6.2f\tratio of %s\n", (float) (num) / den, text);
+    PRINTF("%6.2f\tratio of %s\n", (float) num / (float) den, text);
 }
 
 static void
@@ -381,7 +383,7 @@ summarize_names(STATS * p)
     if (p->words_total)
 	PRINTF("%6ld\ttokens, average length %.2f\n",
 	       p->words_total,
-	       (1.0 * p->words_length) / p->words_total);
+	       (1.0 * (double) p->words_length) / (double) p->words_total);
 }
 
 static void
@@ -589,8 +591,8 @@ static int
 Token(int c)
 {
     static char *bfr;
-    static unsigned used = 0;
-    static unsigned have = 0;
+    static size_t used = 0;
+    static size_t have = 0;
 
     enum PSTATE bstate = pstate;
     int j = 0;
@@ -604,7 +606,7 @@ Token(int c)
 	do {
 	    if (used + 2 >= have)
 		bfr = realloc(bfr, have *= 2);
-	    bfr[used++] = c;
+	    bfr[used++] = (char) c;
 	    word_length++;
 	    c = inFile();
 	} while (TOKEN2(c));
@@ -633,7 +635,7 @@ Token(int c)
 	do {
 	    if (used + 2 >= have)
 		bfr = realloc(bfr, have *= 2);
-	    bfr[used++] = c;
+	    bfr[used++] = (char) c;
 	    c = inFile();
 	} while (NUMBER2(c));
 	bfr[used] = EOS;
@@ -704,7 +706,7 @@ countChar(int ch)
 		big_line[big_used - 1] = '^';
 		big_line[big_used++] = 'M';
 	    }
-	    big_line[big_used++] = ch;
+	    big_line[big_used++] = (char) ch;
 	    big_line[big_used] = EOS;
 	    if (ch == '\n') {
 		Summary(TRUE);
@@ -944,7 +946,6 @@ doFile(char *name)
 static int
 String(int mark)
 {
-    enum PSTATE bstate = pstate;
     int c = inFile();
     static const char *sccs_tag = "@(#)";
     const char *p = sccs_tag;	/* permit literal tab here only! */
@@ -978,7 +979,6 @@ String(int mark)
 	}
     }
     literal = FALSE;
-    bstate = pstate;
     DEBUG("\n");
     return (c);
 }
@@ -1023,7 +1023,7 @@ static void
 Disregard(char *lo, char *hi)
 {
     while (lo <= hi) {
-	if (isalnum(*lo)) {
+	if (isalnum(UCH(*lo))) {
 	    One.chars_notes -= 1;
 	    One.chars_rlogs += 1;
 	}
@@ -1036,7 +1036,7 @@ Disregard(char *lo, char *hi)
 /*
  * Compare strings ignoring blanks (TD_LIB)
  */
-#define	SKIP(p)	while (isspace(*p))	p++;
+#define	SKIP(p)	while (isspace(UCH(*p)))	p++;
 
 static int
 strbcmp(char *a, char *b)
@@ -1044,7 +1044,7 @@ strbcmp(char *a, char *b)
     int cmp;
 
     while (*a && *b) {
-	if (isspace(*a) && isspace(*b)) {
+	if (isspace(UCH(*a)) && isspace(UCH(*b))) {
 	    SKIP(a);
 	    SKIP(b);
 	} else if ((cmp = (*a++ - *b++)) != EOS)
@@ -1079,7 +1079,7 @@ filter_history(int first)
 	revision,
 	contents
     };
-    static char *CMS_ = "DEC/CMS REPLACEMENT HISTORY,";
+    static const char *CMS_ = "DEC/CMS REPLACEMENT HISTORY,";
     static enum HSTATE hstate = unknown;
     static char buffer[BUFSIZ];
     static char prefix[BUFSIZ];
@@ -1094,7 +1094,7 @@ filter_history(int first)
 	prefix[0] = EOS;
 	hstate = cms_history ? cms : unknown;
     } else if (len < sizeof(buffer)) {
-	buffer[len++] = c;
+	buffer[len++] = (char) c;
 	buffer[len] = EOS;
     }
     if (c == '\n') {
@@ -1117,7 +1117,7 @@ filter_history(int first)
 	    s = buffer;
 	    while ((d = strchr(s, '$')) != NULL) {
 		s = d + 1;
-		if (!strncmp(d, "$Log", 4)
+		if (!strncmp(d, "$Log", (size_t) 4)
 		    && (t = strchr(s, '$')) != 0) {
 		    hstate = rlog;
 		    Disregard(d, t);
@@ -1129,7 +1129,7 @@ filter_history(int first)
 	    s = buffer;
 	    while ((d = strchr(s, 'R')) != NULL) {
 		s = d + 1;
-		if (!strncmp(d, "Revision", 8)) {
+		if (!strncmp(d, "Revision", (size_t) 8)) {
 		    size_t len2 = (size_t) (d - buffer);
 		    strcpy(prefix, buffer)[len2] = EOS;
 		    hstate = revision;
@@ -1259,7 +1259,7 @@ w:\
 static void
 usage(void)
 {
-    static char *tbl[] =
+    static const char *tbl[] =
     {
 	"Usage: c_count [options] [files]"
 	,""
@@ -1417,7 +1417,7 @@ main(int argc, char **argv)
 	for (j = optind; j < argc; j++)
 	    doFile(argv[j]);
     } else {
-	while (fgets(name, sizeof(name) - 1, stdin)) {
+	while (fgets(name, (int) sizeof(name) - 1, stdin)) {
 	    size_t len = strlen(name);
 	    if (len != 0 && name[--len] == '\n')
 		name[len] = EOS;

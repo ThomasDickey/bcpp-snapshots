@@ -1,0 +1,5 @@
+ccount (7.12) unstable; urgency=low
+
+  * Add package scripts to upstream source, for test-builds.
+
+ -- Thomas E. Dickey <dickey@invisible-island.net>  Sat, 17 Jul 2010 05:59:49 -0400

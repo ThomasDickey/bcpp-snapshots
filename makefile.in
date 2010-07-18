@@ -1,4 +1,4 @@
-# $Id: makefile.in,v 7.10 2005/06/26 21:21:20 tom Exp $
+# $Id: makefile.in,v 7.13 2010/07/17 11:11:58 tom Exp $
 # Makefile-template for 'c_count'
 
 SHELL		= /bin/sh
@@ -25,15 +25,19 @@ CPPFLAGS	= -I. -I$(srcdir) -DHAVE_CONFIG_H @CPPFLAGS@
 LIBS		= @LIBS@
 LDFLAGS		= @LDFLAGS@
 
-LINT		= lint
+LINT		= @LINT@
+CTAGS		= @CTAGS@
+ETAGS		= @ETAGS@
 
 prefix		= @prefix@
 exec_prefix	= @exec_prefix@
 
 bindir		= @bindir@
-libdir		= @libdir@
-mandir		= @mandir@/man1
+mandir		= @mandir@
 manext		= 1
+
+BINDIR		= $(DESTDIR)$(bindir)
+MANDIR		= $(DESTDIR)$(mandir)/man1
 
 x		= @EXEEXT@
 o		= .@OBJEXT@
@@ -58,15 +62,15 @@ $(THIS)$x : $(OBJ)
 	@ECHO_LD@$(LINK) $(LDFLAGS) -o $@ $(OBJ) $(LDFLAGS) $(LIBS)
 
 install: all installdirs
-	$(INSTALL_PROGRAM) $(THIS)$x $(bindir)/$(actual_bin)
-	$(INSTALL_DATA) $(srcdir)/$(THIS).1 $(mandir)/$(actual_man)
+	$(INSTALL_PROGRAM) $(THIS)$x $(BINDIR)/$(actual_bin)
+	$(INSTALL_DATA) $(srcdir)/$(THIS).1 $(MANDIR)/$(actual_man)
 
 installdirs:
-	$(SHELL) ${srcdir}/mkdirs.sh $(bindir) $(libdir) $(mandir)
+	mkdir -p $(BINDIR) $(MANDIR)
 
 uninstall:
-	rm -f $(bindir)/$(actual_bin)
-	rm -f $(mandir)/$(actual_man)
+	rm -f $(BINDIR)/$(actual_bin)
+	rm -f $(MANDIR)/$(actual_man)
 
 mostlyclean:
 	- rm -f *$o core *~ *.BAK
@@ -88,10 +92,10 @@ lint:
 	$(LINT) $(CPPFLAGS) $(THIS).c
 
 tags:
-	ctags $(THIS).c $(HDRS)
+	$(CTAGS) $(THIS).c $(HDRS)
 
-TAGS:
-	etags $(THIS).c $(HDRS)
+@MAKE_UPPER_TAGS@TAGS:
+@MAKE_UPPER_TAGS@	$(ETAGS) $(THIS).c $(HDRS)
 
 DIGITS   = sed -e 's/^[^0-9]*//g'
 RELEASE	 = `fgrep RELEASE    patchlev.h | $(DIGITS)`
