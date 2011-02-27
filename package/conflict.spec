@@ -1,7 +1,7 @@
 Summary: conflict - filename conflict listing
 %define AppProgram conflict
-%define AppVersion 20100627
-# $XTermId: conflict.spec,v 1.1 2010/06/27 20:22:39 tom Exp $
+%define AppVersion 20110227
+# $XTermId: conflict.spec,v 1.2 2011/02/27 16:05:38 tom Exp $
 Name: %{AppProgram}
 Version: %{AppVersion}
 Release: 1

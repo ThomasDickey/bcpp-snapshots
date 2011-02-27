@@ -1,4 +1,4 @@
-/* $Id: conflict.h,v 6.7 2004/09/02 00:45:32 tom Exp $
+/* $Id: conflict.h,v 6.11 2011/02/27 18:01:20 tom Exp $
  *
  * Common/configurable definitions and types for 'conflict'.
  */
@@ -93,6 +93,10 @@
 #define HAVE_STDLIB_H 0
 #endif
 
+#ifndef MIXEDCASE_FILENAMES
+#define MIXEDCASE_FILENAMES 0
+#endif
+
 #ifndef NO_LEAKS
 #define NO_LEAKS HAVE_DBMALLOC_H
 #endif
@@ -121,6 +125,9 @@
 #define SYS_WIN32 0
 #endif
 
+/*
+ * Actually, anything that we can run the configure script on is "UNIX".
+ */
 #ifndef SYS_UNIX
 #define SYS_UNIX !(SYS_MSDOS || SYS_OS2 || SYS_WIN32)
 #endif
@@ -152,6 +159,7 @@
 # endif
 #endif
 
+#include <ctype.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -208,6 +216,8 @@ extern char *optarg;
 #define FALSE 0
 #endif
 
+#define UCH(c) ((unsigned char)(c))
+
 #define EOS '\0'
 
 #ifndef R_OK
@@ -219,6 +229,10 @@ extern char *optarg;
 #ifndef EXIT_SUCCESS
 #define EXIT_SUCCESS 0
 #define EXIT_FAILURE 1
+#endif
+
+#ifndef MAXPATHLEN
+#define MAXPATHLEN PATH_MAX	/* assume POSIX if nothing else */
 #endif
 
 #if SYS_MSDOS || SYS_OS2 || SYS_WIN32
@@ -311,11 +325,9 @@ extern void free_txtalloc(void);
 extern void txtfree(char *s);
 
 # define MakeString(a)   txtalloc(a)
-# define SameString(a,b) ((a) == (b))	/* txtalloc vs strcmp... */
 # define FreeString(a)		/* ...actually we don't  */
 #else
 # define MakeString(a)    strdup(a)
-# define SameString(a,b) !strcmp(a,b)
 # define FreeString(a)    free(a)
 #endif
 

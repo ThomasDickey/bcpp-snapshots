@@ -1,4 +1,4 @@
-MANIFEST for conflict, version t20100627
+MANIFEST for conflict, version t20110227
 --------------------------------------------------------------------------------
 MANIFEST                        this file
 CHANGES                         change-log for 'conflict'
@@ -16,7 +16,6 @@ conflict.h                      common include for 'conflict'
 install-sh                      install-script, from X11R5
 makefile.in                     template for UNIX makefile for 'conflict'
 makefile.wnt                    makefile for Visual C
-mkdirs.sh                       make directory-hierarchy (from X-windows)
 msdos.c                         MS-DOS support functions
 os2.c                           OS/2 support functions
 run_test.sh                     UNIX test-script for 'conflict'
