@@ -1,5 +1,5 @@
 .\"*****************************************************************************
-.\" Copyright 1995-2004,2010 by Thomas E. Dickey.  All Rights Reserved.        *
+.\" Copyright 1995-2010,2011 by Thomas E. Dickey.  All Rights Reserved.        *
 .\"                                                                            *
 .\" Permission to use, copy, modify, and distribute this software and its      *
 .\" documentation for any purpose and without fee is hereby granted, provided  *
@@ -17,13 +17,13 @@
 .\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR *
 .\" IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.                *
 .\"*****************************************************************************
-.\" $Id: conflict.1,v 6.4 2010/06/27 19:57:28 tom Exp $
-.de ES
+.\" $Id: conflict.1,v 6.6 2011/02/27 18:14:46 tom Exp $
+.de Es
 .RS
 .nf
 .sp
 ..
-.de EE
+.de Ee
 .fi
 .RE
 .sp .5
@@ -60,47 +60,53 @@ Conflicting names are reported on succeeding lines.
 .
 .SH OPTIONS
 .TP
-.BI -e " name"
+.B \-c
+do not ignore case when comparing filenames (see \fB\-i\fP).
+.TP
+.BI \-e " name"
 specify another environment variable than PATH
 (e.g., INFOPATH, LD_LIBRARY_PATH).
 .
 .TP
-.BI -I " path"
+.BI \-I " path"
 for compatibility with C-preprocessor options, build up the search path
 with the given directory.
-(The corresponding \fB-D\fP and \fB-U\fP options are ignored.)
-Using the \fB-I\fP or \fB-L\fP options overrides the use of environment variables
+(The corresponding \fB\-D\fP and \fB\-U\fP options are ignored.)
+Using the \fB\-I\fP or \fB\-L\fP options overrides the use of environment variables
 for the search path.
+.TP
+.B \-i
+ignore case when comparing filenames (see \fB\-c\fP).
 .
 .TP
-.BI -L " path"
+.BI \-L " path"
 for compatibility with C-compiler options, build up the search path
 with the given directory.
 .
 .TP
-.B -p
+.B \-p
 print pathnames only, rather than the table.
 .
 .TP
-.B -r
+.B \-r
 look for readable files
 .
 .TP
-.BI -t " types"
+.BI \-t " types"
 specify a list of file types which are treated as conflicting.
 The option value is a list of file suffixes (a "." followed by
 zero or more other characters).
 The list separator is the "." which begins each suffix, e.g.,
-.ES
-	conflict -t.exe.com
-.EE
+.Es
+	conflict \-t.exe.com
+.Ee
 .IP
-If no \fB-t\fP option is given,
+If no \fB\-t\fP option is given,
 a built-in list of executable file types is used for systems
 where this is known.
 .
 .TP
-.B -v
+.B \-v
 Use verbose option to control how much is shown.
 Repeat the option for different levels:
 .RS
@@ -118,24 +124,24 @@ summary, showing executable file (with its full path) as it is found).
 .RE
 .
 .TP
-.B -V
+.B \-V
 print the version, exit.
 .
 .TP
-.B -w
+.B \-w
 look for writable files
 .
 .TP
-.BI -W " number"
+.BI \-W " number"
 expand width of display by number of columns (default: one column per path).
 .
 .TP
-.B -x
+.B \-x
 look for executable files (the default).
 .
 .PP
-You may combine the "\fB-r\fP", "\fB-w\fP" and "\fB-x\fP" options.
-If you do not specify one of these, \fBconflict\fR assumes "\fB-x\fP".
+You may combine the "\fB\-r\fP", "\fB\-w\fP" and "\fB\-x\fP" options.
+If you do not specify one of these, \fBconflict\fR assumes "\fB\-x\fP".
 .
 .SH OPERATIONS
 \fBConflict\fR may be used to list all conflicting names in your
@@ -143,12 +149,12 @@ path (if no arguments are given), or to find conflicts for a specified
 name.
 To list only conflicts from a particular directory "path"
 you may type
-.ES
-conflict -a path/*
-.EE
+.Es
+conflict \-a path/*
+.Ee
 .PP
 An example of the use of \fBconflict\fR is shown below
-.ES
+.Es
 bsd4.2(5) conflict
 Current working directory is "/home/dickey/src/conflict"
 -> .
@@ -163,10 +169,10 @@ Current working directory is "/home/dickey/src/conflict"
 ---*--+: cc
 *+-----: conflict
 \&...
-.EE
+.Ee
 .
 .SH ENVIRONMENT
-\fBConflict\fR runs in a portable UNIX\*R environment, as well as
+\fBConflict\fR runs in a POSIX environment, as well as
 MSDOS, Win32 and OS/2 command-line.
 .
 .SH FILES

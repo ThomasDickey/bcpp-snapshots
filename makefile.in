@@ -1,8 +1,8 @@
-# $Id: makefile.in,v 6.19 2010/06/27 22:09:07 tom Exp $
+# $Id: makefile.in,v 6.21 2011/02/27 18:20:57 tom Exp $
 # Makefile-template for 'conflict'
 
 THIS		= conflict
-RELEASE		= t20100627
+RELEASE		= t20110227
 
 #### Start of system configuration section. ####
 
@@ -31,6 +31,11 @@ bindir		= @bindir@
 mandir		= @mandir@/man1
 manext		= 1
 
+BINDIR		= $(DESTDIR)$(bindir)
+MANDIR		= $(DESTDIR)$(mandir)
+
+INSTALLDIRS	= $(BINDIR) $(MANDIR)
+
 x		= @EXEEXT@
 o		= .@OBJEXT@
 
@@ -44,7 +49,7 @@ CPPFLAGS	= -I. -I$(srcdir) -DHAVE_CONFIG_H -DRELEASE=\"$(RELEASE)\" @CPPFLAGS@ @
 SRC =	CHANGES COPYING README \
 	$(THIS).c $(THIS).h $(THIS).1 \
 	txtalloc.c unix.c msdos.c os2.c \
-	aclocal.m4 config_h.in install-sh mkdirs.sh makefile.in configure.in \
+	aclocal.m4 config_h.in install-sh makefile.in configure.in \
 	config.guess config.sub \
 	run_test.sh
 
@@ -66,14 +71,16 @@ $(PROG): $(OBJ)
 $(OBJ) : conflict.h
 
 install: all installdirs
-	$(INSTALL_PROGRAM) $(PROG) $(DESTDIR)$(bindir)/$(PROG)
-	$(INSTALL_DATA) $(srcdir)/$(THIS).1 $(DESTDIR)$(mandir)/$(THIS).$(manext)
+	$(INSTALL_PROGRAM) $(PROG) $(BINDIR)/$(PROG)
+	$(INSTALL_DATA) $(srcdir)/$(THIS).1 $(MANDIR)/$(THIS).$(manext)
 
-installdirs:
-	$(SHELL) ${srcdir}/mkdirs.sh $(DESTDIR)$(bindir) $(DESTDIR)$(mandir)
+$(INSTALLDIRS) :
+	mkdir -p $@
+
+installdirs: $(INSTALLDIRS)
 
 uninstall:
-	rm -f $(DESTDIR)$(bindir)/$(PROG) $(DESTDIR)$(mandir)/$(THIS).$(manext)
+	rm -f $(BINDIR)/$(PROG) $(MANDIR)/$(THIS).$(manext)
 
 mostlyclean:
 	rm -f *$o core *~ *.BAK

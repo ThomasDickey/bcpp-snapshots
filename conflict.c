@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 1995-2004,2010 by Thomas E. Dickey.  All Rights Reserved.        *
+ * Copyright 1995-2010,2011 by Thomas E. Dickey.  All Rights Reserved.        *
  *                                                                            *
  * Permission to use, copy, modify, and distribute this software and its      *
  * documentation for any purpose and without fee is hereby granted, provided  *
@@ -19,7 +19,7 @@
  ******************************************************************************/
 
 #ifndef	NO_IDENT
-static const char Id[] = "$Id: conflict.c,v 6.16 2010/06/27 22:35:58 tom Exp $";
+static const char Id[] = "$Id: conflict.c,v 6.19 2011/02/27 18:02:32 tom Exp $";
 #endif
 
 /*
@@ -52,13 +52,25 @@ static size_t total;
 static size_t path_len;		/* maximum number of items in path */
 static unsigned num_types;	/* number of file-types to scan */
 static int acc_mask;		/* permissions we're looking for */
+static int caseless;		/* true if we ignore case when comparing names */
 static int p_opt;		/* print pathnames (not a table) */
 static int v_opt;		/* verbose (repeat for different levels) */
 static int do_blips;
 static const char *w_opt = "";	/* pads listing */
 static const char *w_opt_text = "--------";
 
-#if SYS_MSDOS || SYS_OS2 || SYS_WIN32 || SYS_OS2_EMX
+#if MIXEDCASE_FILENAMES
+#define C_VALUE 0
+#define C_USAGE " (default)"
+#define I_USAGE ""
+#else
+#define C_VALUE 1
+#define C_USAGE ""
+#define I_USAGE " (default)"
+#endif
+
+/* just as a stylistic issue, use DOS-compatible names in uppercase */
+#if !MIXEDCASE_FILENAMES && (SYS_MSDOS || SYS_OS2 || SYS_WIN32 || SYS_OS2_EMX)
 #define DOS_upper(s) strupr(s)
 #else
 #define DOS_upper(s) s
@@ -66,13 +78,9 @@ static const char *w_opt_text = "--------";
 
 #if SYS_MSDOS
 #define TYPES_PATH ".COM.EXE.BAT.PIF"
-#endif
-
-#if SYS_OS2 || SYS_OS2_EMX
+#elif SYS_OS2 || SYS_OS2_EMX
 #define TYPES_PATH ".EXE.CMD.bat.com.sys"
-#endif
-
-#if SYS_WIN32
+#elif SYS_WIN32
 #define TYPES_PATH ".COM.EXE.BAT.LNK"	/* could also use .CMD and .PIF */
 #endif
 
@@ -82,12 +90,34 @@ static const char *w_opt_text = "--------";
 #define NULL_FTYPE 1		/* "." and "" are different types */
 #endif
 
-static char *TypesOf(size_t len, INPATH * ip);
-
-#if USE_INODE
-static void node_found(INPATH * ip, unsigned n, type_t f, struct stat *sb);
-#else
-static void node_found(INPATH * ip, unsigned n, type_t flags);
+#ifndef HAVE_STRCASECMP
+static int
+my_strcasecmp(const char *a, const char *b)
+{
+    while (*a && *b) {
+	int cmp = toupper(UCH(*a)) - toupper(UCH(*b));
+	if (cmp != 0)
+	    break;
+	++a;
+	++b;
+    }
+    return toupper(UCH(*a)) - toupper(UCH(*b));
+}
+#define strcasecmp(a, b) my_strcasecmp(a, b)
+static int
+my_strncasecmp(const char *a, const char *b, size_t n)
+{
+    while (n && *a && *b) {
+	int cmp = toupper(UCH(*a)) - toupper(UCH(*b));
+	if (cmp != 0)
+	    break;
+	++a;
+	++b;
+	--n;
+    }
+    return toupper(UCH(*a)) - toupper(UCH(*b));
+}
+#define strncasecmp(a, b, n) my_strncasecmp(a, b, n)
 #endif
 
 /*
@@ -200,6 +230,33 @@ ShowConflicts(unsigned len, INPATH * ip)
     }
 }
 
+static char *
+TypesOf(size_t len, INPATH * ip)
+{
+    unsigned j, mask, n, k;
+#if NO_LEAKS
+    static char result[BUFSIZ];
+#else
+    static char *result;
+
+    if (result == 0)
+	result = (char *) malloc((num_types * 4) + 1);
+#endif
+
+    for (j = mask = 0; j < len; j++)
+	mask |= NODEFLAGS(j);
+
+    result[0] = EOS;
+    for (n = 0, k = 1; n < num_types; n++, k <<= 1) {
+	if (k & mask) {
+	    if (result[0] != EOS)
+		(void) strcat(result, ",");
+	    (void) strcat(result, FileTypes[n]);
+	}
+    }
+    return result;
+}
+
 static void
 ShowPathnames(INPATH * ip)
 {
@@ -237,33 +294,6 @@ ShowPathnames(INPATH * ip)
     } else {
 	(void) printf(": %s\n", ip->ip_name);
     }
-}
-
-static char *
-TypesOf(size_t len, INPATH * ip)
-{
-    unsigned j, mask, n, k;
-#if NO_LEAKS
-    static char result[BUFSIZ];
-#else
-    static char *result;
-
-    if (result == 0)
-	result = (char *) malloc((num_types * 4) + 1);
-#endif
-
-    for (j = mask = 0; j < len; j++)
-	mask |= NODEFLAGS(j);
-
-    result[0] = EOS;
-    for (n = 0, k = 1; n < num_types; n++, k <<= 1) {
-	if (k & mask) {
-	    if (result[0] != EOS)
-		(void) strcat(result, ",");
-	    (void) strcat(result, FileTypes[n]);
-	}
-    }
-    return result;
 }
 
 /*
@@ -372,20 +402,57 @@ LookupType(char *name)
     return 0;
 }
 
+static int
+SameString(char *a, char *b)
+{
+    int result;
+
+    if (caseless) {
+	result = !strcasecmp(a, b);
+    } else {
+#if USE_TXTALLOC
+	result = (a == b);
+#else
+	result = !strcmp(a, b);
+#endif
+    }
+    return result;
+}
+
 /* Compare two leaf-names, ignoring their suffix. */
 static int
 SameTypeless(char *a, char *b)
 {
+    int result = FALSE;
     char *type_a = ftype(a);
     char *type_b = ftype(b);
     if ((type_a - a) == (type_b - b)) {
-	if (!strncmp(a, b, (size_t) (type_a - a)))
-	    return TRUE;
+	if (type_a == a) {
+	    result = SameString(a, b);
+	} else {
+	    if (caseless) {
+		if (!strncasecmp(a, b, (size_t) (type_a - a)))
+		    result = TRUE;
+	    } else {
+		if (!strncmp(a, b, (size_t) (type_a - a)))
+		    result = TRUE;
+	    }
+	}
     }
-    return FALSE;
+    return result;
 }
 
-#define SameName(a,b) ((FileTypes == 0) ? SameString(a,b) : SameTypeless(a,b))
+static int
+SameName(char *a, char *b)
+{
+    int result;
+    if (FileTypes == 0) {
+	result = SameString(a, b);
+    } else {
+	result = SameTypeless(a, b);
+    }
+    return result;
+}
 
 /*
  * For systems where case does not matter, return an uppercased copy of the
@@ -570,7 +637,9 @@ usage(void)
 	,"with \"*\", succeeding instances with \"+\" marks."
 	,""
 	,"Options are:"
+	,"  -c         do not ignore case when comparing filenames" C_USAGE
 	,"  -e name    specify another environment variable than $PATH"
+	,"  -i         ignore case when comparing filenames" I_USAGE
 	,"  -p         print pathnames only"
 	,"  -r         look for read-able files"
 	,"  -t types   look only for given file-types"
@@ -608,11 +677,21 @@ main(int argc, char *argv[])
     char *type_list = 0;
     char bfr[MAXPATHLEN];
 
-    while ((j = getopt(argc, argv, "D:e:I:prt:U:vVwW:x")) != EOF) {
+    caseless = C_VALUE;
+
+    while ((j = getopt(argc, argv, "cD:e:iI:prt:U:vVwW:x")) != EOF) {
 	switch (j) {
 	case 'V':
 	    printf("conflict %s\n", RELEASE);
 	    return (EXIT_SUCCESS);
+
+	case 'c':
+	    caseless = 0;
+	    break;
+	case 'i':
+	    caseless = 1;
+	    break;
+
 	case 'e':
 	    env_name = optarg;
 	    break;
@@ -726,7 +805,7 @@ main(int argc, char *argv[])
     /*
      * Reconstruct the type-list (if any) as an array to simplify scanning.
      */
-#if SYS_MSDOS || SYS_OS2 || SYS_WIN32 || SYS_OS2_EMX
+#ifdef TYPES_PATH
     if (type_list == 0) {
 	if (!strcmp(env_name, "PATH"))
 	    type_list = TYPES_PATH;
