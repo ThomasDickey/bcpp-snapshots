@@ -1,8 +1,20 @@
--- $Id: CHANGES,v 1.37 2009/06/28 19:59:21 tom Exp $
+-- $Id: CHANGES,v 1.43 2012/03/18 16:34:30 tom Exp $
 -- Thomas E. Dickey <dickey@invisible-island.net>
 
+2012/03/18
+	+ add rpm script.
+	+ fixes for DESTDIR in makefiles
+	+ add cb++ script to install-rules
+	+ integrate patch from Debian package, to search for bcpp.cfg in
+	  user's home-directory and optionally a compile-time specific
+	  directory.
+	+ add dpkg script from Debian package, for testing.
+	+ updated configure script macros
+	+ drop mkdirs.sh, using "mkdir -p"
+	+ update config.guess, config.sub
+
 2009/06/30
-	+ update configure scripts
+	+ updated configure scripts
 	+ improve exec-sql parser, detecting inline comments beginning with
 	  "--".
 	+ fix a case where multi-line indent was set during a #define, and
@@ -35,7 +47,7 @@
 	+ correct logic that tracks state of preprocessor lines that continue
 	  from one line to the next.  The additional lines were not marked
 	  as preprocessor lines (report by Edward Bishop).
-	+ update configure script, fixes a check that added some gcc warning
+	+ updated configure script, fixes a check that added some gcc warning
 	  options which are not recognized by g++.
 
 2003/11/03
@@ -202,7 +214,7 @@
 	+ fixes for stricter gcc warnings
 
 1996/12/24
-	+ update copyright notices.
+	+ updated copyright notices.
 
 	+ refined adjustment of inline comments to work with hanging.cpp, which
 	  doesn't take that into account.

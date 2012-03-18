@@ -1,4 +1,4 @@
-MANIFEST for bcpp, version t2009-06-30
+MANIFEST for bcpp, version t2012-03-18
 --------------------------------------------------------------------------------
 MANIFEST                        this file
 CHANGES                         change-log for BCPP
@@ -15,9 +15,8 @@ configure                       configure script for BCPP
 configure.in                    configure-script template for BCPP
 indent.bat                      script for format all C/C++/Java(Script) files
 indent.cfg                      alternate configuration (larger queue)
-install.sh                      install-script
+install-sh                      utility script
 makefile.in                     top-level makefile templace for BCPP
-mkdirs.sh                       mkinstalldirs
 code                            subdirectory
 code/.vilerc                    vile settings
 code/anyobj.cpp                 the base class for all objects...
@@ -47,6 +46,19 @@ code/stacklis.h                 interface of stacklis.cpp
 code/strings.cpp                simple string-utilities
 code/tabs.cpp                   tab expansion/conversion for BCPP
 code/verbose.cpp                all output to stdout or stderr
+package                         subdirectory
+package/bcpp.spec               build-script
+package/debian                  subdirectory
+package/debian/README.Debian    Debian package scripts
+package/debian/changelog        Debian package scripts
+package/debian/compat           Debian package scripts
+package/debian/control          Debian package scripts
+package/debian/copyright        Debian package scripts
+package/debian/docs             Debian package scripts
+package/debian/rules            Debian package scripts
+package/debian/source           subdirectory
+package/debian/source/format    Debian package scripts
+package/debian/source/options   Debian package scripts
 txtdocs                         subdirectory
 txtdocs/bcpp.1                  manual, in UNIX manpage format
 txtdocs/hirachy.txt             text-version of class-hierarchy

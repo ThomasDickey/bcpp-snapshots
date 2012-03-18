@@ -1,10 +1,12 @@
-$Id: COPYING,v 1.2 2012/03/18 10:45:38 tom Exp $
+This package was debianized by Miriam Ruiz <little_miry@yahoo.es> on
+Mon,  3 Oct 2005 15:43:14 +0200.
 
-BCPP - Beautify C++ Source Files
+It was downloaded from http://www.invisible-island.net/bcpp/
 
---------------------------------------------------------------------------------
+Copyright 2005 by Thomas E. Dickey <dickey@invisible-island.net>
+Based in bcpp version 1.8, December 1995 by Steven De Toni <Steven De Toni>
 
-Copyright 2005-2009,2012 by Thomas E. Dickey
+License:
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the
