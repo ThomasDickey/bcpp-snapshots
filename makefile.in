@@ -1,4 +1,4 @@
-# $Id: makefile.in,v 1.3 2002/11/23 17:29:32 tom Exp $
+# $Id: makefile.in,v 1.6 2012/03/18 15:57:15 tom Exp $
 # top-level makefile-template for 'bcpp'
 
 THIS		= bcpp
@@ -15,8 +15,11 @@ INSTALL_DATA	= @INSTALL_DATA@
 prefix		= @prefix@
 exec_prefix	= @exec_prefix@
 
-bindir		= $(DESTDIR)@bindir@
-mandir		= $(DESTDIR)@mandir@/man1
+bindir		= @bindir@
+mandir		= @mandir@
+
+BINDIR		= $(DESTDIR)$(bindir)
+MANDIR		= $(DESTDIR)$(mandir)/man1
 manext		= 1
 
 #### End of system configuration section. ####
@@ -29,15 +32,14 @@ all:
 	cd code && $(MAKE) $@
 
 install: all installdirs
-	cd code && $(MAKE) $@
-	$(INSTALL_PROGRAM) code/$(THIS) $(bindir)/$(THIS)
-	$(INSTALL_DATA) $(srcdir)/txtdocs/$(THIS).1 $(mandir)/$(THIS).$(manext)
+	cd code && $(MAKE) $@ DESTDIR=$(DESTDIR)
+	$(INSTALL_DATA) $(srcdir)/txtdocs/$(THIS).1 $(MANDIR)/$(THIS).$(manext)
 
 installdirs:
-	$(SHELL) ${srcdir}/mkdirs.sh $(bindir) $(mandir)
+	mkdir -p $(BINDIR) $(MANDIR)
 
 uninstall:
-	rm -f $(bindir)/$(THIS) $(mandir)/$(THIS).$(manext)
+	rm -f $(BINDIR)/$(THIS) $(MANDIR)/$(THIS).$(manext)
 
 mostlyclean:
 	cd code && $(MAKE) $@

@@ -1,6 +1,6 @@
 // C(++) Beautifier V1.61 Unix/MS-DOS update !
 // -----------------------------------------
-// $Id: bcpp.cpp,v 1.129 2009/06/28 13:27:57 tom Exp $
+// $Id: bcpp.cpp,v 1.133 2012/03/18 17:24:53 tom Exp $
 //
 // Program was written by Steven De Toni 1994 (CBC, ACBC).
 // Modified/revised by Thomas E. Dickey 1996-2002,2003.
@@ -559,7 +559,7 @@ static InputStruct* ExtractCCmt (int&     offset,
     InputStruct* pItem = 0;
     char endData = NULLC;
     char endState = NULLC;
-    size_t len = end >= 0 ? (end - start + 2) : strlen(pLineData);
+    size_t len = (end >= 0) ? (size_t) (end - start + 2) : strlen(pLineData);
     size_t last = start + len;
 
     if (end >= 0)
@@ -2231,6 +2231,7 @@ static bool isPreProc (OutputStruct *test)
     return result;
 }
 
+#ifdef TEST_BCPP
 // ----------------------------------------------------------------------------
 // Check for a keyword which can follow a right curly-brace.
 static bool KeyAfterBrace (const char *word, int length)
@@ -2246,6 +2247,7 @@ static bool KeyAfterBrace (const char *word, int length)
     }
     return False;
 }
+#endif
 
 // ----------------------------------------------------------------------------
 // Check for a keyword which can precede a left curly-brace.
@@ -2265,6 +2267,7 @@ static bool KeyBeforeBrace (const char *word, int length)
 }
 
 // ----------------------------------------------------------------------------
+#ifdef TEST_BCPP
 static bool LineContainsBraces(QueueList* pLines, int item)
 {
     OutputStruct *pItem = reinterpret_cast<OutputStruct*>(pLines->peek (item));
@@ -2287,6 +2290,7 @@ static bool LineContainsBraces(QueueList* pLines, int item)
     }
     return result;
 }
+#endif
 
 // ----------------------------------------------------------------------------
 static OutputStruct* findBraceLine(QueueList* pLines, int &first, int last, char brace, int step)
@@ -2344,10 +2348,12 @@ static OutputStruct* findCodeLine(QueueList* pLines, int &first, int last, int s
     return result;
 }
 
+#ifdef TEST_BCPP
 static OutputStruct* findCodeLine(QueueList* pLines, int &first, int last)
 {
     return findCodeLine(pLines, first, last, 1);
 }
+#endif
 
 // ----------------------------------------------------------------------------
 // Find the index for the last word on the code line, or the last character
@@ -2426,6 +2432,7 @@ static int LookupLastKeyword(OutputStruct* pCodeLine)
 // ----------------------------------------------------------------------------
 // Find the index for the first word on the code line, or the first character
 // if the line does not begin with a word.  Returns true if we found something.
+#ifdef TEST_BCPP
 static bool parseFirstCode(OutputStruct* pCodeLine, char &firstchar, int &firstword, int &wordsize)
 {
     bool result = false;
@@ -2483,7 +2490,9 @@ static bool parseFirstCode(OutputStruct* pCodeLine, char &firstchar, int &firstw
     }
     return result;
 }
+#endif
 
+#ifdef TEST_BCPP
 static void copyLinesUntil(QueueList* dst, QueueList* src, OutputStruct *last)
 {
     OutputStruct *temp = reinterpret_cast<OutputStruct*>(src->takeNext());
@@ -2495,6 +2504,7 @@ static void copyLinesUntil(QueueList* dst, QueueList* src, OutputStruct *last)
         temp = reinterpret_cast<OutputStruct*>(src->takeNext());
     }
 }
+#endif
 
 // ----------------------------------------------------------------------------
 // Function reformats open braces (left-curly) to be on the same lines as the
@@ -2720,6 +2730,7 @@ static QueueList* ReformatLCurly (QueueList* pLines, int first, const Config& us
 //              queue, or the value of pLines if no work is needed.
 //              The input pLines is freed unless it is the return-value.
 //
+#ifdef TEST_BCPP
 static QueueList* ReformatRCurly (QueueList* pLines, int first, const Config& userS)
 {
     int           queueNum      = pLines -> status (); // get queue number
@@ -2915,6 +2926,7 @@ static QueueList* ReformatRCurly (QueueList* pLines, int first, const Config& us
 
     return pLines;
 }
+#endif
 
 // ----------------------------------------------------------------------------
 // Function reformats the spacing between functions, structures, unions, classes.
@@ -3549,6 +3561,47 @@ static int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
 // pCfgFile = reference to FILE structure pointer.
 static void FindConfigFile (const char* pCfgName, FILE*& pCfgFile)
 {
+    // test to see if file is in current directory first: ./bcpp.cfg
+    if ((pCfgFile = fopen(pCfgName, "r")) != NULL)
+        return;
+
+    // search in user's $HOME directory: $HOME/.bcpp.cfg
+    char* pSHome      = getenv ("HOME");
+    if (pSHome)
+    {
+        char* pNameMem    = NULL;
+        if ((pNameMem = new char[strlen (pSHome) + strlen (pCfgName) + 3]) == NULL)
+            return;
+        strcpy (pNameMem, pSHome);
+        strcat (pNameMem, "/.");
+        strcat (pNameMem, pCfgName);
+        if ((pCfgFile = fopen(pNameMem, "r")) != NULL)
+        {
+            fprintf(stderr, "Using configuration file at \"%s\"\n", pNameMem);
+            delete[] pNameMem;
+            return;
+        }
+        delete[] pNameMem;
+     }
+
+    // If we have a compile-time definition of the directory where the
+    // configuration file is, use that.
+#ifdef BCPP_CONFIG_DIR
+    // search in /etc/bcpp/ directory: /etc/bcpp/bcpp.cfg
+    char* pNameMem    = NULL;
+    if ((pNameMem = new char[strlen (BCPP_CONFIG_DIR) + strlen (pCfgName) + 1]) == NULL)
+        return;
+    strcpy (pNameMem, BCPP_CONFIG_DIR);
+    strcat (pNameMem, pCfgName);
+    if ((pCfgFile = fopen(pNameMem, "r")) != NULL)
+    {
+        fprintf(stderr, "Using configuration file at \"%s\"\n", pNameMem);
+        delete[] pNameMem;
+        return;
+    }
+#else
+    // Otherwise, search in the user's PATH variable
+
     const char* sepCharList = ";,:"; // dos, amigaDos, unix
     char* pSPath      = getenv ("PATH");
     char* pEPath      = NULL;
@@ -3558,11 +3611,7 @@ static void FindConfigFile (const char* pCfgName, FILE*& pCfgFile)
     char  backUp;
     int   count       = 0;
 
-    // test to see if file is in current directory first !
-    if ((pCfgFile = fopen(pCfgName, "r")) != NULL)
-        return;
-
-    // environment variable not found, lord knows what it is !
+    // environment variable not found...
     if (pSPath == NULL)
        return;
 
@@ -3613,8 +3662,11 @@ static void FindConfigFile (const char* pCfgName, FILE*& pCfgFile)
           pCfgFile = fopen(pNameMem, "r");
 
     } while ((*pEPath != NULLC) && (pCfgFile == NULL));
+#endif
 
     delete[] pNameMem;
+
+    pCfgFile = NULL;
 }
 
 // ----------------------------------------------------------------------------
