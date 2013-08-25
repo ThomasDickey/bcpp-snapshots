@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 7.8 2010/07/17 00:05:13 tom Exp $
+dnl $Id: aclocal.m4,v 7.9 2013/08/24 19:18:25 tom Exp $
 dnl Process this file with autoconf to produce a configure script.
 dnl
 dnl See also
@@ -93,13 +93,15 @@ AC_SUBST(EXTRA_CPPFLAGS)
 
 ])dnl
 dnl ---------------------------------------------------------------------------
-dnl CF_ANSI_CC_CHECK version: 9 updated: 2001/12/30 17:53:34
+dnl CF_ANSI_CC_CHECK version: 13 updated: 2012/10/06 11:17:15
 dnl ----------------
-dnl This is adapted from the macros 'fp_PROG_CC_STDC' and 'fp_C_PROTOTYPES'
-dnl in the sharutils 4.2 distribution.
+dnl This was originally adapted from the macros 'fp_PROG_CC_STDC' and
+dnl 'fp_C_PROTOTYPES' in the sharutils 4.2 distribution.
 AC_DEFUN([CF_ANSI_CC_CHECK],
 [
-AC_CACHE_CHECK(for ${CC-cc} option to accept ANSI C, cf_cv_ansi_cc,[
+CF_CC_ENV_FLAGS
+
+AC_CACHE_CHECK(for ${CC:-cc} option to accept ANSI C, cf_cv_ansi_cc,[
 cf_cv_ansi_cc=no
 cf_save_CFLAGS="$CFLAGS"
 cf_save_CPPFLAGS="$CPPFLAGS"
@@ -140,7 +142,7 @@ if test "$cf_cv_ansi_cc" != "no"; then
 if test ".$cf_cv_ansi_cc" != ".-DCC_HAS_PROTOS"; then
 	CF_ADD_CFLAGS($cf_cv_ansi_cc)
 else
-	AC_DEFINE(CC_HAS_PROTOS)
+	AC_DEFINE(CC_HAS_PROTOS,1,[Define to 1 if C compiler supports prototypes])
 fi
 fi
 ])dnl
@@ -198,7 +200,33 @@ ifelse([$3],,[    :]dnl
 ])dnl
   ])])dnl
 dnl ---------------------------------------------------------------------------
-dnl CF_CHECK_CACHE version: 11 updated: 2008/03/23 14:45:59
+dnl CF_CC_ENV_FLAGS version: 1 updated: 2012/10/03 05:25:49
+dnl ---------------
+dnl Check for user's environment-breakage by stuffing CFLAGS/CPPFLAGS content
+dnl into CC.  This will not help with broken scripts that wrap the compiler with
+dnl options, but eliminates a more common category of user confusion.
+AC_DEFUN([CF_CC_ENV_FLAGS],
+[
+# This should have been defined by AC_PROG_CC
+: ${CC:=cc}
+
+AC_MSG_CHECKING(\$CC variable)
+case "$CC" in #(vi
+*[[\ \	]]-[[IUD]]*)
+	AC_MSG_RESULT(broken)
+	AC_MSG_WARN(your environment misuses the CC variable to hold CFLAGS/CPPFLAGS options)
+	# humor him...
+	cf_flags=`echo "$CC" | sed -e 's/^[[^ 	]]*[[ 	]]//'`
+	CC=`echo "$CC" | sed -e 's/[[ 	]].*//'`
+	CF_ADD_CFLAGS($cf_flags)
+	;;
+*)
+	AC_MSG_RESULT(ok)
+	;;
+esac
+])dnl
+dnl ---------------------------------------------------------------------------
+dnl CF_CHECK_CACHE version: 12 updated: 2012/10/02 20:55:03
 dnl --------------
 dnl Check if we're accidentally using a cache from a different machine.
 dnl Derive the system name, as a check for reusing the autoconf cache.
@@ -221,7 +249,7 @@ else
 		system_name="`(hostname) 2>/dev/null`"
 	fi
 fi
-test -n "$system_name" && AC_DEFINE_UNQUOTED(SYSTEM_NAME,"$system_name")
+test -n "$system_name" && AC_DEFINE_UNQUOTED(SYSTEM_NAME,"$system_name",[Define to the system name.])
 AC_CACHE_VAL(cf_cv_system_name,[cf_cv_system_name="$system_name"])
 
 test -z "$system_name" && system_name="$cf_cv_system_name"
@@ -233,7 +261,40 @@ if test ".$system_name" != ".$cf_cv_system_name" ; then
 fi
 ])dnl
 dnl ---------------------------------------------------------------------------
-dnl CF_DISABLE_ECHO version: 11 updated: 2009/12/13 13:16:57
+dnl CF_CLANG_COMPILER version: 1 updated: 2012/06/16 14:55:39
+dnl -----------------
+dnl Check if the given compiler is really clang.  clang's C driver defines
+dnl __GNUC__ (fooling the configure script into setting $GCC to yes) but does
+dnl not ignore some gcc options.
+dnl
+dnl This macro should be run "soon" after AC_PROG_CC or AC_PROG_CPLUSPLUS, to
+dnl ensure that it is not mistaken for gcc/g++.  It is normally invoked from
+dnl the wrappers for gcc and g++ warnings.
+dnl
+dnl $1 = GCC (default) or GXX
+dnl $2 = INTEL_COMPILER (default) or INTEL_CPLUSPLUS
+dnl $3 = CFLAGS (default) or CXXFLAGS
+AC_DEFUN([CF_CLANG_COMPILER],[
+ifelse([$2],,CLANG_COMPILER,[$2])=no
+
+if test "$ifelse([$1],,[$1],GCC)" = yes ; then
+	AC_MSG_CHECKING(if this is really Clang ifelse([$1],GXX,C++,C) compiler)
+	cf_save_CFLAGS="$ifelse([$3],,CFLAGS,[$3])"
+	ifelse([$3],,CFLAGS,[$3])="$ifelse([$3],,CFLAGS,[$3]) -Qunused-arguments"
+	AC_TRY_COMPILE([],[
+#ifdef __clang__
+#else
+make an error
+#endif
+],[ifelse([$2],,CLANG_COMPILER,[$2])=yes
+cf_save_CFLAGS="$cf_save_CFLAGS -Qunused-arguments"
+],[])
+	ifelse([$3],,CFLAGS,[$3])="$cf_save_CFLAGS"
+	AC_MSG_RESULT($ifelse([$2],,CLANG_COMPILER,[$2]))
+fi
+])
+dnl ---------------------------------------------------------------------------
+dnl CF_DISABLE_ECHO version: 12 updated: 2012/10/06 16:30:28
 dnl ---------------
 dnl You can always use "make -n" to see the actual options, but it's hard to
 dnl pick out/analyze warning messages when the compile-line is long.
@@ -248,7 +309,7 @@ dnl
 AC_DEFUN([CF_DISABLE_ECHO],[
 AC_MSG_CHECKING(if you want to see long compiling messages)
 CF_ARG_DISABLE(echo,
-	[  --disable-echo          display "compiling" commands],
+	[  --disable-echo          do not display "compiling" commands],
 	[
     ECHO_LT='--silent'
     ECHO_LD='@echo linking [$]@;'
@@ -270,7 +331,7 @@ AC_SUBST(SHOW_CC)
 AC_SUBST(ECHO_CC)
 ])dnl
 dnl ---------------------------------------------------------------------------
-dnl CF_DISABLE_LEAKS version: 5 updated: 2010/03/13 15:14:55
+dnl CF_DISABLE_LEAKS version: 7 updated: 2012/10/02 20:55:03
 dnl ----------------
 dnl Combine no-leak checks with the libraries or tools that are used for the
 dnl checks.
@@ -288,7 +349,8 @@ AC_ARG_ENABLE(leaks,
 AC_MSG_RESULT($with_no_leaks)
 
 if test "$with_no_leaks" = yes ; then
-	AC_DEFINE(NO_LEAKS)
+	AC_DEFINE(NO_LEAKS,1,[Define to 1 if you want to perform memory-leak testing.])
+	AC_DEFINE(YY_NO_LEAKS,1,[Define to 1 if you want to perform memory-leak testing.])
 fi
 ])dnl
 dnl ---------------------------------------------------------------------------
@@ -312,7 +374,7 @@ fi
 fi
 ])dnl
 dnl ---------------------------------------------------------------------------
-dnl CF_GCC_ATTRIBUTES version: 13 updated: 2009/08/11 20:19:56
+dnl CF_GCC_ATTRIBUTES version: 16 updated: 2012/10/02 20:55:03
 dnl -----------------
 dnl Test for availability of useful gcc __attribute__ directives to quiet
 dnl compiler warnings.  Though useful, not all are supported -- and contrary
@@ -339,7 +401,7 @@ if test "$GCC" = yes
 then
 	AC_CHECKING([for $CC __attribute__ directives])
 cat > conftest.$ac_ext <<EOF
-#line __oline__ "${as_me-configure}"
+#line __oline__ "${as_me:-configure}"
 #include "confdefs.h"
 #include "conftest.h"
 #include "conftest.i"
@@ -390,27 +452,27 @@ EOF
 			test -n "$verbose" && AC_MSG_RESULT(... $cf_attribute)
 			cat conftest.h >>confdefs.h
 			case $cf_attribute in #(vi
+			noreturn) #(vi
+				AC_DEFINE_UNQUOTED(GCC_NORETURN,$cf_directive,[Define to noreturn-attribute for gcc])
+				;;
 			printf) #(vi
-				if test "$cf_printf_attribute" = no ; then
-					cat >>confdefs.h <<EOF
-#define GCC_PRINTFLIKE(fmt,var) /* nothing */
-EOF
-				else
-					cat >>confdefs.h <<EOF
-#define GCC_PRINTFLIKE(fmt,var) __attribute__((format(printf,fmt,var)))
-EOF
+				cf_value='/* nothing */'
+				if test "$cf_printf_attribute" != no ; then
+					cf_value='__attribute__((format(printf,fmt,var)))'
+					AC_DEFINE(GCC_PRINTF,1,[Define to 1 if the compiler supports gcc-like printf attribute.])
 				fi
+				AC_DEFINE_UNQUOTED(GCC_PRINTFLIKE(fmt,var),$cf_value,[Define to printf-attribute for gcc])
 				;;
 			scanf) #(vi
-				if test "$cf_scanf_attribute" = no ; then
-					cat >>confdefs.h <<EOF
-#define GCC_SCANFLIKE(fmt,var) /* nothing */
-EOF
-				else
-					cat >>confdefs.h <<EOF
-#define GCC_SCANFLIKE(fmt,var)  __attribute__((format(scanf,fmt,var)))
-EOF
+				cf_value='/* nothing */'
+				if test "$cf_scanf_attribute" != no ; then
+					cf_value='__attribute__((format(scanf,fmt,var)))'
+					AC_DEFINE(GCC_SCANF,1,[Define to 1 if the compiler supports gcc-like scanf attribute.])
 				fi
+				AC_DEFINE_UNQUOTED(GCC_SCANFLIKE(fmt,var),$cf_value,[Define to sscanf-attribute for gcc])
+				;;
+			unused) #(vi
+				AC_DEFINE_UNQUOTED(GCC_UNUSED,$cf_directive,[Define to unused-attribute for gcc])
 				;;
 			esac
 		fi
@@ -422,7 +484,7 @@ rm -rf conftest*
 fi
 ])dnl
 dnl ---------------------------------------------------------------------------
-dnl CF_GCC_VERSION version: 5 updated: 2010/04/24 11:02:31
+dnl CF_GCC_VERSION version: 7 updated: 2012/10/18 06:46:33
 dnl --------------
 dnl Find version of gcc
 AC_DEFUN([CF_GCC_VERSION],[
@@ -430,13 +492,13 @@ AC_REQUIRE([AC_PROG_CC])
 GCC_VERSION=none
 if test "$GCC" = yes ; then
 	AC_MSG_CHECKING(version of $CC)
-	GCC_VERSION="`${CC} --version 2>/dev/null | sed -e '2,$d' -e 's/^.*(GCC) //' -e 's/^[[^0-9.]]*//' -e 's/[[^0-9.]].*//'`"
+	GCC_VERSION="`${CC} --version 2>/dev/null | sed -e '2,$d' -e 's/^.*(GCC[[^)]]*) //' -e 's/^.*(Debian[[^)]]*) //' -e 's/^[[^0-9.]]*//' -e 's/[[^0-9.]].*//'`"
 	test -z "$GCC_VERSION" && GCC_VERSION=unknown
 	AC_MSG_RESULT($GCC_VERSION)
 fi
 ])dnl
 dnl ---------------------------------------------------------------------------
-dnl CF_GCC_WARNINGS version: 25 updated: 2010/04/24 11:03:31
+dnl CF_GCC_WARNINGS version: 29 updated: 2012/06/16 14:55:39
 dnl ---------------
 dnl Check if the compiler supports useful warning options.  There's a few that
 dnl we don't use, simply because they're too noisy:
@@ -459,9 +521,10 @@ AC_DEFUN([CF_GCC_WARNINGS],
 [
 AC_REQUIRE([CF_GCC_VERSION])
 CF_INTEL_COMPILER(GCC,INTEL_COMPILER,CFLAGS)
+CF_CLANG_COMPILER(GCC,CLANG_COMPILER,CFLAGS)
 
 cat > conftest.$ac_ext <<EOF
-#line __oline__ "${as_me-configure}"
+#line __oline__ "${as_me:-configure}"
 int main(int argc, char *argv[[]]) { return (argv[[argc-1]] == 0) ; }
 EOF
 
@@ -534,18 +597,25 @@ then
 					continue;;
 				esac
 				;;
+			Wpointer-arith) #(vi
+				case $GCC_VERSION in
+				[[12]].*)
+					CF_VERBOSE(feature is broken in gcc $GCC_VERSION)
+					continue;;
+				esac
+				;;
 			esac
 			EXTRA_CFLAGS="$EXTRA_CFLAGS -$cf_opt"
 		fi
 	done
 	CFLAGS="$cf_save_CFLAGS"
 fi
-rm -f conftest*
+rm -rf conftest*
 
 AC_SUBST(EXTRA_CFLAGS)
 ])dnl
 dnl ---------------------------------------------------------------------------
-dnl CF_GETOPT_HEADER version: 4 updated: 2009/08/31 20:07:52
+dnl CF_GETOPT_HEADER version: 5 updated: 2012/10/06 16:39:58
 dnl ----------------
 dnl Check for getopt's variables which are commonly defined in stdlib.h,
 dnl unistd.h or (nonstandard) in getopt.h
@@ -564,11 +634,11 @@ AC_TRY_COMPILE([
 done
 ])
 if test $cf_cv_getopt_header != none ; then
-	AC_DEFINE(HAVE_GETOPT_HEADER)
+	AC_DEFINE(HAVE_GETOPT_HEADER,1,[Define to 1 if we need to include getopt.h])
 fi
 ])dnl
 dnl ---------------------------------------------------------------------------
-dnl CF_INTEL_COMPILER version: 4 updated: 2010/05/26 05:38:42
+dnl CF_INTEL_COMPILER version: 5 updated: 2013/02/10 10:41:05
 dnl -----------------
 dnl Check if the given compiler is really the Intel compiler for Linux.  It
 dnl tries to imitate gcc, but does not return an error when it finds a mismatch
@@ -582,6 +652,7 @@ dnl $1 = GCC (default) or GXX
 dnl $2 = INTEL_COMPILER (default) or INTEL_CPLUSPLUS
 dnl $3 = CFLAGS (default) or CXXFLAGS
 AC_DEFUN([CF_INTEL_COMPILER],[
+AC_REQUIRE([AC_CANONICAL_HOST])
 ifelse([$2],,INTEL_COMPILER,[$2])=no
 
 if test "$ifelse([$1],,[$1],GCC)" = yes ; then
@@ -605,7 +676,7 @@ cf_save_CFLAGS="$cf_save_CFLAGS -we147 -no-gcc"
 fi
 ])dnl
 dnl ---------------------------------------------------------------------------
-dnl CF_MAKE_TAGS version: 5 updated: 2010/04/03 20:07:32
+dnl CF_MAKE_TAGS version: 6 updated: 2010/10/23 15:52:32
 dnl ------------
 dnl Generate tags/TAGS targets for makefiles.  Do not generate TAGS if we have
 dnl a monocase filesystem.
@@ -615,10 +686,10 @@ AC_REQUIRE([CF_MIXEDCASE_FILENAMES])
 AC_CHECK_PROGS(CTAGS, exctags ctags)
 AC_CHECK_PROGS(ETAGS, exetags etags)
 
-AC_CHECK_PROG(MAKE_LOWER_TAGS, ${CTAGS-ctags}, yes, no)
+AC_CHECK_PROG(MAKE_LOWER_TAGS, ${CTAGS:-ctags}, yes, no)
 
 if test "$cf_cv_mixedcase" = yes ; then
-	AC_CHECK_PROG(MAKE_UPPER_TAGS, ${ETAGS-etags}, yes, no)
+	AC_CHECK_PROG(MAKE_UPPER_TAGS, ${ETAGS:-etags}, yes, no)
 else
 	MAKE_UPPER_TAGS=no
 fi
@@ -642,7 +713,7 @@ AC_SUBST(MAKE_UPPER_TAGS)
 AC_SUBST(MAKE_LOWER_TAGS)
 ])dnl
 dnl ---------------------------------------------------------------------------
-dnl CF_MIXEDCASE_FILENAMES version: 3 updated: 2003/09/20 17:07:55
+dnl CF_MIXEDCASE_FILENAMES version: 4 updated: 2012/10/02 20:55:03
 dnl ----------------------
 dnl Check if the file-system supports mixed-case filenames.  If we're able to
 dnl create a lowercase name and see it as uppercase, it doesn't support that.
@@ -669,25 +740,25 @@ else
 	rm -f conftest CONFTEST
 fi
 ])
-test "$cf_cv_mixedcase" = yes && AC_DEFINE(MIXEDCASE_FILENAMES)
+test "$cf_cv_mixedcase" = yes && AC_DEFINE(MIXEDCASE_FILENAMES,1,[Define to 1 if filesystem supports mixed-case filenames.])
 ])dnl
 dnl ---------------------------------------------------------------------------
-dnl CF_MSG_LOG version: 4 updated: 2007/07/29 09:55:12
+dnl CF_MSG_LOG version: 5 updated: 2010/10/23 15:52:32
 dnl ----------
 dnl Write a debug message to config.log, along with the line number in the
 dnl configure script.
 AC_DEFUN([CF_MSG_LOG],[
-echo "${as_me-configure}:__oline__: testing $* ..." 1>&AC_FD_CC
+echo "${as_me:-configure}:__oline__: testing $* ..." 1>&AC_FD_CC
 ])dnl
 dnl ---------------------------------------------------------------------------
-dnl CF_NO_LEAKS_OPTION version: 4 updated: 2006/12/16 14:24:05
+dnl CF_NO_LEAKS_OPTION version: 5 updated: 2012/10/02 20:55:03
 dnl ------------------
 dnl see CF_WITH_NO_LEAKS
 AC_DEFUN([CF_NO_LEAKS_OPTION],[
 AC_MSG_CHECKING(if you want to use $1 for testing)
 AC_ARG_WITH($1,
 	[$2],
-	[AC_DEFINE($3)ifelse([$4],,[
+	[AC_DEFINE_UNQUOTED($3,1,"Define to 1 if you want to use $1 for testing.")ifelse([$4],,[
 	 $4
 ])
 	: ${with_cflags:=-g}
@@ -709,7 +780,7 @@ case .$with_cflags in #(vi
 esac
 ])dnl
 dnl ---------------------------------------------------------------------------
-dnl CF_PROG_EXT version: 10 updated: 2004/01/03 19:28:18
+dnl CF_PROG_EXT version: 11 updated: 2012/10/06 08:57:51
 dnl -----------
 dnl Compute $PROG_EXT, used for non-Unix ports, such as OS/2 EMX.
 AC_DEFUN([CF_PROG_EXT],
@@ -731,7 +802,7 @@ AC_OBJEXT
 
 PROG_EXT="$EXEEXT"
 AC_SUBST(PROG_EXT)
-test -n "$PROG_EXT" && AC_DEFINE_UNQUOTED(PROG_EXT,"$PROG_EXT")
+test -n "$PROG_EXT" && AC_DEFINE_UNQUOTED(PROG_EXT,"$PROG_EXT",[Define to the program extension (normally blank)])
 ])dnl
 dnl ---------------------------------------------------------------------------
 dnl CF_PROG_LINT version: 2 updated: 2009/08/12 04:43:14
