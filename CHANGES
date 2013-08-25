@@ -1,6 +1,14 @@
--- $Id: CHANGES,v 7.21 2010/07/17 13:57:26 tom Exp $
+-- $Id: CHANGES,v 7.24 2013/08/25 00:37:24 tom Exp $
 
-2010/7/17 (c_count 7.12)
+2010/08/24 (c_count 7.13)
+
+	+ pretend that MinGW does globbing.
+
+	+ updated configure macros
+
+	+ update config.guess and config.sub
+
+2010/07/17 (c_count 7.12)
 
 	+ escape dashes in manpage as needed to work around groff.
 
@@ -26,7 +34,7 @@
 
 	+ reformat changelog, for metrics script.
 
-2006/1/8 (c_count 7.11)
+2006/01/08 (c_count 7.11)
 
 	+ correct bookkeeping for unterminated blocks (report by Lester
 	  Ingber).
@@ -68,7 +76,7 @@
 
 	+ add -V option, to show version.
 
-2001/2/27 (c_count 7.7)
+2001/02/27 (c_count 7.7)
 
 	+ expand wildcards on WIN32 with _setargv().
 
@@ -76,28 +84,28 @@
 
 	+ Updated configure script.
 
-1999/1/11
+1999/01/11
 
 	+ add check for files w/o trailing newline.
 
-1998/8/3 (c_count 7.6)
+1998/08/03 (c_count 7.6)
 
 	+ modify configure script to work with --srcdir (reported by Marty
 	  Leisner).
 
-1998/7/2 (c_count 7.5)
+1998/07/02 (c_count 7.5)
 
 	+ implement check for mismatched braces.
 
 	+ add -w option, to show too-long identifiers
 
-1997/10/5 (c_count 7.4)
+1997/10/05 (c_count 7.4)
 
 	+ change copyright terms to allow commerical distribution.
 
 	+ add -b option, to display blocklevel statistics.
 
-1997/4/25 (c_count 7.3)
+1997/04/25 (c_count 7.3)
 
 	+ correct state-parsing of "/*<LF>", supplied test.
 

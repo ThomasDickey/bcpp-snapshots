@@ -1,3 +1,9 @@
+ccount (7.13) unstable; urgency=low
+
+  * routine packaging updates
+
+ -- Thomas E. Dickey <dickey@invisible-island.net>  Sat, 24 Aug 2013 15:24:56 -0400
+
 ccount (7.12) unstable; urgency=low
 
   * Add package scripts to upstream source, for test-builds.

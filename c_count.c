@@ -3,6 +3,7 @@
  * Author:	T.E.Dickey
  * Created:	04 Dec 1985
  * Modified:
+ *		24 Aug 2013, ifdef to assume MinGW does globbing.
  *		16 Jul 2010, fix strict compiler warnings, e.g., with const.
  *		08 Jan 2006, correct bookkeeping for unterminated blocks.
  *		17 Jul 2005, show statement numbers at the beginning of a
@@ -75,7 +76,7 @@
  *			     can get reasonable counts for ddn-driver, etc.
  *			     Also fixed printf-formats for xenix-port.
  *		23 Apr 1986, treat standard-input as a list of names, not code.
- *		28 Jan 1985, make final 'exit()' with return code.
+ *		28 Jan 1986, make final 'exit()' with return code.
  *
  * Function:	Count lines and statements in one or more C program files,
  *		giving statistics on percentage commented.
@@ -94,7 +95,7 @@
 #include "patchlev.h"
 
 #ifndef	NO_IDENT
-static const char Id[] = "$Id: c_count.c,v 7.55 2010/07/18 00:12:14 tom Exp $";
+static const char Id[] = "$Id: c_count.c,v 7.58 2013/08/25 00:40:19 tom Exp $";
 #endif
 
 #include <stdio.h>
@@ -164,6 +165,10 @@ extern char *optarg;
 
 #define LVL_WEIGHT(n)	if (opt_blok) One.lvl_weights += (n) * (One.nesting_lvl+1)
 
+#if defined(WIN32) && (defined(__MINGW32__) || defined(__MINGW64__))
+int _dowildard = -1;
+#endif
+
 /*
  * To make the verbose listing look nice (without doing tab-conversion), we
  * want to have the columns for statements, lines, error flags add up to
@@ -179,7 +184,7 @@ extern char *optarg;
 static int inFile(void);
 static int Comment(int cpp);
 static int Escape(void);
-static int String(int mark);
+static int String (int mark);
 
 static FILE *File;
 static char **quotvec;
@@ -568,9 +573,9 @@ IncludeFile(int c)
     while (c == ' ' || c == '\t')
 	c = inFile();
     if (c == '"')
-	c = String(c);
+	c = String (c);
     else if (c == '<')
-	c = String('>');
+	c = String ('>');
     return c;
 }
 
@@ -624,7 +629,7 @@ Token(int c)
 	    if (c == ' ' || c == '\t' || c == '(') {
 		for (j = 0; j < quotdef; j++) {
 		    if (!strcmp(quotvec[j], bfr)) {
-			c = String('"');
+			c = String ('"');
 			DEBUG("**%c**\n", c);
 			break;
 		    }
@@ -858,7 +863,7 @@ doFile(char *name)
 	    break;
 	case '"':
 	case '\'':
-	    c = String(c);
+	    c = String (c);
 	    break;
 	case '{':
 	    DEBUG("char\t%c\n", c);
@@ -944,8 +949,7 @@ doFile(char *name)
  * string (perhaps because the leading quote was in a macro!).
  */
 static int
-String(int mark)
-{
+String (int mark) {
     int c = inFile();
     static const char *sccs_tag = "@(#)";
     const char *p = sccs_tag;	/* permit literal tab here only! */
@@ -1300,7 +1304,7 @@ main(int argc, char **argv)
     int j;
     char name[BUFSIZ];
 
-#ifdef WIN32
+#if defined(WIN32) && !(defined(__MINGW32__) || defined(__MINGW64__))
     _setargv(&argc, &argv);
 #endif
     quotvec = typeCalloc(char *, (size_t) argc);
