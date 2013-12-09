@@ -1,5 +1,9 @@
-$Id: CHANGES,v 6.16 2011/02/27 16:10:45 tom Exp $
+$Id: CHANGES,v 6.17 2013/12/09 13:19:16 tom Exp $
 ------------------------------------------------------------------------------
+
+2013/12/09
+	+ updated configure macros, e.g., clang and MinGW fixes
+	+ update config.guess, config.sub and install-sh.
 
 2011/02/27
 	+ set the default for -i/-c options according to whether the filesystem
