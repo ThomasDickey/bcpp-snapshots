@@ -1,3 +1,9 @@
+bcpp (20131209) unstable; urgency=low
+
+  * update configure script
+
+ -- Thomas E. Dickey <dickey@invisible-island.net>  Mon, 09 Dec 2013 07:30:32 -0500
+
 bcpp (20120318) unstable; urgency=low
 
   * Add package scripts for testing

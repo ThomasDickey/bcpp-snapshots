@@ -1,4 +1,4 @@
-# $Id: makefile.in,v 1.6 2012/03/18 15:57:15 tom Exp $
+# $Id: makefile.in,v 1.7 2013/12/09 12:37:28 tom Exp $
 # top-level makefile-template for 'bcpp'
 
 THIS		= bcpp
@@ -14,6 +14,7 @@ INSTALL_DATA	= @INSTALL_DATA@
 
 prefix		= @prefix@
 exec_prefix	= @exec_prefix@
+datarootdir	= @datarootdir@
 
 bindir		= @bindir@
 mandir		= @mandir@
