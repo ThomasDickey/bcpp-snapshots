@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.11 2012/03/18 10:46:39 tom Exp $
+dnl $Id: aclocal.m4,v 1.12 2013/12/09 12:36:15 tom Exp $
 dnl autoconf macros for BCPP
 dnl See
 dnl		http://invisible-island.net/autoconf/ 
@@ -9,41 +9,6 @@ dnl --------------
 dnl Allow user to disable a normally-on option.
 AC_DEFUN([CF_ARG_DISABLE],
 [CF_ARG_OPTION($1,[$2],[$3],[$4],yes)])dnl
-dnl ---------------------------------------------------------------------------
-dnl CF_CHECK_CACHE version: 11 updated: 2008/03/23 14:45:59
-dnl --------------
-dnl Check if we're accidentally using a cache from a different machine.
-dnl Derive the system name, as a check for reusing the autoconf cache.
-dnl
-dnl If we've packaged config.guess and config.sub, run that (since it does a
-dnl better job than uname).  Normally we'll use AC_CANONICAL_HOST, but allow
-dnl an extra parameter that we may override, e.g., for AC_CANONICAL_SYSTEM
-dnl which is useful in cross-compiles.
-dnl
-dnl Note: we would use $ac_config_sub, but that is one of the places where
-dnl autoconf 2.5x broke compatibility with autoconf 2.13
-AC_DEFUN([CF_CHECK_CACHE],
-[
-if test -f $srcdir/config.guess || test -f $ac_aux_dir/config.guess ; then
-	ifelse([$1],,[AC_CANONICAL_HOST],[$1])
-	system_name="$host_os"
-else
-	system_name="`(uname -s -r) 2>/dev/null`"
-	if test -z "$system_name" ; then
-		system_name="`(hostname) 2>/dev/null`"
-	fi
-fi
-test -n "$system_name" && AC_DEFINE_UNQUOTED(SYSTEM_NAME,"$system_name")
-AC_CACHE_VAL(cf_cv_system_name,[cf_cv_system_name="$system_name"])
-
-test -z "$system_name" && system_name="$cf_cv_system_name"
-test -n "$cf_cv_system_name" && AC_MSG_RESULT(Configuring for $cf_cv_system_name)
-
-if test ".$system_name" != ".$cf_cv_system_name" ; then
-	AC_MSG_RESULT(Cached system name ($system_name) does not agree with actual ($cf_cv_system_name))
-	AC_MSG_ERROR("Please remove config.cache and try again.")
-fi
-])dnl
 dnl ---------------------------------------------------------------------------
 dnl CF_ARG_OPTION version: 4 updated: 2010/05/26 05:38:42
 dnl -------------
@@ -68,7 +33,75 @@ ifelse([$3],,[    :]dnl
 ])dnl
   ])])dnl
 dnl ---------------------------------------------------------------------------
-dnl CF_DISABLE_ECHO version: 11 updated: 2009/12/13 13:16:57
+dnl CF_CHECK_CACHE version: 12 updated: 2012/10/02 20:55:03
+dnl --------------
+dnl Check if we're accidentally using a cache from a different machine.
+dnl Derive the system name, as a check for reusing the autoconf cache.
+dnl
+dnl If we've packaged config.guess and config.sub, run that (since it does a
+dnl better job than uname).  Normally we'll use AC_CANONICAL_HOST, but allow
+dnl an extra parameter that we may override, e.g., for AC_CANONICAL_SYSTEM
+dnl which is useful in cross-compiles.
+dnl
+dnl Note: we would use $ac_config_sub, but that is one of the places where
+dnl autoconf 2.5x broke compatibility with autoconf 2.13
+AC_DEFUN([CF_CHECK_CACHE],
+[
+if test -f $srcdir/config.guess || test -f $ac_aux_dir/config.guess ; then
+	ifelse([$1],,[AC_CANONICAL_HOST],[$1])
+	system_name="$host_os"
+else
+	system_name="`(uname -s -r) 2>/dev/null`"
+	if test -z "$system_name" ; then
+		system_name="`(hostname) 2>/dev/null`"
+	fi
+fi
+test -n "$system_name" && AC_DEFINE_UNQUOTED(SYSTEM_NAME,"$system_name",[Define to the system name.])
+AC_CACHE_VAL(cf_cv_system_name,[cf_cv_system_name="$system_name"])
+
+test -z "$system_name" && system_name="$cf_cv_system_name"
+test -n "$cf_cv_system_name" && AC_MSG_RESULT(Configuring for $cf_cv_system_name)
+
+if test ".$system_name" != ".$cf_cv_system_name" ; then
+	AC_MSG_RESULT(Cached system name ($system_name) does not agree with actual ($cf_cv_system_name))
+	AC_MSG_ERROR("Please remove config.cache and try again.")
+fi
+])dnl
+dnl ---------------------------------------------------------------------------
+dnl CF_CLANG_COMPILER version: 2 updated: 2013/11/19 19:23:35
+dnl -----------------
+dnl Check if the given compiler is really clang.  clang's C driver defines
+dnl __GNUC__ (fooling the configure script into setting $GCC to yes) but does
+dnl not ignore some gcc options.
+dnl
+dnl This macro should be run "soon" after AC_PROG_CC or AC_PROG_CPLUSPLUS, to
+dnl ensure that it is not mistaken for gcc/g++.  It is normally invoked from
+dnl the wrappers for gcc and g++ warnings.
+dnl
+dnl $1 = GCC (default) or GXX
+dnl $2 = CLANG_COMPILER (default)
+dnl $3 = CFLAGS (default) or CXXFLAGS
+AC_DEFUN([CF_CLANG_COMPILER],[
+ifelse([$2],,CLANG_COMPILER,[$2])=no
+
+if test "$ifelse([$1],,[$1],GCC)" = yes ; then
+	AC_MSG_CHECKING(if this is really Clang ifelse([$1],GXX,C++,C) compiler)
+	cf_save_CFLAGS="$ifelse([$3],,CFLAGS,[$3])"
+	ifelse([$3],,CFLAGS,[$3])="$ifelse([$3],,CFLAGS,[$3]) -Qunused-arguments"
+	AC_TRY_COMPILE([],[
+#ifdef __clang__
+#else
+make an error
+#endif
+],[ifelse([$2],,CLANG_COMPILER,[$2])=yes
+cf_save_CFLAGS="$cf_save_CFLAGS -Qunused-arguments"
+],[])
+	ifelse([$3],,CFLAGS,[$3])="$cf_save_CFLAGS"
+	AC_MSG_RESULT($ifelse([$2],,CLANG_COMPILER,[$2]))
+fi
+])
+dnl ---------------------------------------------------------------------------
+dnl CF_DISABLE_ECHO version: 12 updated: 2012/10/06 16:30:28
 dnl ---------------
 dnl You can always use "make -n" to see the actual options, but it's hard to
 dnl pick out/analyze warning messages when the compile-line is long.
@@ -83,7 +116,7 @@ dnl
 AC_DEFUN([CF_DISABLE_ECHO],[
 AC_MSG_CHECKING(if you want to see long compiling messages)
 CF_ARG_DISABLE(echo,
-	[  --disable-echo          display "compiling" commands],
+	[  --disable-echo          do not display "compiling" commands],
 	[
     ECHO_LT='--silent'
     ECHO_LD='@echo linking [$]@;'
@@ -105,58 +138,21 @@ AC_SUBST(SHOW_CC)
 AC_SUBST(ECHO_CC)
 ])dnl
 dnl ---------------------------------------------------------------------------
-dnl CF_INTEL_COMPILER version: 4 updated: 2010/05/26 05:38:42
-dnl -----------------
-dnl Check if the given compiler is really the Intel compiler for Linux.  It
-dnl tries to imitate gcc, but does not return an error when it finds a mismatch
-dnl between prototypes, e.g., as exercised by CF_MISSING_CHECK.
-dnl
-dnl This macro should be run "soon" after AC_PROG_CC or AC_PROG_CPLUSPLUS, to
-dnl ensure that it is not mistaken for gcc/g++.  It is normally invoked from
-dnl the wrappers for gcc and g++ warnings.
-dnl
-dnl $1 = GCC (default) or GXX
-dnl $2 = INTEL_COMPILER (default) or INTEL_CPLUSPLUS
-dnl $3 = CFLAGS (default) or CXXFLAGS
-AC_DEFUN([CF_INTEL_COMPILER],[
-ifelse([$2],,INTEL_COMPILER,[$2])=no
-
-if test "$ifelse([$1],,[$1],GCC)" = yes ; then
-	case $host_os in
-	linux*|gnu*)
-		AC_MSG_CHECKING(if this is really Intel ifelse([$1],GXX,C++,C) compiler)
-		cf_save_CFLAGS="$ifelse([$3],,CFLAGS,[$3])"
-		ifelse([$3],,CFLAGS,[$3])="$ifelse([$3],,CFLAGS,[$3]) -no-gcc"
-		AC_TRY_COMPILE([],[
-#ifdef __INTEL_COMPILER
-#else
-make an error
-#endif
-],[ifelse([$2],,INTEL_COMPILER,[$2])=yes
-cf_save_CFLAGS="$cf_save_CFLAGS -we147 -no-gcc"
-],[])
-		ifelse([$3],,CFLAGS,[$3])="$cf_save_CFLAGS"
-		AC_MSG_RESULT($ifelse([$2],,INTEL_COMPILER,[$2]))
-		;;
-	esac
-fi
-])dnl
-dnl ---------------------------------------------------------------------------
-dnl CF_GXX_VERSION version: 6 updated: 2010/10/23 15:44:18
+dnl CF_GXX_VERSION version: 7 updated: 2012/06/16 14:55:39
 dnl --------------
 dnl Check for version of g++
 AC_DEFUN([CF_GXX_VERSION],[
 AC_REQUIRE([AC_PROG_CPP])
 GXX_VERSION=none
 if test "$GXX" = yes; then
-	AC_MSG_CHECKING(version of g++)
+	AC_MSG_CHECKING(version of ${CXX:-g++})
 	GXX_VERSION="`${CXX:-g++} --version| sed -e '2,$d' -e 's/^.*(GCC) //' -e 's/^[[^0-9.]]*//' -e 's/[[^0-9.]].*//'`"
 	test -z "$GXX_VERSION" && GXX_VERSION=unknown
 	AC_MSG_RESULT($GXX_VERSION)
 fi
 ])dnl
 dnl ---------------------------------------------------------------------------
-dnl CF_GXX_WARNINGS version: 6 updated: 2010/08/14 18:25:37
+dnl CF_GXX_WARNINGS version: 8 updated: 2013/11/16 14:27:53
 dnl ---------------
 dnl Check if the compiler supports useful warning options.
 dnl
@@ -179,6 +175,7 @@ AC_DEFUN([CF_GXX_WARNINGS],
 [
 
 CF_INTEL_COMPILER(GXX,INTEL_CPLUSPLUS,CXXFLAGS)
+CF_CLANG_COMPILER(GXX,CLANG_CPLUSPLUS,CXXFLAGS)
 
 AC_REQUIRE([CF_GXX_VERSION])
 
@@ -244,16 +241,17 @@ then
 	for cf_opt in \
 		Wabi \
 		fabi-version=0 \
+		Wextra \
+		Wignored-qualifiers \
+		Wlogical-op \
 		Woverloaded-virtual \
 		Wsign-promo \
 		Wsynth \
 		Wold-style-cast \
 		Wcast-align \
 		Wcast-qual \
-		Wmissing-prototypes \
 		Wpointer-arith \
 		Wshadow \
-		Wstrict-prototypes \
 		Wundef $cf_gxx_extra_warnings $1
 	do
 		CXXFLAGS="$cf_save_CXXFLAGS $EXTRA_CXXFLAGS -Werror -$cf_opt"
@@ -272,10 +270,40 @@ AC_LANG_RESTORE
 AC_SUBST(EXTRA_CXXFLAGS)
 ])dnl
 dnl ---------------------------------------------------------------------------
-dnl CF_VERBOSE version: 3 updated: 2007/07/29 09:55:12
-dnl ----------
-dnl Use AC_VERBOSE w/o the warnings
-AC_DEFUN([CF_VERBOSE],
-[test -n "$verbose" && echo "	$1" 1>&AC_FD_MSG
-CF_MSG_LOG([$1])
+dnl CF_INTEL_COMPILER version: 5 updated: 2013/02/10 10:41:05
+dnl -----------------
+dnl Check if the given compiler is really the Intel compiler for Linux.  It
+dnl tries to imitate gcc, but does not return an error when it finds a mismatch
+dnl between prototypes, e.g., as exercised by CF_MISSING_CHECK.
+dnl
+dnl This macro should be run "soon" after AC_PROG_CC or AC_PROG_CPLUSPLUS, to
+dnl ensure that it is not mistaken for gcc/g++.  It is normally invoked from
+dnl the wrappers for gcc and g++ warnings.
+dnl
+dnl $1 = GCC (default) or GXX
+dnl $2 = INTEL_COMPILER (default) or INTEL_CPLUSPLUS
+dnl $3 = CFLAGS (default) or CXXFLAGS
+AC_DEFUN([CF_INTEL_COMPILER],[
+AC_REQUIRE([AC_CANONICAL_HOST])
+ifelse([$2],,INTEL_COMPILER,[$2])=no
+
+if test "$ifelse([$1],,[$1],GCC)" = yes ; then
+	case $host_os in
+	linux*|gnu*)
+		AC_MSG_CHECKING(if this is really Intel ifelse([$1],GXX,C++,C) compiler)
+		cf_save_CFLAGS="$ifelse([$3],,CFLAGS,[$3])"
+		ifelse([$3],,CFLAGS,[$3])="$ifelse([$3],,CFLAGS,[$3]) -no-gcc"
+		AC_TRY_COMPILE([],[
+#ifdef __INTEL_COMPILER
+#else
+make an error
+#endif
+],[ifelse([$2],,INTEL_COMPILER,[$2])=yes
+cf_save_CFLAGS="$cf_save_CFLAGS -we147 -no-gcc"
+],[])
+		ifelse([$3],,CFLAGS,[$3])="$cf_save_CFLAGS"
+		AC_MSG_RESULT($ifelse([$2],,INTEL_COMPILER,[$2]))
+		;;
+	esac
+fi
 ])dnl
