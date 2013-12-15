@@ -3,6 +3,9 @@
  * Author:	T.E.Dickey
  * Created:	04 Dec 1985
  * Modified:
+ *		14 Dec 2013, minor fix for Quoted(); if the first character of
+ *			     a quoted string was a blank, it was added to the
+ *			     blanks category rather than to code.
  *		24 Aug 2013, ifdef to assume MinGW does globbing.
  *		16 Jul 2010, fix strict compiler warnings, e.g., with const.
  *		08 Jan 2006, correct bookkeeping for unterminated blocks.
@@ -95,7 +98,7 @@
 #include "patchlev.h"
 
 #ifndef	NO_IDENT
-static const char Id[] = "$Id: c_count.c,v 7.58 2013/08/25 00:40:19 tom Exp $";
+static const char Id[] = "$Id: c_count.c,v 7.59 2013/12/14 13:45:23 tom Exp $";
 #endif
 
 #include <stdio.h>
@@ -184,7 +187,7 @@ int _dowildard = -1;
 static int inFile(void);
 static int Comment(int cpp);
 static int Escape(void);
-static int String (int mark);
+static int Quoted(int mark);
 
 static FILE *File;
 static char **quotvec;
@@ -573,9 +576,9 @@ IncludeFile(int c)
     while (c == ' ' || c == '\t')
 	c = inFile();
     if (c == '"')
-	c = String (c);
+	c = Quoted(c);
     else if (c == '<')
-	c = String ('>');
+	c = Quoted('>');
     return c;
 }
 
@@ -629,7 +632,7 @@ Token(int c)
 	    if (c == ' ' || c == '\t' || c == '(') {
 		for (j = 0; j < quotdef; j++) {
 		    if (!strcmp(quotvec[j], bfr)) {
-			c = String ('"');
+			c = Quoted('"');
 			DEBUG("**%c**\n", c);
 			break;
 		    }
@@ -863,7 +866,7 @@ doFile(char *name)
 	    break;
 	case '"':
 	case '\'':
-	    c = String (c);
+	    c = Quoted(c);
 	    break;
 	case '{':
 	    DEBUG("char\t%c\n", c);
@@ -949,13 +952,15 @@ doFile(char *name)
  * string (perhaps because the leading quote was in a macro!).
  */
 static int
-String (int mark) {
-    int c = inFile();
+Quoted(int mark)
+{
     static const char *sccs_tag = "@(#)";
     const char *p = sccs_tag;	/* permit literal tab here only! */
+    int c;
 
     DEBUG("string\t%c", (mark == '>') ? '<' : mark);
     literal = TRUE;
+    c = inFile();
     while (c != EOF) {
 	if (c == '\n') {	/* this is legal, but not likely */
 	    One.flags_unquo++;	/* ...assume balance is in macro */

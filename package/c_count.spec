@@ -1,7 +1,7 @@
 Summary: c_count - C-language line counter
 %define AppProgram c_count
-%define AppVersion 7.13
-# $Id: c_count.spec,v 1.3 2013/08/24 19:24:03 tom Exp $
+%define AppVersion 7.14
+# $Id: c_count.spec,v 1.5 2013/12/14 20:43:01 tom Exp $
 Name: %{AppProgram}
 Version: %{AppVersion}
 Release: 1
@@ -9,7 +9,8 @@ License: MIT
 Group: Applications/Development
 URL: ftp://invisible-island.net/%{AppProgram}
 Source0: %{AppProgram}-%{AppVersion}.tgz
-Packager: Thomas Dickey <dickey@invisible-island.net>
+Vendor: Thomas E. Dickey
+Packager: Thomas E. Dickey <dickey@invisible-island.net>
 
 %description
 C_count  counts  lines  and  statements in C-language source files.  It
