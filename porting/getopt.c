@@ -1,6 +1,6 @@
 /* ::[[ @(#) getopt.c 1.5 89/03/11 05:40:23 ]]:: */
 #ifndef LINT
-static const char Id[] = "$Id: getopt.c,v 1.2 2002/11/22 22:06:46 tom Exp $";
+static const char Id[] = "$Id: getopt.c,v 1.3 2013/10/07 16:44:22 tom Exp $";
 #endif
 
 /*
@@ -25,6 +25,7 @@ static const char Id[] = "$Id: getopt.c,v 1.2 2002/11/22 22:06:46 tom Exp $";
 
 #include <stdio.h>
 #include <string.h>
+#include <getopt.h>
 
 #define ERR(szz,czz) if(opterr){fprintf(stderr,"%s%s%c\n",argv[0],szz,czz);}
 
@@ -34,7 +35,7 @@ int optopt;
 char *optarg;
 
 int
-getopt(int argc, char **argv, char *opts)
+getopt(int argc, char **argv, const char *opts)
 {
     static int sp = 1;
     register int c;

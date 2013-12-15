@@ -1,4 +1,4 @@
-# $Id: makefile.in,v 7.14 2013/08/24 19:19:04 tom Exp $
+# $Id: makefile.in,v 7.18 2013/10/07 16:43:54 tom Exp $
 # Makefile-template for 'c_count'
 
 SHELL		= /bin/sh
@@ -45,11 +45,21 @@ o		= .@OBJEXT@
 
 #### End of system configuration section. ####
 
+################################################################################
+.SUFFIXES : $o .i
+
 .c$o:
 	@RULE_CC@
 	@ECHO_CC@$(CC) -c $(CPPFLAGS) $(CFLAGS) $<
 
-OBJ = $(THIS)$o
+.c.i :
+	@RULE_CC@
+	@ECHO_CC@$(CPP) -C $(CPPFLAGS) $*.c >$@
+
+################################################################################
+
+EXTRAOBJ = @EXTRAOBJ@
+OBJ = $(THIS)$o $(EXTRAOBJ)
 
 TRANSFORM_BIN = sed 's/$x$$//'       |sed '$(transform)'|sed 's/$$/$x/'
 TRANSFORM_MAN = sed 's/$(manext)$$//'|sed '$(transform)'|sed 's/$$/$(manext)/'
@@ -74,16 +84,16 @@ uninstall:
 	rm -f $(MANDIR)/$(actual_man)
 
 mostlyclean:
-	- rm -f *$o core *~ *.BAK
+	- rm -f $(OBJ) getopt.c core *~ *.BAK *.i
 	- rm -f Part?? part.*
 
-clean: mostlyclean
+clean :: mostlyclean
 	- rm -f $(THIS)$x
 
-distclean: clean
+distclean : clean
 	- rm -f makefile config.log config.cache config.status config.h
 
-realclean: distclean
+realclean : distclean
 	- rm -f tags TAGS # don't remove configure!
 
 check: $(THIS)$x
@@ -123,3 +133,6 @@ dist: MANIFEST
 	rm -rf `cat .fname` .fname .files
 
 $(THIS)$o:	config.h
+getopt.c:	$(srcdir)/porting/getopt.c
+	-@ rm -f $@
+	cp $? $@
