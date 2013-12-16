@@ -1,4 +1,6 @@
--- $Id: CHANGES,v 7.27 2013/12/14 15:56:54 tom Exp $
+-- $Id: CHANGES,v 7.28 2013/12/15 20:59:35 tom Exp $
+
+2013/12/15 (c_count 7.15)
 
 2013/12/14 (c_count 7.14)
 	+ add script for cross-compiling NullSoft installer to MinGW.

@@ -3,6 +3,9 @@
  * Author:	T.E.Dickey
  * Created:	04 Dec 1985
  * Modified:
+ *		15 Dec 2013, ensure that parse-state returns to "code" after a
+ *			     comment is completed.  Extend parsing for numbers
+ *			     to improve error-checking.
  *		14 Dec 2013, minor fix for Quoted(); if the first character of
  *			     a quoted string was a blank, it was added to the
  *			     blanks category rather than to code.
@@ -98,7 +101,7 @@
 #include "patchlev.h"
 
 #ifndef	NO_IDENT
-static const char Id[] = "$Id: c_count.c,v 7.59 2013/12/14 13:45:23 tom Exp $";
+static const char Id[] = "$Id: c_count.c,v 7.62 2013/12/16 01:36:13 tom Exp $";
 #endif
 
 #include <stdio.h>
@@ -234,12 +237,21 @@ static STATS All, One;		/* total, per-file stats */
 
 static STATS Old;		/* previous data for summarize() */
 
-enum PSTATE {
+typedef enum {
+    tNone = 0,
+    tChar,
+    tNumber,
+    tToken
+} TSTATE;
+typedef enum {
     pCode,
     pComment,
+    pCppComment,
     pPreprocessor
-};
-static enum PSTATE pstate;
+} PSTATE;
+static PSTATE pstate;
+
+#define IsComment(s) ((s) == pComment || (s) == pCppComment)
 
 static int within_stmt;		/* nonzero within statements */
 
@@ -582,6 +594,20 @@ IncludeFile(int c)
     return c;
 }
 
+static int
+guessToken(int c)
+{
+    int result;
+    if (TOKEN(c)) {
+	result = tToken;
+    } else if (NUMBER(c)) {
+	result = tNumber;
+    } else {
+	result = tChar;
+    }
+    return result;
+}
+
 /*
  * If '-q' option is in effect, append to the token-buffer until a token is
  * complete.  Test the completed token to see if it matches any of the strings
@@ -601,60 +627,151 @@ Token(int c)
     static char *bfr;
     static size_t used = 0;
     static size_t have = 0;
+    static TSTATE tstate = tNone;
+    static char exponents[] = "eE";
+    static char suffixes[] = "uUlL";
 
-    enum PSTATE bstate = pstate;
+    PSTATE bstate = pstate;
     int j = 0;
 
     if (bfr == 0)
 	bfr = malloc(have = 80);
 
-    if (TOKEN(c)) {
-	int word_length = 0;
-	One.words_total++;
-	do {
-	    if (used + 2 >= have)
-		bfr = realloc(bfr, have *= 2);
-	    bfr[used++] = (char) c;
-	    word_length++;
-	    c = inFile();
-	} while (TOKEN2(c));
-	bfr[used] = EOS;
+    if (tstate == tNone) {
+	tstate = guessToken(c);
+    }
 
-	DEBUG("name\t%s\n", bfr);
+    switch (tstate) {
+    case tToken:
+	{
+	    int word_length = 0;
+	    One.words_total++;
+	    do {
+		if (used + 2 >= have)
+		    bfr = realloc(bfr, have *= 2);
+		bfr[used++] = (char) c;
+		word_length++;
+		c = inFile();
+	    } while (TOKEN2(c));
+	    bfr[used] = EOS;
 
-	One.words_length += word_length;
-	if (word_length >= limit_name)
-	    One.flags_2long++;
+	    DEBUG("name\t%s\n", bfr);
 
-	if (pstate == pPreprocessor && !strcmp(bfr, "include")) {
-	    c = IncludeFile(c);
-	} else if (quotdef) {
-	    if (c == ' ' || c == '\t' || c == '(') {
-		for (j = 0; j < quotdef; j++) {
-		    if (!strcmp(quotvec[j], bfr)) {
-			c = Quoted('"');
-			DEBUG("**%c**\n", c);
-			break;
+	    One.words_length += word_length;
+	    if (word_length >= limit_name)
+		One.flags_2long++;
+
+	    if (pstate == pPreprocessor && !strcmp(bfr, "include")) {
+		c = IncludeFile(c);
+	    } else if (quotdef) {
+		if (c == ' ' || c == '\t' || c == '(') {
+		    for (j = 0; j < quotdef; j++) {
+			if (!strcmp(quotvec[j], bfr)) {
+			    c = Quoted('"');
+			    DEBUG("**%c**\n", c);
+			    break;
+			}
 		    }
 		}
 	    }
 	}
-    } else if (NUMBER(c)) {
-	do {
-	    if (used + 2 >= have)
-		bfr = realloc(bfr, have *= 2);
-	    bfr[used++] = (char) c;
-	    c = inFile();
-	} while (NUMBER2(c));
-	bfr[used] = EOS;
+	break;
+    case tNumber:
+	{
+	    int digits = 0;
+	    int lead_0 = 0;
+	    int baseis = 0;
+	    int gotdot = 0;
+	    int gotexp = 0;
+	    int gotend = 0;
 
-	DEBUG("number\t%s\n", bfr);
-    } else {			/* punctuation */
+	    used = 0;
+	    if (isdigit(c)) {
+		++digits;
+	    } else if (c == '.') {
+		gotdot = 1;
+	    }
+	    if (c == '0') {
+		lead_0 = 1;
+	    }
+
+	    for (;;) {
+		if (used + 4 >= have)
+		    bfr = realloc(bfr, have = (2 * (used + 2)));
+		bfr[used++] = (char) c;
+		c = inFile();
+		if (c <= 0) {
+		    break;
+		} else if (gotend) {
+		    if ((strchr) (suffixes, c) == 0) {
+			break;
+		    }
+		} else if (gotdot || (baseis == 0 && digits && !isdigit(c)
+				      && (strchr) (exponents, c) != 0)) {
+		    if (gotexp == 1) {
+			if (c == '+' || c == '-' || isdigit(c)) {
+			    gotexp = 2;
+			} else {
+			    break;
+			}
+		    } else if (gotexp == 2) {
+			if ((strchr) (suffixes, c)) {
+			    gotexp = 3;
+			} else if (!isdigit(c)) {
+			    break;
+			}
+		    } else if (gotexp == 3) {
+			if ((strchr) (suffixes, c) == 0) {
+			    break;
+			}
+		    } else if ((strchr) (exponents, c) != 0) {
+			gotdot = 1;
+			gotexp = 1;
+		    } else if (isdigit(c)) {
+			++digits;
+		    } else {
+			break;
+		    }
+		} else if (c == '.') {
+		    gotdot = 1;
+		} else if (lead_0 && used == 1) {
+		    if (c == 'x' || c == 'X') {
+			baseis = 16;
+		    } else if (isoctal(c)) {
+			baseis = 8;
+		    } else {
+			break;
+		    }
+		} else if ((strchr) (suffixes, c) != 0) {
+		    if (digits) {
+			gotend = 1;
+		    } else {
+			break;
+		    }
+		} else if (baseis == 16 && isxdigit(c)) {
+		    ++digits;
+		} else if (baseis == 8 && isoctal(c)) {
+		    ++digits;
+		} else if (isdigit(c)) {
+		    ++digits;
+		} else {
+		    break;
+		}
+	    }
+	    bfr[used] = EOS;
+
+	    DEBUG("number\t%s\n", bfr);
+	}
+	break;
+    case tNone:
+	/* FALLTHRU */
+    case tChar:		/* punctuation */
 	if (debug) {
 	    if (isgraph(c) && strchr("{};/\\", c) == 0)
 		DEBUG("char\t%c\n", c);
 	}
 	c = inFile();
+	break;
     }
     used = 0;
 
@@ -668,6 +785,7 @@ Token(int c)
 	have = 0;
     }
 #endif
+    tstate = tNone;
     return (c);
 }
 
@@ -681,7 +799,7 @@ countChar(int ch)
     static int had_note;
     static int had_code;
     static int cnt_code;
-    static enum PSTATE bstate;
+    static PSTATE bstate;
 
     if (ch < 0) {
 	within_stmt = 0;
@@ -731,8 +849,8 @@ countChar(int ch)
 	    pstate = pPreprocessor;
 	} else if (ch == '\n') {
 	    if (cnt_code) {
-		had_code += (pstate != pComment);
-		if (pstate == pComment)
+		had_code += !IsComment(pstate);
+		if (IsComment(pstate))
 		    had_note = TRUE;
 		cnt_code = 0;
 	    }
@@ -740,8 +858,13 @@ countChar(int ch)
 	    if (is_blank) {
 		One.lines_blank++;
 	    } else {
-		if (pstate == pPreprocessor
-		    || bstate == pPreprocessor) {
+		if (pstate == pCppComment
+		    && bstate == pPreprocessor) {
+		    One.lines_prepro++;
+		    One.lines_inline++;
+		    pstate = pPreprocessor;
+		} else if (pstate == pPreprocessor
+			   || bstate == pPreprocessor) {
 		    One.lines_prepro++;
 		    if (had_note) {
 			One.lines_inline++;
@@ -751,7 +874,7 @@ countChar(int ch)
 		    if (had_note) {
 			One.lines_inline++;
 		    }
-		} else if (had_note || pstate == pComment) {
+		} else if (had_note || IsComment(pstate)) {
 		    One.lines_notes++;
 		}
 		had_code =
@@ -783,6 +906,8 @@ countChar(int ch)
 	    is_blank = FALSE;
 	    switch (pstate) {
 	    case pComment:
+		/* FALLTHRU */
+	    case pCppComment:
 		if (cnt_code) {
 		    had_code += (cnt_code > 2);
 		    cnt_code = 0;
@@ -857,12 +982,14 @@ doFile(char *name)
 	switch (c) {
 	case '/':
 	    c = Token(EOS);
-	    if (c == '*')
+	    if (c == '*') {
 		c = Comment(FALSE);
-	    else if (c == '/')
+	    } else if (c == '/') {
 		c = Comment(TRUE);
-	    else
+		pstate = pCode;
+	    } else {
 		DEBUG("char\t%c\n", c);
+	    }
 	    break;
 	case '"':
 	case '\'':
@@ -1081,15 +1208,15 @@ strbcmp(char *a, char *b)
 static int
 filter_history(int first)
 {
-    enum HSTATE {
+    typedef enum {
 	unknown,
 	cms,
 	rlog,
 	revision,
 	contents
-    };
+    } HSTATE;
     static const char *CMS_ = "DEC/CMS REPLACEMENT HISTORY,";
-    static enum HSTATE hstate = unknown;
+    static HSTATE hstate = unknown;
     static char buffer[BUFSIZ];
     static char prefix[BUFSIZ];
     static size_t len;
@@ -1173,7 +1300,7 @@ Comment(int c_plus_plus)
 {
     int c;
     int d = 0;
-    enum PSTATE save_st = pstate;
+    PSTATE save_st = pstate;
 
     if (within_stmt == 2) {
 	One.stmts_total--;
@@ -1188,7 +1315,9 @@ Comment(int c_plus_plus)
     }
     One.chars_ignore += 2;	/* ignore the comment-delimiter */
 
-    pstate = pComment;
+    pstate = (c_plus_plus
+	      ? pCppComment
+	      : pComment);
     c = filter_history(TRUE);
     while (c != EOF) {
 	if (c_plus_plus) {
