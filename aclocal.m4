@@ -1,7 +1,7 @@
-dnl $Id: aclocal.m4,v 6.13 2013/12/09 13:25:32 tom Exp $
+dnl $Id: aclocal.m4,v 6.14 2014/01/01 13:23:04 tom Exp $
 dnl autoconf macros for 'conflict'
 dnl ---------------------------------------------------------------------------
-dnl Copyright 2002-2011,2013 Thomas E. Dickey
+dnl Copyright 2002-2013,2014 Thomas E. Dickey
 dnl 
 dnl Permission is hereby granted, free of charge, to any person obtaining a
 dnl copy of this software and associated documentation files (the
@@ -662,6 +662,60 @@ cf_save_CFLAGS="$cf_save_CFLAGS -we147 -no-gcc"
 		;;
 	esac
 fi
+])dnl
+dnl ---------------------------------------------------------------------------
+dnl CF_MAKE_DOCS version: 2 updated: 2013/01/02 20:04:08
+dnl ------------
+dnl $1 = name(s) to generate rules for
+dnl $2 = suffix of corresponding manpages used as input.
+define([CF_MAKE_DOCS],[
+test -z "$cf_make_docs" && cf_make_docs=0
+
+cf_output=makefile
+test -f "$cf_output" || cf_output=Makefile
+
+if test "$cf_make_docs" = 0
+then
+cat >>$cf_output <<"CF_EOF"
+################################################################################
+.SUFFIXES : .html .$2 .man .ps .pdf .txt
+
+.$2.html :
+	GROFF_NO_SGR=stupid [$](SHELL) -c "tbl [$]*.$2 | groff -P -o0 -I$*_ -Thtml -man" >[$]@
+
+.$2.ps :
+	[$](SHELL) -c "tbl [$]*.$2 | groff -man" >[$]@
+
+.$2.txt :
+	GROFF_NO_SGR=stupid [$](SHELL) -c "tbl [$]*.$2 | nroff -Tascii -man | col -bx" >[$]@
+
+.ps.pdf :
+	ps2pdf [$]*.ps
+
+CF_EOF
+	cf_make_docs=1
+fi
+
+for cf_name in $1
+do
+cat >>$cf_output <<CF_EOF
+################################################################################
+docs-$cf_name \\
+docs :: $cf_name.html \\
+	$cf_name.pdf \\
+	$cf_name.ps \\
+	$cf_name.txt
+
+clean \\
+docs-clean ::
+	rm -f $cf_name.html $cf_name.pdf $cf_name.ps $cf_name.txt
+
+$cf_name.html : $cf_name.$2
+$cf_name.pdf : $cf_name.ps
+$cf_name.ps : $cf_name.$2
+$cf_name.txt : $cf_name.$2
+CF_EOF
+done
 ])dnl
 dnl ---------------------------------------------------------------------------
 dnl CF_MAKE_TAGS version: 6 updated: 2010/10/23 15:52:32
