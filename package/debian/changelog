@@ -1,3 +1,9 @@
+conflict (20140101) unstable; urgency=low
+
+  * update configure script
+
+ -- Thomas E. Dickey <dickey@invisible-island.net>  Wed, 01 Jan 2014 08:44:32 -0500
+
 conflict (20131209) unstable; urgency=high
 
   * update configure script

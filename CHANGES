@@ -1,5 +1,9 @@
-$Id: CHANGES,v 6.17 2013/12/09 13:19:16 tom Exp $
+$Id: CHANGES,v 6.18 2014/01/01 13:21:31 tom Exp $
 ------------------------------------------------------------------------------
+
+2014/01/01
+	+ add "docs" rule to makefile
+	+ update config.guess
 
 2013/12/09
 	+ updated configure macros, e.g., clang and MinGW fixes
