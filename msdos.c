@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 1995,2004 by Thomas E. Dickey.  All Rights Reserved.             *
+ * Copyright 1995-2004,2014 by Thomas E. Dickey.  All Rights Reserved.        *
  *                                                                            *
  * Permission to use, copy, modify, and distribute this software and its      *
  * documentation for any purpose and without fee is hereby granted, provided  *
@@ -19,7 +19,7 @@
  ******************************************************************************/
 
 #ifndef NO_IDENT
-static const char Id[] = "$Id: msdos.c,v 6.5 2004/06/19 14:37:53 tom Exp $";
+static const char Id[] = "$Id: msdos.c,v 6.6 2014/04/15 08:10:18 tom Exp $";
 #endif
 
 /*
@@ -65,7 +65,7 @@ have_drive(char *name)
 int
 same_drive(char *a, char *b)
 {
-    return have_drive(a) && have_drive(b) && (*a == *b);
+    return have_drive(a) && have_drive(b) && (toupper(*a) == toupper(*b));
 }
 
 int
