@@ -1,5 +1,9 @@
-$Id: CHANGES,v 6.18 2014/01/01 13:21:31 tom Exp $
+$Id: CHANGES,v 6.20 2014/04/15 08:24:28 tom Exp $
 ------------------------------------------------------------------------------
+
+2014/04/15
+	+ updated configure macros for Intel compiler and Solaris
+	+ ensure that DOS-style driver letters are compared ignoring case.
 
 2014/01/01
 	+ add "docs" rule to makefile
