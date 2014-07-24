@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 6.15 2014/04/15 08:24:36 tom Exp $
+dnl $Id: aclocal.m4,v 6.19 2014/07/23 21:15:51 tom Exp $
 dnl autoconf macros for 'conflict'
 dnl ---------------------------------------------------------------------------
 dnl Copyright 2002-2013,2014 Thomas E. Dickey
@@ -28,7 +28,7 @@ dnl sale, use or other dealings in this Software without prior written
 dnl authorization.
 dnl ---------------------------------------------------------------------------
 dnl ---------------------------------------------------------------------------
-dnl CF_ACVERSION_CHECK version: 4 updated: 2013/03/04 19:52:56
+dnl CF_ACVERSION_CHECK version: 5 updated: 2014/06/04 19:11:49
 dnl ------------------
 dnl Conditionally generate script according to whether we're using a given autoconf.
 dnl
@@ -37,7 +37,7 @@ dnl $2 = code to use if AC_ACVERSION is at least as high as $1.
 dnl $3 = code to use if AC_ACVERSION is older than $1.
 define([CF_ACVERSION_CHECK],
 [
-ifdef([AC_ACVERSION], ,[m4_copy([m4_PACKAGE_VERSION],[AC_ACVERSION])])dnl
+ifdef([AC_ACVERSION], ,[ifdef([AC_AUTOCONF_VERSION],[m4_copy([AC_AUTOCONF_VERSION],[AC_ACVERSION])],[m4_copy([m4_PACKAGE_VERSION],[AC_ACVERSION])])])dnl
 ifdef([m4_version_compare],
 [m4_if(m4_version_compare(m4_defn([AC_ACVERSION]), [$1]), -1, [$3], [$2])],
 [CF_ACVERSION_COMPARE(
@@ -54,7 +54,7 @@ define([CF_ACVERSION_COMPARE],
 [ifelse([$8], , ,[$8])],
 [ifelse([$9], , ,[$9])])])dnl
 dnl ---------------------------------------------------------------------------
-dnl CF_ADD_CFLAGS version: 10 updated: 2010/05/26 05:38:42
+dnl CF_ADD_CFLAGS version: 11 updated: 2014/07/22 05:32:57
 dnl -------------
 dnl Copy non-preprocessor flags to $CFLAGS, preprocessor flags to $CPPFLAGS
 dnl The second parameter if given makes this macro verbose.
@@ -79,7 +79,7 @@ no)
 		-D*)
 			cf_tst_cflags=`echo ${cf_add_cflags} |sed -e 's/^-D[[^=]]*='\''\"[[^"]]*//'`
 
-			test "${cf_add_cflags}" != "${cf_tst_cflags}" \
+			test "x${cf_add_cflags}" != "x${cf_tst_cflags}" \
 				&& test -z "${cf_tst_cflags}" \
 				&& cf_fix_cppflags=yes
 
@@ -116,7 +116,7 @@ yes)
 
 	cf_tst_cflags=`echo ${cf_add_cflags} |sed -e 's/^[[^"]]*"'\''//'`
 
-	test "${cf_add_cflags}" != "${cf_tst_cflags}" \
+	test "x${cf_add_cflags}" != "x${cf_tst_cflags}" \
 		&& test -z "${cf_tst_cflags}" \
 		&& cf_fix_cppflags=no
 	;;
@@ -626,6 +626,64 @@ make an error
 test "$cf_cv_gnu_source" = yes && CPPFLAGS="$CPPFLAGS -D_GNU_SOURCE"
 ])dnl
 dnl ---------------------------------------------------------------------------
+dnl CF_INSTALL_OPTS version: 1 updated: 2014/07/21 18:19:51
+dnl ---------------
+dnl prompt for/fill-in useful install-program options
+AC_DEFUN([CF_INSTALL_OPTS],
+[
+CF_INSTALL_OPT_S
+CF_INSTALL_OPT_O
+])dnl
+dnl ---------------------------------------------------------------------------
+dnl CF_INSTALL_OPT_O version: 1 updated: 2014/07/21 18:19:51
+dnl ----------------
+dnl Almost all "install" programs default to the current user's ownership.
+dnl Almost - MINIX is an exception.
+AC_DEFUN([CF_INSTALL_OPT_O],
+[
+AC_MSG_CHECKING(if install needs to be told about ownership)
+case `$ac_config_guess` in #(vi
+*minix)
+	with_install_o=yes
+	;;
+*)
+	with_install_o=no
+	;;
+esac
+
+AC_MSG_RESULT($with_install_o)
+if test "x$with_install_o" = xyes
+then
+	INSTALL_OPT_O=`id root|sed -e 's/uid=[[0-9]]*(/ -o /' -e 's/gid=[[0-9]]*(/ -g /' -e 's/ [[^=[:space:]]][[^=[:space:]]]*=.*/ /' -e 's/)//g'`
+else
+	INSTALL_OPT_O=
+fi
+
+AC_SUBST(INSTALL_OPT_O)
+])dnl
+dnl ---------------------------------------------------------------------------
+dnl CF_INSTALL_OPT_S version: 1 updated: 2014/07/21 18:19:51
+dnl ----------------
+dnl By default, we should strip executables which are installed, but leave the
+dnl ability to suppress that for unit-testing.
+AC_DEFUN([CF_INSTALL_OPT_S],
+[
+AC_MSG_CHECKING(if you want to install stripped executables)
+CF_ARG_DISABLE(stripping,
+	[  --disable-stripping     do not strip installed executables],
+	[with_stripping=no],
+	[with_stripping=yes])
+AC_MSG_RESULT($with_stripping)
+
+if test "$with_stripping" = yes
+then
+	INSTALL_OPT_S="-s"
+else
+	INSTALL_OPT_S=
+fi
+AC_SUBST(INSTALL_OPT_S)
+])dnl
+dnl ---------------------------------------------------------------------------
 dnl CF_INTEL_COMPILER version: 6 updated: 2014/03/17 13:13:07
 dnl -----------------
 dnl Check if the given compiler is really the Intel compiler for Linux.  It
@@ -895,7 +953,7 @@ fi
 
 ])dnl
 dnl ---------------------------------------------------------------------------
-dnl CF_PROG_CC version: 3 updated: 2012/10/06 15:31:55
+dnl CF_PROG_CC version: 4 updated: 2014/07/12 18:57:58
 dnl ----------
 dnl standard check for CC, plus followup sanity checks
 dnl $1 = optional parameter to pass to AC_PROG_CC to specify compiler name
@@ -905,7 +963,7 @@ CF_GCC_VERSION
 CF_ACVERSION_CHECK(2.52,
 	[AC_PROG_CC_STDC],
 	[CF_ANSI_CC_REQD])
-CF_CC_ENV_FLAGS 
+CF_CC_ENV_FLAGS
 ])dnl
 dnl ---------------------------------------------------------------------------
 dnl CF_PROG_EXT version: 11 updated: 2012/10/06 08:57:51
@@ -1052,7 +1110,7 @@ CF_NO_LEAKS_OPTION(valgrind,
 	[USE_VALGRIND])
 ])dnl
 dnl ---------------------------------------------------------------------------
-dnl CF_XOPEN_SOURCE version: 46 updated: 2014/02/09 19:30:15
+dnl CF_XOPEN_SOURCE version: 47 updated: 2014/07/23 17:11:49
 dnl ---------------
 dnl Try to get _XOPEN_SOURCE defined properly that we can use POSIX functions,
 dnl or adapt to the vendor's definitions to get equivalent functionality,
@@ -1103,6 +1161,9 @@ irix[[56]].*) #(vi
 linux*|gnu*|mint*|k*bsd*-gnu) #(vi
 	CF_GNU_SOURCE
 	;;
+minix*) #(vi
+	cf_xopen_source="-D_NETBSD_SOURCE" # POSIX.1-2001 features are ifdef'd with this...
+	;;
 mirbsd*) #(vi
 	# setting _XOPEN_SOURCE or _POSIX_SOURCE breaks <sys/select.h> and other headers which use u_int / u_short types
 	cf_XOPEN_SOURCE=
@@ -1139,7 +1200,7 @@ solaris2.*) #(vi
 esac
 
 if test -n "$cf_xopen_source" ; then
-	CF_ADD_CFLAGS($cf_xopen_source)
+	CF_ADD_CFLAGS($cf_xopen_source,true)
 fi
 
 dnl In anything but the default case, we may have system-specific setting
