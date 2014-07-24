@@ -1,5 +1,9 @@
-$Id: CHANGES,v 6.20 2014/04/15 08:24:28 tom Exp $
+$Id: CHANGES,v 6.21 2014/07/23 08:13:30 tom Exp $
 ------------------------------------------------------------------------------
+
+2014/07/23
+	+ add install options -o and -s, e.g., for Minix port.
+	+ update config.guess
 
 2014/04/15
 	+ updated configure macros for Intel compiler and Solaris

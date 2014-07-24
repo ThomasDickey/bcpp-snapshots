@@ -1,8 +1,8 @@
-# $Id: makefile.in,v 6.26 2014/04/15 08:22:57 tom Exp $
+# $Id: makefile.in,v 6.28 2014/07/23 08:17:37 tom Exp $
 # Makefile-template for 'conflict'
 
 THIS		= conflict
-RELEASE		= t20140415
+RELEASE		= t20140723
 
 #### Start of system configuration section. ####
 
@@ -12,8 +12,8 @@ VPATH  		= @srcdir@
 
 CC		= @CC@
 LINK		= $(CC)
-INSTALL		= @INSTALL@
-INSTALL_PROGRAM	= @INSTALL_PROGRAM@
+INSTALL		= @INSTALL@ @INSTALL_OPT_O@
+INSTALL_PROGRAM	= @INSTALL_PROGRAM@ @INSTALL_OPT_S@
 INSTALL_DATA	= @INSTALL_DATA@
 
 CTAGS		= @CTAGS@
