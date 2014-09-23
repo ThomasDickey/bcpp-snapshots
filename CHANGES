@@ -1,6 +1,12 @@
--- $Id: CHANGES,v 7.28 2013/12/15 20:59:35 tom Exp $
+-- $Id: CHANGES,v 7.29 2014/09/22 19:59:25 tom Exp $
 
-2013/12/15 (c_count 7.15)
+2014/09/22 (c_count 7.15)
+	+ ensure that parse-state returns to "code" after a comment is
+	  completed.  Extend parsing for numbers to improve error-checking.
+
+	+ updated configure macros
+
+	+ update config.guess and config.sub
 
 2013/12/14 (c_count 7.14)
 	+ add script for cross-compiling NullSoft installer to MinGW.
