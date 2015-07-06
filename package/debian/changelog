@@ -1,3 +1,9 @@
+ccount (7.16) unstable; urgency=low
+
+  * routine packaging updates
+
+ -- Thomas E. Dickey <dickey@invisible-island.net>  Sun, 05 Jul 2015 19:53:34 -0400
+
 ccount (7.15) unstable; urgency=low
 
   * errata found comparing with lex-metrics
