@@ -1,7 +1,7 @@
 Upstream source http://invisible-island.net/conflict/conflict.html
 
 -------------------------------------------------------------------------------
-Copyright 1995-2013,2014 by Thomas E. Dickey
+Copyright 1995-2014,2015 by Thomas E. Dickey
 
 Permission to use, copy, modify, and distribute this software and its
 documentation for any purpose and without fee is hereby granted,
@@ -23,7 +23,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 Files: aclocal.m4
 Licence: other-BSD
-Copyright:  2002-2013,2014 by Thomas E. Dickey
+Copyright:  2002-2014,2015 by Thomas E. Dickey
     Permission is hereby granted, free of charge, to any person obtaining a
     copy of this software and associated documentation files (the
     "Software"), to deal in the Software without restriction, including
