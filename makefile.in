@@ -1,4 +1,4 @@
-# $Id: makefile.in,v 7.18 2013/10/07 16:43:54 tom Exp $
+# $Id: makefile.in,v 7.19 2015/07/05 23:51:49 tom Exp $
 # Makefile-template for 'c_count'
 
 SHELL		= /bin/sh
@@ -91,7 +91,7 @@ clean :: mostlyclean
 	- rm -f $(THIS)$x
 
 distclean : clean
-	- rm -f makefile config.log config.cache config.status config.h
+	- rm -f makefile config.log config.cache config.status config.h man2html.tmp
 
 realclean : distclean
 	- rm -f tags TAGS # don't remove configure!
