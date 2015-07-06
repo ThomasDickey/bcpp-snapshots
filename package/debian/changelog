@@ -1,3 +1,9 @@
+conflict (20150705) unstable; urgency=low
+
+  * update configure script, add --with-man2html option
+
+ -- Thomas E. Dickey <dickey@invisible-island.net>  Sun, 05 Jul 2015 20:27:15 -0400
+
 conflict (20140723) unstable; urgency=low
 
   * update configure script
