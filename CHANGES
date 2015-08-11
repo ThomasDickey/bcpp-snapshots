@@ -1,5 +1,11 @@
--- $Id: CHANGES,v 1.44 2013/12/09 12:29:50 tom Exp $
+-- $Id: CHANGES,v 1.46 2015/08/11 08:42:26 tom Exp $
 -- Thomas E. Dickey <dickey@invisible-island.net>
+
+2015/08/11
+	+ fix an off-by-one in limit-checking for command-line option values
+	  (patch by Miriam Ruiz).
+	+ updated configure script macros
+	+ update config.guess, config.sub
 
 2013/12/09
 	+ updated configure script macros
