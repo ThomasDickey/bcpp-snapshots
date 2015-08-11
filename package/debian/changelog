@@ -1,3 +1,9 @@
+bcpp (20150811) unstable; urgency=low
+
+  * update configure script
+
+ -- Thomas E. Dickey <dickey@invisible-island.net>  Tue, 11 Aug 2015 04:12:18 -0400
+
 bcpp (20131209) unstable; urgency=low
 
   * update configure script

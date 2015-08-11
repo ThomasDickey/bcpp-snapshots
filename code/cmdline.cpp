@@ -1,7 +1,7 @@
 #ifndef _CMDLINE_CODE
 #define _CMDLINE_CODE
 
-// $Id: cmdline.cpp,v 1.24 2009/06/26 00:52:53 tom Exp $
+// $Id: cmdline.cpp,v 1.25 2015/08/11 08:37:00 Miriam.Ruiz Exp $
 // Program C(++) Beautifier Written By Steven De Toni ACBC 11 12/94
 // Revised 1999 - Thomas Dickey
 //
@@ -96,7 +96,7 @@ void PrintProgramHelp (void)
 // integer assignment
 static void intOption (int& cmdCount, int argc, char* argv[], int &result )
 {
-    if (cmdCount++ <= (argc-1))
+    if (++cmdCount <= (argc-1))
     {
         result = atoi (argv[cmdCount]);
     }
@@ -110,7 +110,7 @@ static void intOption (int& cmdCount, int argc, char* argv[], int &result )
 // string assignment
 static void strOption (int& cmdCount, int argc, char* argv[], char * &result)
 {
-    if (cmdCount++ <= (argc-1))
+    if (++cmdCount <= (argc-1))
     {
         result = argv[cmdCount];
     }
