@@ -1,10 +1,10 @@
-; $Id: c_count.nsi,v 1.4 2015/07/05 23:58:02 tom Exp $
+; $Id: c_count.nsi,v 1.5 2015/09/25 00:20:01 tom Exp $
 ; Script generated with the Venis Install Wizard
 
 ; Define your application name
 !define APPNAME "c_count"
 !define VERSION_MAJOR "7"
-!define VERSION_MINOR "16"
+!define VERSION_MINOR "17"
 !define VERSION "${VERSION_MAJOR}.${VERSION_MINOR}"
 !define APPNAMEANDVERSION "${APPNAME} ${VERSION}"
 
