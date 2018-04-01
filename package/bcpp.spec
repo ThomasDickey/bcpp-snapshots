@@ -1,13 +1,13 @@
 Summary: bcpp - C(++) beautifier
 %define AppProgram bcpp
-%define AppVersion 20150811
-# $Id: bcpp.spec,v 1.3 2015/08/11 08:13:00 tom Exp $
+%define AppVersion 20180401
+# $Id: bcpp.spec,v 1.5 2018/04/01 19:56:57 tom Exp $
 Name: %{AppProgram}
 Version: %{AppVersion}
 Release: 1
 License: MIT
 Group: Applications/Development
-URL: ftp://invisible-island.net/%{AppProgram}
+URL: ftp://ftp.invisible-island.net/%{AppProgram}
 Source0: %{AppProgram}-%{AppVersion}.tgz
 Packager: Thomas Dickey <dickey@invisible-island.net>
 
@@ -22,28 +22,31 @@ a simple algorithm for indenting embedded SQL.
 
 %prep
 
+# no need for debugging symbols...
+%define debug_package %{nil}
+
 %setup -q -n %{AppProgram}-%{AppVersion}
 
 %build
 
 CPPFLAGS="$CPPFLAGS -DBCPP_CONFIG_DIR=\"%{_sysconfdir}\"" \
 INSTALL_PROGRAM='${INSTALL}' \
-	./configure \
-		--program-prefix=b \
-		--target %{_target_platform} \
-		--prefix=%{_prefix} \
-		--bindir=%{_bindir} \
-		--datadir=%{_datadir} \
-		--sysconfdir=%{_sysconfdir} \
-		--libdir=%{_libdir} \
-		--mandir=%{_mandir}
+./configure \
+ --program-prefix=b \
+ --target %{_target_platform} \
+ --prefix=%{_prefix} \
+ --bindir=%{_bindir} \
+ --datadir=%{_datadir} \
+ --sysconfdir=%{_sysconfdir} \
+ --libdir=%{_libdir} \
+ --mandir=%{_mandir}
 
 make
 
 %install
 [ "$RPM_BUILD_ROOT" != "/" ] && rm -rf $RPM_BUILD_ROOT
 
-make install                    DESTDIR=$RPM_BUILD_ROOT
+make install DESTDIR=$RPM_BUILD_ROOT
 
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}
 install code/bcpp.cfg $RPM_BUILD_ROOT%{_sysconfdir}
@@ -62,6 +65,9 @@ strip $RPM_BUILD_ROOT%{_bindir}/%{AppProgram}
 
 %changelog
 # each patch should add its ChangeLog entries here
+
+* Sun Apr 01 2018 Thomas Dickey
+- update ftp url, suppress debug package
 
 * Sun Mar 18 2012 Thomas Dickey
 - initial version

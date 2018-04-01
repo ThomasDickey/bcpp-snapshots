@@ -1,7 +1,7 @@
-dnl $Id: aclocal.m4,v 1.13 2015/08/11 08:09:24 tom Exp $
+dnl $Id: aclocal.m4,v 1.14 2018/04/01 19:38:34 tom Exp $
 dnl autoconf macros for BCPP
 dnl See
-dnl		http://invisible-island.net/autoconf/ 
+dnl		https://invisible-island.net/autoconf/ 
 dnl ---------------------------------------------------------------------------
 dnl ---------------------------------------------------------------------------
 dnl CF_ARG_DISABLE version: 3 updated: 1999/03/30 17:24:31
@@ -138,7 +138,7 @@ AC_SUBST(SHOW_CC)
 AC_SUBST(ECHO_CC)
 ])dnl
 dnl ---------------------------------------------------------------------------
-dnl CF_GXX_VERSION version: 7 updated: 2012/06/16 14:55:39
+dnl CF_GXX_VERSION version: 8 updated: 2017/02/11 14:48:57
 dnl --------------
 dnl Check for version of g++
 AC_DEFUN([CF_GXX_VERSION],[
@@ -147,7 +147,11 @@ GXX_VERSION=none
 if test "$GXX" = yes; then
 	AC_MSG_CHECKING(version of ${CXX:-g++})
 	GXX_VERSION="`${CXX:-g++} --version| sed -e '2,$d' -e 's/^.*(GCC) //' -e 's/^[[^0-9.]]*//' -e 's/[[^0-9.]].*//'`"
-	test -z "$GXX_VERSION" && GXX_VERSION=unknown
+	if test -z "$GXX_VERSION"
+	then
+		GXX_VERSION=unknown
+		GXX=no
+	fi
 	AC_MSG_RESULT($GXX_VERSION)
 fi
 ])dnl
