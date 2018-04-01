@@ -1,9 +1,9 @@
 // C(++) Beautifier V1.61 Unix/MS-DOS update !
 // -----------------------------------------
-// $Id: bcpp.cpp,v 1.133 2012/03/18 17:24:53 tom Exp $
+// $Id: bcpp.cpp,v 1.134 2018/04/01 19:55:24 tom Exp $
 //
 // Program was written by Steven De Toni 1994 (CBC, ACBC).
-// Modified/revised by Thomas E. Dickey 1996-2002,2003.
+// Modified/revised by Thomas E. Dickey 1996-2015,2018.
 //
 // Steven's original notes follow:
 // ----------------------------------------------------------------------------
@@ -559,7 +559,7 @@ static InputStruct* ExtractCCmt (int&     offset,
     InputStruct* pItem = 0;
     char endData = NULLC;
     char endState = NULLC;
-    size_t len = (end >= 0) ? (size_t) (end - start + 2) : strlen(pLineData);
+    size_t len = (end >= 0) ? static_cast<size_t>(end - start + 2) : strlen(pLineData);
     size_t last = start + len;
 
     if (end >= 0)
