@@ -1,7 +1,7 @@
 Summary: bcpp - C(++) beautifier
 %define AppProgram bcpp
-%define AppVersion 20180401
-# $Id: bcpp.spec,v 1.5 2018/04/01 19:56:57 tom Exp $
+%define AppVersion 20200922
+# $Id: bcpp.spec,v 1.6 2020/09/22 23:34:20 tom Exp $
 Name: %{AppProgram}
 Version: %{AppVersion}
 Release: 1
