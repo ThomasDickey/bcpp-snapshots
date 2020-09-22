@@ -1,3 +1,9 @@
+bcpp (20200922) unstable; urgency=low
+
+  * maintenance updates
+
+ -- Thomas E. Dickey <dickey@invisible-island.net>  Tue, 22 Sep 2020 19:34:20 -0400
+
 bcpp (20180401) unstable; urgency=low
 
   * update configure script

@@ -1,5 +1,10 @@
--- $Id: CHANGES,v 1.47 2018/04/01 19:35:57 tom Exp $
+-- $Id: CHANGES,v 1.49 2020/09/22 23:51:07 tom Exp $
 -- Thomas E. Dickey <dickey@invisible-island.net>
+
+2020/09/22
+	+ remove obsolete makefile-rules
+	+ updated configure script macros
+	+ update config.guess, config.sub
 
 2018/04/01
 	+ updated configure script macros
