@@ -1,5 +1,5 @@
 //******************************************************************************
-// Copyright 1999-2002,2020 by Thomas E. Dickey                                *
+// Copyright 1999-2020,2021 by Thomas E. Dickey                                *
 // All Rights Reserved.                                                        *
 //                                                                             *
 // Permission to use, copy, modify, and distribute this software and its       *
@@ -17,7 +17,7 @@
 // OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR   *
 // PERFORMANCE OF THIS SOFTWARE.                                               *
 //******************************************************************************
-// $Id: verbose.cpp,v 1.8 2020/09/22 23:47:07 tom Exp $
+// $Id: verbose.cpp,v 1.10 2021/01/08 23:32:48 tom Exp $
 // verbose.cpp
 
 #include "bcpp.h"
@@ -68,10 +68,10 @@ bool prompt(const char *format, ...)
             fflush(stderr);
             code = getc(stdin);
             if (code == 'y' || code == 'Y')
-                return True;
+                return true;
             if (code == 'n' || code == 'N')
                 break;
         }
     }
-    return False;
+    return false;
 }

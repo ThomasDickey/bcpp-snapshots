@@ -1,5 +1,5 @@
 //******************************************************************************
-// Copyright 1999,2002 by Thomas E. Dickey                                     *
+// Copyright 1999-2002,2021 by Thomas E. Dickey                                *
 // All Rights Reserved.                                                        *
 //                                                                             *
 // Permission to use, copy, modify, and distribute this software and its       *
@@ -17,7 +17,7 @@
 // OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR   *
 // PERFORMANCE OF THIS SOFTWARE.                                               *
 //******************************************************************************
-// $Id: backup.cpp,v 1.9 2002/05/18 17:46:05 tom Exp $
+// $Id: backup.cpp,v 1.11 2021/01/08 23:31:06 tom Exp $
 
 #include "bcpp.h"
 
@@ -94,7 +94,7 @@ void RestoreIfUnchanged(char *oldFilename, char *newFilename)
 {
     FILE *newFp = fopen(newFilename, "r");
     FILE *oldFp = fopen(oldFilename, "r");
-    bool changed = False;
+    bool changed = false;
     int newCh = EOF;
     int oldCh = EOF;
 

@@ -1,4 +1,4 @@
-// $Id: config.cpp,v 1.26 2009/06/27 12:57:10 tom Exp $
+// $Id: config.cpp,v 1.27 2021/01/08 23:24:39 tom Exp $
 // Program C(++) beautifier Written By Steven De Toni ACBC 11 11/94
 //
 // This program module contains routines to read data from a text file a
@@ -198,15 +198,15 @@ static const char *parseKeyword(const char *& from, size_t& len)
 }
 
 // compare a desired keyword 'want' against the actual data 'have'.
-static Boolean matchKeyword(const char *want, const char *have, size_t haveLen)
+static bool matchKeyword(const char *want, const char *have, size_t haveLen)
 {
-    Boolean result = False;
+    bool result = false;
     size_t wantLen = strlen(want);
 
     if (haveLen == wantLen
         && !strncmp(want, have, wantLen))
     {
-        result = True;
+        result = true;
     }
     return result;
 }
@@ -295,7 +295,7 @@ static void ConfigAssignment (int& errorCount, int& configError, const char* pPo
         ErrorMessage (errorCount, 2, configError, " Valid Range = 0 - 5000");
 }
 
-static void ConfigAssignment (int& errorCount, int& configError, const char* pPosInLine, Boolean& variable)
+static void ConfigAssignment (int& errorCount, int& configError, const char* pPosInLine, bool& variable)
 {
     ConfigWords type = ANYT;
 
@@ -306,12 +306,12 @@ static void ConfigAssignment (int& errorCount, int& configError, const char* pPo
     {
         case (YES):  // YES
         case (ON) :  // ON
-            variable = True;
+            variable = true;
             break;
 
         case (NO) :  // NO
         case (OFF):  // OFF
-            variable = False;
+            variable = false;
             break;
 
         default:
@@ -355,7 +355,7 @@ int SetConfig (FILE* pConfigFile, Config& userSettings)
   ConfigWords type                ;
   int         lineCount     = 0   ;
   int         configError   = 0   ;
-  Boolean     test;
+  bool        test;
 
   while (! noMoreConfig)
   {
@@ -415,18 +415,18 @@ int SetConfig (FILE* pConfigFile, Config& userSettings)
                 break;
 
              case (LGRAPHC): // LEAVE_GRAPHIC_CHARS = {on, off, yes, no}
-                test = False;
+                test = false;
                 DecodeIt (test);
-                if (test == True)
+                if (test == true)
                     userSettings.deleteHighChars = 3; //   set bit 0, 1
                 else
                     userSettings.deleteHighChars = 0; // unset bit 0, 1
                 break;
 
              case (ASCIIO): // ASCII_CHARS_ONLY = {on, off, yes, no}
-                test = False;
+                test = false;
                 DecodeIt (test);
-                if (test == True)
+                if (test == true)
                     userSettings.deleteHighChars = 1;   //   set bit 0
                 else
                     userSettings.deleteHighChars = 0;   // unset bit 0
@@ -496,7 +496,7 @@ int ShowConfig (Config& userSettings)
     verbose ("Use Tabs In Indenting              : %s\n", choices[userSettings.useTabs+1]);
     verbose ("Indent Spacing Length              : %d\n", userSettings.tabSpaceSize);
     verbose ("Comments With Code                 : %d\n", userSettings.posOfCommentsWC);
-    if (userSettings.leaveCommentsNC != False)
+    if (userSettings.leaveCommentsNC != false)
         verbose ("Comments With No Code              : Indented According To Code\n");
     else
         verbose ("Comments With No Code              : %d\n", userSettings.posOfCommentsNC);

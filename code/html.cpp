@@ -1,5 +1,5 @@
 //******************************************************************************
-// Copyright 1999-2002,2003 by Thomas E. Dickey                                          *
+// Copyright 1999-2003,2021 by Thomas E. Dickey                                          *
 // All Rights Reserved.                                                        *
 //                                                                             *
 // Permission to use, copy, modify, and distribute this software and its       *
@@ -17,7 +17,7 @@
 // OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR   *
 // PERFORMANCE OF THIS SOFTWARE.                                               *
 //******************************************************************************
-// $Id: html.cpp,v 1.5 2003/04/22 22:58:57 tom Exp $
+// $Id: html.cpp,v 1.7 2021/01/08 23:32:08 tom Exp $
 
 #include "bcpp.h"
 #include "cmdline.h"
@@ -60,7 +60,7 @@ EndScript(const char *text)
 bool
 HtmlStruct::Active(const char *pLineData)
 {
-    bool match = False;
+    bool match = false;
     int n;
 
     switch (state)
@@ -80,13 +80,13 @@ HtmlStruct::Active(const char *pLineData)
         case 1:
             if (BeginScript(pLineData)) {
                 state = 2;
-                match = True;
+                match = true;
             }
             break;
         case 2:
             if (EndScript(pLineData)) {
                 state = 1;
-                match = True;
+                match = true;
             }
             break;
         default:

@@ -1,7 +1,7 @@
 #ifndef _CONFIG_HEADER
 #define _CONFIG_HEADER
 
-// $Id: config.h,v 1.15 2009/06/26 00:02:22 tom Exp $
+// $Id: config.h,v 1.16 2021/01/08 23:25:01 tom Exp $
 // Program C(++) beautifier Written By Steven De Toni ACBC 11 10/94
 //
 // This file contains prototypes, constants, enum declarations for the 
@@ -10,8 +10,6 @@
 // configuration file.
 
 #include <stdio.h>          // FILE Structure
-
-enum Boolean     {False = 0, True = -1};
 
 // Commonly-used characters that are awkward to represent
 const char NULLC = '\0';
@@ -35,23 +33,23 @@ struct Config
 {
   int     numOfLineFunc  ;  // number of lines between functions
   int     tabSpaceSize   ;  // number of spaces a tab takes up {4}
-  Boolean useTabs        ;  // True = use tabs in indenting, False = use spaces
+  bool    useTabs        ;  // true = use tabs in indenting, false = use spaces
   int     posOfCommentsWC;  // position of comments on line with code
   int     posOfCommentsNC;  // position of comments on line
-  Boolean keepCommentsWC ;  // True = keep comments inline with code
-  Boolean leaveCommentsNC;  // True = don't change the indentation of comments with code.
-  Boolean quoteChars     ;  // change non-ASCII chars in quotes to octal notation
+  bool    keepCommentsWC ;  // true = keep comments inline with code
+  bool    leaveCommentsNC;  // true = don't change the indentation of comments with code.
+  bool    quoteChars     ;  // change non-ASCII chars in quotes to octal notation
   int     deleteHighChars;  // 0  = no check         , 1 = delete high chars,
                             // 2  = don't delete graphics chars
-  Boolean topBraceLoc    ;  // True = place on new line, False = at end of code
-  Boolean braceLoc       ;  // True = place on new line, False = at end of code
-  Boolean output         ;  // Set this True for normal program output
+  bool    topBraceLoc    ;  // true = place on new line, false = at end of code
+  bool    braceLoc       ;  // true = place on new line, false = at end of code
+  bool    output         ;  // Set this true for normal program output
   int     queueBuffer    ;  // Set the number if lines to store in memory at a time !
-  Boolean backUp         ;  // backup the original file, have output file become input file name !
-  Boolean indentPreP     ;  // indent preprocessor controls to match code
-  Boolean indent_sql     ;  // indent embedded SQL statements
-  Boolean braceIndent    ;  // True = indent trailing brace, False = don't
-  Boolean braceIndent2   ;  // True = indent both braces, False = don't
+  bool    backUp         ;  // backup the original file, have output file become input file name !
+  bool    indentPreP     ;  // indent preprocessor controls to match code
+  bool    indent_sql     ;  // indent embedded SQL statements
+  bool    braceIndent    ;  // true = indent trailing brace, false = don't
+  bool    braceIndent2   ;  // true = indent both braces, false = don't
 };
 
 
