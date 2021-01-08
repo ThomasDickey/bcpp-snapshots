@@ -1,6 +1,6 @@
 // C(++) Beautifier V1.61 Unix/MS-DOS update !
 // -----------------------------------------
-// $Id: bcpp.cpp,v 1.134 2018/04/01 19:55:24 tom Exp $
+// $Id: bcpp.cpp,v 1.135 2021/01/08 23:24:20 tom Exp $
 //
 // Program was written by Steven De Toni 1994 (CBC, ACBC).
 // Modified/revised by Thomas E. Dickey 1996-2015,2018.
@@ -207,48 +207,48 @@ static inline char lastChar(const char *s)
    return ((s != NULL) && (*s != NULLC)) ? *(endOf(s)-1) : static_cast<char>(NULLC);
 }
 
-static Boolean IsStartOfComment(char *pLineData, char *pLineState)
+static bool IsStartOfComment(char *pLineData, char *pLineState)
 {
     if (pLineState[0] == Comment)
     {
         if (!strncmp(pLineData, ccom_begin, 2))
-            return True;
+            return true;
     }
-    return False;
+    return false;
 }
 
-static Boolean IsEndOfComment(char *pLineData, char *pLineState)
+static bool IsEndOfComment(char *pLineData, char *pLineState)
 {
     while (*pLineState++ == Comment)
     {
         if (!strncmp(pLineData++, ccom_end, 2))
-            return True;
+            return true;
     }
-    return False;
+    return false;
 }
 
-static Boolean IsLeadingCommentFragment(char *pLineData, char *pLineState)
+static bool IsLeadingCommentFragment(char *pLineData, char *pLineState)
 {
     if (IsStartOfComment(pLineData, pLineState)
      && !IsEndOfComment(pLineData+2, pLineState+2))
-        return True;
-    return False;
+        return true;
+    return false;
 }
 
 // Check if we've just extracted a comment fragment, i.e., a C comment
 // beginning on the current line that doesn't end there.  We'll have to defer
 // the comment til after the code is flushed out, otherwise we end up
 // commenting it out.
-static Boolean ExtractedCCmtFragment(char *pLineData, InputStruct* pItem)
+static bool ExtractedCCmtFragment(char *pLineData, InputStruct* pItem)
 {
     if (*SkipBlanks(pLineData)
      && IsLeadingCommentFragment(pItem->pData, pItem->pState))
     {
-        pItem->comWcode = False;
+        pItem->comWcode = false;
         pItem->offset = 0;
-        return True;
+        return true;
     }
-    return False;
+    return false;
 }
 
 static inline void ShiftLeft(char *s, int len)
@@ -279,7 +279,7 @@ int LookupKeyword(const char *tst)
 // Return true if the given data is a blockLine.
 static bool beginBlockLine(OutputStruct* pItem)
 {
-    bool result = False;
+    bool result = false;
     int findWord = LookupKeyword(pItem -> pCode);
     if (findWord >= 0)
     {
@@ -287,7 +287,7 @@ static bool beginBlockLine(OutputStruct* pItem)
         {
             TRACE(("beginBlockLine -- "));
             TRACE_OUTPUT(pItem);
-            result = True;
+            result = true;
         }
     }
     return result;
@@ -296,7 +296,7 @@ static bool beginBlockLine(OutputStruct* pItem)
 // Return true if the given data is a multiLine.
 static bool beginMultiLine(OutputStruct* pItem)
 {
-    bool result = False;
+    bool result = false;
     int findWord = LookupKeyword(pItem -> pCode);
     if (findWord >= 0)
     {
@@ -304,7 +304,7 @@ static bool beginMultiLine(OutputStruct* pItem)
         {
             TRACE(("beginMultiLine -- "));
             TRACE_OUTPUT(pItem);
-            result = True;
+            result = true;
         }
     }
     return result;
@@ -367,21 +367,21 @@ static int StripSpacingLeftRight (char* pLineData, char* pLineState, int mode = 
 // pLineState : Pointer to a string to process.
 //
 // Return Values:
-// Boolean   : False = line has no code
-//             True  = line has some sort of code
+// Boolean   : false = line has no code
+//             true  = line has some sort of code
 //
-static Boolean TestLineHasCode (char* pLineState)
+static bool TestLineHasCode (char* pLineState)
 {
     if (pLineState != NULL)
     {
         while (*pLineState != NullC)
         {
             if (ispunct(*pLineState))
-                return True;
+                return true;
             pLineState++;
         }
     }
-    return False;
+    return false;
 }
 
 
@@ -400,22 +400,22 @@ static bool isFinalComment(int first, int last, char *pData, char *pState)
 {
     if (pState[first] == Ignore)
     {
-        return True;
+        return true;
     }
     last += 2;              // count the "*/"
     int limit = strlen(pState);
     if (last >= limit)
     {
-        return True;
+        return true;
     }
     while (last < limit)
     {
         if (pData[last] != ESCAPE
          && pData[last] != SPACE)
-            return False;
+            return false;
         ++last;
     }
-    return True;
+    return true;
 }
 
 static bool isContinuation(size_t &len, char *pData, char *pState)
@@ -427,9 +427,9 @@ static bool isContinuation(size_t &len, char *pData, char *pState)
          && pData[--len] == ESCAPE
          && pState[len] != Comment
          && pState[len] != Ignore)
-            return True;
+            return true;
     }
-    return False;
+    return false;
 }
 
 static bool isContinuation(InputStruct *pItem)
@@ -477,14 +477,14 @@ static inline bool isPreproLine(OutputStruct* pOut)
 // check if the given data begins with a right curly-brace
 static inline bool BeginsCurly(OutputStruct* pOut)
 {
-    bool result = False;
+    bool result = false;
     for (int n = 0; pOut->pCode[n] != NULLC; ++n)
     {
         if (pOut->pCFlag[n] != Blank)
         {
             if (pOut->pCFlag[n] == Normal
              && pOut->pCode[n] == R_CURL)
-                result = True;
+                result = true;
             break;
         }
     }
@@ -508,10 +508,10 @@ static inline bool BeginsCurly(OutputStruct* pOut)
 //                returns a NULL value if unable to allocate memory.
 //
 static InputStruct* ExtractCode (int      offset,
-                          char*    pLineData,
-                          char*    pLineState,
+                          char*     pLineData,
+                          char*     pLineState,
                           DataTypes dataType = Code,
-                          Boolean  removeSpace = True)
+                          bool      removeSpace = true)
 {
     char* pNewCode = 0;
     char* pNewState = 0;
@@ -522,7 +522,7 @@ static InputStruct* ExtractCode (int      offset,
         if ((pNewState =  NewString(pLineState)) != 0)
         {
             // strip spacing in new string before storing
-            if (removeSpace != False)
+            if (removeSpace != false)
             {
                 offset += StripSpacingLeftRight (pNewCode, pNewState);
                 if (dataType == Code
@@ -574,7 +574,7 @@ static InputStruct* ExtractCCmt (int&     offset,
         pLineData + start,
         pLineState + start,
         dataType,
-        False);
+        false);
 
     if (end >= 0)
     {
@@ -698,7 +698,7 @@ static void splitContinuation(InputStruct *pItem, char *pLineData, char *pLineSt
     size_t len;
 
     if (force && !strcmp(pLineData, pItem->pData))
-        force = False;
+        force = false;
 
     if ((force || isContinuation(len, pLineData, pLineState))
      && !isContinuation(len, pItem->pData, pItem->pState))
@@ -765,7 +765,7 @@ static int DecodeLine (bool afterSlash, int offset, char* pLineData, char *pLine
         }
         else //##### Place output as comment without code (C comment terminator not found)
         {
-            InputStruct* pTemp = ExtractCode (offset, pLineData, pLineState, CCom, False); // don't remove spaces !
+            InputStruct* pTemp = ExtractCode (offset, pLineData, pLineState, CCom, false); // don't remove spaces !
 
             //#### Test if memory allocated
             if (pTemp == NULL)
@@ -909,7 +909,7 @@ static int DecodeLine (bool afterSlash, int offset, char* pLineData, char *pLine
     SChar = FindPunctuation(pLineData, pLineState, L_CURL);
     EChar = FindPunctuation(pLineData, pLineState, R_CURL);
 
-    Boolean testEnumType = False;
+    bool testEnumType = false;
     if ( ((SChar >= 0) && (EChar >= 0)) && (SChar < EChar))
     {
         // test to see if there are multiple open/ close braces in enum
@@ -918,13 +918,13 @@ static int DecodeLine (bool afterSlash, int offset, char* pLineData, char *pLine
         int OBrace2 = FindPunctuation(pLineData+SChar+1, pLineState+SChar+1, L_CURL);
 
         if ( (OBrace2 < 0) || ((OBrace2 > EChar) && (OBrace2 >= 0)) )
-           testEnumType = True;
+           testEnumType = true;
     }
 
     //##### If condition correct, then make rest of line just code ! (e.g enum)
     // if no items in input queue, and no multiple open, close braces in
     // line then .... extract as enum.
-    if ( (testEnumType != False) && (pInputQueue -> status () <= 0) )
+    if ( (testEnumType != false) && (pInputQueue -> status () <= 0) )
     {
         //store code as enum type if follow-up condition is true
         EChar++;
@@ -983,7 +983,7 @@ static int DecodeLine (bool afterSlash, int offset, char* pLineData, char *pLine
         saveFlag = pLineState[toSave]; pLineState[toSave] = NULLC;
 
         //#### Store leading code if any
-        if (TestLineHasCode (pLineState) != False)
+        if (TestLineHasCode (pLineState) != false)
         {
            char* pTemp = NewString(pLineData);
            if (pTemp == NULL)
@@ -1098,7 +1098,7 @@ static int DecodeLine (bool afterSlash, int offset, char* pLineData, char *pLine
             TRACE_INPUT(pTemp)
             pInputQueue->putLast (pTemp); // store Item
 
-        } while ((TestLineHasCode (pLineState) != False) && (pTemp != NULL));
+        } while ((TestLineHasCode (pLineState) != false) && (pTemp != NULL));
 
     }
     else //##### Line contains either code, or spacing
@@ -1116,7 +1116,7 @@ static int DecodeLine (bool afterSlash, int offset, char* pLineData, char *pLine
             pInputQueue->putLast (pTemp);
         }
         //##### If line has more than spacing/tabs then code
-        else if (TestLineHasCode (pLineState) != False
+        else if (TestLineHasCode (pLineState) != false
          && strcmp(pLineData, "\\") != 0)
         {
             // implement blank space
@@ -1167,7 +1167,7 @@ static void dontHangComment(InputStruct *pIn, OutputStruct *pOut, QueueList* pLi
                     break;
                 }
                 if (*text != '*')
-                    star = False;
+                    star = false;
             }
             ShiftLeft(pOut -> pComment, length);
             if (star)
@@ -1187,7 +1187,7 @@ static bool inputIsCode(InputStruct *pItem)
             case OBrace:
             case CBrace:
             case PreP:
-                return True;
+                return true;
             case CCom:
             case CppCom:
             case ELine:
@@ -1203,7 +1203,7 @@ static bool inputIsCode(InputStruct *pItem)
     else
         warning ("%d", pItem -> dataType);
 
-    return False;      // ##### incorrect dataType expected!
+    return false;      // ##### incorrect dataType expected!
 }
 
 // ----------------------------------------------------------------------------
@@ -1269,7 +1269,7 @@ bool ContinuedQuote(OutputStruct *pOut)
             return (pOut -> pCFlag[0] != pOut -> pCode[0]);
         }
     }
-    return False;
+    return false;
 }
 
 // ----------------------------------------------------------------------------
@@ -1291,10 +1291,10 @@ static bool EndsStatement(OutputStruct *pOut)
             else
             if (nested == 0
              && pOut -> pCode[n] == SEMICOLON)
-                return True;
+                return true;
         }
     }
-    return False;
+    return false;
 }
 
 // ----------------------------------------------------------------------------
@@ -1306,7 +1306,7 @@ static bool BeginsElseClause(OutputStruct *pOut)
     {
         return !EndsStatement(pOut);
     }
-    return False;
+    return false;
 }
 
 // ----------------------------------------------------------------------------
@@ -1413,9 +1413,9 @@ static int ConstructLine (
                 "MCCONFIG}}"
             };
             if (CompareKeyword(tst, keys[0]))
-                indentPreP = True;
+                indentPreP = true;
             if (CompareKeyword(tst, keys[1]))
-                indentPreP = False;
+                indentPreP = false;
         }
 
         int theType = pTestType -> dataType;
@@ -1439,7 +1439,7 @@ static int ConstructLine (
             //@@@@@@@ Processing of C++ type comments // comment
             case (CppCom):
             {
-                if (pTestType -> comWcode == True)  //##### If true then comment has code
+                if (pTestType -> comWcode == true)  //##### If true then comment has code
                 {
                     InputStruct *pNextItem = reinterpret_cast<InputStruct*>(pInputQueue -> peek(1));
 
@@ -1485,7 +1485,7 @@ static int ConstructLine (
                 }
                 else
                 {
-                    if (userS.leaveCommentsNC != False)
+                    if (userS.leaveCommentsNC != false)
                     {
                         pOut -> indentSpace   = combinedIndent(indentStack, prepStack, userS);
                         if ((pOut -> offset >= userS.posOfCommentsWC)
@@ -1520,7 +1520,7 @@ static int ConstructLine (
                     // Special case: align "else" and "if" if they're on successive lines
                     if (pendingElse
                      && CompareKeyword(pOut -> pCode, "if"))
-                        pOut -> splitElseIf = True;
+                        pOut -> splitElseIf = true;
                     pendingElse = BeginsElseClause(pOut);
                 }
                 TRACE(("@%d, Set Code   = %s:%d indent %d\n", __LINE__, pOut->pCode, pOut->thisToken, pOut->indentSpace));
@@ -1533,7 +1533,7 @@ static int ConstructLine (
             // @@@@@@ Processing of closed brackets "} k = 1;"
             case (CBrace):
             {
-                pendingElse = False;
+                pendingElse = false;
 
                 // indent back before adding brace, some error checking
                 if ((pTestType -> dataType == CBrace) && !userS.braceIndent)
@@ -1589,11 +1589,11 @@ static int ConstructLine (
                             break;
                         case 1:
                             pOut -> indentSpace = indentStack + prepStack;
-                            if (indentPreP != False)
+                            if (indentPreP != false)
                                 prepStack += userS.tabSpaceSize;
                             break;
                         case 2:
-                            if (indentPreP != False)
+                            if (indentPreP != false)
                             {
                                 prepStack -= userS.tabSpaceSize;
                                 if (prepStack < 0)
@@ -1829,9 +1829,9 @@ static QueueList* IndentNonBraceCode (QueueList* pLines, StackList* pIMode, cons
     IndentStruct* pIndentItem = reinterpret_cast<IndentStruct*>(pIMode -> pop());
 
     if ( ((pAlterLine -> pCode != NULL)     || ((pAlterLine -> pBrace != NULL) && (pIndentItem -> attrib == multiLine)) ) ||
-         ((userS.leaveCommentsNC != False)  && ((pAlterLine -> pCode == NULL)  && (pAlterLine -> pComment != NULL))) )
+         ((userS.leaveCommentsNC != false)  && ((pAlterLine -> pCode == NULL)  && (pAlterLine -> pComment != NULL))) )
     {
-        bool adjusted = False;
+        bool adjusted = false;
 
         TRACE_OUTPUT(pAlterLine);
         TRACE_INDENT(pIndentItem);
@@ -1895,7 +1895,7 @@ static QueueList* IndentNonBraceCode (QueueList* pLines, StackList* pIMode, cons
                     if (OutputContainsCode(pAlterLine)) // FIXME2
                     {
                         pAlterLine -> indentSpace += userS.tabSpaceSize;
-                        adjusted = True;
+                        adjusted = true;
                     }
                     else if (pAlterLine -> pComment != NULL)
                     {
@@ -1917,7 +1917,7 @@ static QueueList* IndentNonBraceCode (QueueList* pLines, StackList* pIMode, cons
                         if (OutputContainsCode(pAlterLine))
                         {
                             pAlterLine -> indentSpace += userS.tabSpaceSize;
-                            adjusted = True;
+                            adjusted = true;
                         }
                         TRACE_OUTPUT(pAlterLine)
                     }
@@ -1991,7 +1991,7 @@ static QueueList* IndentNonBraceCode (QueueList* pLines, StackList* pIMode, cons
 
             // recursive function call !
             if (pIMode -> status() > 0)
-                pLines = IndentNonBraceCode (pLines, pIMode, userS, False);
+                pLines = IndentNonBraceCode (pLines, pIMode, userS, false);
 
             TRACE(("#%d, brace=%p: %d\n", pAlterLine->thisToken, pAlterLine->pBrace, pIndentItem->attrib));
             TRACE(("@%d, push indent %d\n", __LINE__, pIndentItem -> singleIndentLen));
@@ -2065,7 +2065,7 @@ static QueueList* IndentNonBraces (StackList* pIMode, QueueList* pLines, const C
     //#### Indent code if code available, in a case statement
     TRACE(("...IndentNonBraces: %d\n", pIMode -> status() ));
     if (pIMode -> status () > 0)
-        pLines = IndentNonBraceCode (pLines, pIMode, userS, True);
+        pLines = IndentNonBraceCode (pLines, pIMode, userS, true);
 
     if (pLines -> status () < minLimit)
         return pLines;
@@ -2239,13 +2239,13 @@ static bool KeyAfterBrace (const char *word, int length)
     switch (length)
     {
     case 4:
-        return (strncmp(word, "else", length)) ? False : True;
+        return (strncmp(word, "else", length)) ? false : true;
 #if 0                           // only if we have more info...
     case 5:
-        return (strncmp(word, "while", length)) ? False : True;
+        return (strncmp(word, "while", length)) ? false : true;
 #endif
     }
-    return False;
+    return false;
 }
 #endif
 
@@ -2256,14 +2256,14 @@ static bool KeyBeforeBrace (const char *word, int length)
     switch (length)
     {
     case 2:
-        return (strncmp(word, "do", length)) ? False : True;
+        return (strncmp(word, "do", length)) ? false : true;
     case 4:
         return (strncmp(word, "else", length)
-             && strncmp(word, "enum", length)) ? False : True;
+             && strncmp(word, "enum", length)) ? false : true;
     case 5:
-        return (strncmp(word, "while", length)) ? False : True;
+        return (strncmp(word, "while", length)) ? false : true;
     }
-    return False;
+    return false;
 }
 
 // ----------------------------------------------------------------------------
@@ -2557,11 +2557,11 @@ static QueueList* ReformatLCurly (QueueList* pLines, int first, const Config& us
 
         // we're here to join braces, but must check if this instance must
         // remain split:
-        bool splitBraces = False;
+        bool splitBraces = false;
         if (pBraceLine->bracesLevel == 0
-         && userS.topBraceLoc != False)
+         && userS.topBraceLoc != false)
         {
-            splitBraces = True;
+            splitBraces = true;
         }
         else
         {
@@ -2575,13 +2575,13 @@ static QueueList* ReformatLCurly (QueueList* pLines, int first, const Config& us
                 if (lastchar != R_PAREN
                  && lastchar != '='
                  && (lastword < 0
-                  || KeyBeforeBrace(pCodeLine->pCode + lastword, wordsize) == False))
-                    splitBraces = True;
+                  || KeyBeforeBrace(pCodeLine->pCode + lastword, wordsize) == false))
+                    splitBraces = true;
             }
         }
 
         // place top-level open braces on same line as code
-        if (splitBraces || userS.braceLoc == True)
+        if (splitBraces || userS.braceLoc == true)
         {
             TRACE(("...leave brace, restart (%d,%d)\n", splitBraces, userS.braceLoc));
 
@@ -2771,11 +2771,11 @@ static QueueList* ReformatRCurly (QueueList* pLines, int first, const Config& us
 
         // we're here to join braces, but must check if this instance must
         // remain split:
-        bool splitBraces = False;
+        bool splitBraces = false;
         if (pBraceLine->bracesLevel == 0
-         && userS.topBraceLoc != False)
+         && userS.topBraceLoc != false)
         {
-            splitBraces = True;
+            splitBraces = true;
         }
         else
         {
@@ -2789,13 +2789,13 @@ static QueueList* ReformatRCurly (QueueList* pLines, int first, const Config& us
                     lastchar, lastword, wordsize));
                 // we can join a right-curly before "else"
                 if (lastchar != NullC
-                 || KeyAfterBrace(pCodeLine->pCode + lastword, wordsize) == False)
-                    splitBraces = True;
+                 || KeyAfterBrace(pCodeLine->pCode + lastword, wordsize) == false)
+                    splitBraces = true;
             }
         }
 
         // place top-level close braces on same line as code
-        if (splitBraces || userS.braceLoc == True)
+        if (splitBraces || userS.braceLoc == true)
         {
             TRACE(("...leave brace, restart (%d,%d)\n", splitBraces, userS.braceLoc));
 
@@ -2948,15 +2948,15 @@ static QueueList* ReformatRCurly (QueueList* pLines, int first, const Config& us
 //
 static void FunctionSpacing (QueueList* pLines, const Config& userS, int& FuncVar, int &pendingBlank, bool& inBraces )
 {
-    inBraces = False;
+    inBraces = false;
     if (pLines -> status () > 0) // if there are items in the queue !
     {
         OutputStruct* pTestLine =  reinterpret_cast<OutputStruct*>(pLines -> peek (1));
 
-        inBraces = (pTestLine -> indentSpace > 0) ? True : False;
+        inBraces = (pTestLine -> indentSpace > 0) ? true : false;
 
         // check if end of function, structure, class has been reached !
-        if ( ((FuncVar == 0) && (inBraces == False)) &&
+        if ( ((FuncVar == 0) && (inBraces == false)) &&
              (pTestLine -> pBrace != NULL) )
         {
              if (pTestLine -> pBrace[0] == R_CURL
@@ -2994,7 +2994,7 @@ static bool PreProcessorEndif(OutputStruct *pOut)
     {
         return CompareKeyword(SkipBlanks(pOut -> pCode + 1), "endif");
     }
-    return False;
+    return false;
 }
 
 // ----------------------------------------------------------------------------
@@ -3034,7 +3034,7 @@ static int beginningPrePro (QueueList *pInputQueue, int Current)
 }
 
 // We may convert leading whitespace in a comment back to tabs
-static Boolean adjustLeadingSpaces(int fillMode, char *&notes, int &leading)
+static bool adjustLeadingSpaces(int fillMode, char *&notes, int &leading)
 {
     if ((fillMode & 1) != 0 && notes != NULL && *notes == SPACE)
     {
@@ -3043,9 +3043,9 @@ static Boolean adjustLeadingSpaces(int fillMode, char *&notes, int &leading)
             notes++;
             leading++;
         }
-        return True;
+        return true;
     }
-    return False;
+    return false;
 }
 
 // ----------------------------------------------------------------------------
@@ -3077,7 +3077,7 @@ static QueueList* OutputToOutFile (FILE* pOutFile, QueueList* pLines, StackList*
     bool          inBraces;
 
     // determine fill mode
-    if (userS.useTabs == True)
+    if (userS.useTabs == true)
         fillMode |= 1;          // set bit 0, tabs
 
     while (pLines -> status() > stopLimit) // stopLimit is used to search backward for L_CURL
@@ -3096,15 +3096,15 @@ static QueueList* OutputToOutFile (FILE* pOutFile, QueueList* pLines, StackList*
              return NULL;               //#### Memory Allocation Failure
 
         // reformat open braces if user option set
-        if (userS.topBraceLoc == False  // place open braces on same line as code
-         || userS.braceLoc == False)    // place open braces on same line as code
+        if (userS.topBraceLoc == false  // place open braces on same line as code
+         || userS.braceLoc == false)    // place open braces on same line as code
         {
             pLines = ReformatLCurly (pLines, 1, userS);
             if (pLines == NULL)
                return NULL;
         }
 #ifdef TEST_BCPP
-        if (userS.braceLoc == False)    // place closing braces on same line as code
+        if (userS.braceLoc == false)    // place closing braces on same line as code
         {
             pLines = ReformatRCurly (pLines, 1, userS);
             if (pLines == NULL)
@@ -3325,9 +3325,9 @@ static int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
     int                 FuncVar      = 0;      // variable used in processing function spacing !
     CharState           curState     = Blank;
     char*               lineState    = NULL;
-    Boolean             codeOnLine   = False;
-    bool                indentPreP   = False;
-    bool                pendingElse  = False;
+    bool                codeOnLine   = false;
+    bool                indentPreP   = false;
+    bool                pendingElse  = false;
     int                 prepStack    = 0;
     int                 bracesLevel  = 0;
     int                 preproLevel  = 0;
@@ -3336,7 +3336,7 @@ static int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
     HtmlStruct          html_state;
     SqlStruct           sql_state;
     size_t              beforeSize;
-    bool                beforeSlash  = False;
+    bool                beforeSlash  = false;
     bool                afterSlash;
 
     // Check memory allocated !
@@ -3350,7 +3350,7 @@ static int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
         return -1;
     }
 
-    if (userS.output != False)
+    if (userS.output != false)
     {
         verbose ("\nFeed Me, Feed Me Code ...\n");
         verbose ("Number Of Lines Processed :  ");
@@ -3374,7 +3374,7 @@ static int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
         if (pData != NULL)
         {
             lineNo++;
-            if ( (lineNo % lineStep == 0) && (userS.output != False) )
+            if ( (lineNo % lineStep == 0) && (userS.output != false) )
             {
                 if (lineNo > 0)
                     backSpaceIt (lineNo - lineStep); // reposition cursor ! Don't used gotoxy() for Unix compatibility
@@ -3419,7 +3419,7 @@ static int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
             if (DecodeLine (afterSlash, 0, pData, lineState, pInputQueue) == 0) // if there are input items to process
             {
                 int old_prepro = in_prepro;
-                bool restoreit = False;
+                bool restoreit = false;
 
                 if ((in_prepro = beginningPrePro(pInputQueue, in_prepro)) != 0)
                 {
@@ -3436,7 +3436,7 @@ static int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
                 }
                 else if (old_prepro)
                 {
-                    restoreit = True;
+                    restoreit = true;
                     if (old_prepro == 1)
                         indentStack += userS.tabSpaceSize;
                 }
@@ -3527,7 +3527,7 @@ static int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
             pendingBlank);
 
     // output final line position
-    if (userS.output != False)
+    if (userS.output != false)
     {
         if ((lineNo > 0) && (lineNo > lineStep))
            backSpaceIt (lineNo - (lineNo % lineStep)); // reposition cursor
@@ -3541,7 +3541,7 @@ static int ProcessFile (FILE* pInFile, FILE* pOutFile, const Config& userS)
     delete[] pData;
     delete[] lineState;
 
-    if (userS.output != False)
+    if (userS.output != false)
     {
         unsigned long int t = GetStartEndTime (2);
         int    hours = (t / 60) / 60,
@@ -3683,7 +3683,7 @@ static void FindConfigFile (const char* pCfgName, FILE*& pCfgFile)
 static int LoadnRun (int argc, char* argv[])
 {
     const char* pNoFile    = "Couldn't Open, or Create File";
-    bool  renamed          = False;
+    bool  renamed          = false;
     char* pConfig          = NULL;
     char* pInFile          = NULL;
     char* pOutFile         = NULL;
@@ -3696,39 +3696,39 @@ static int LoadnRun (int argc, char* argv[])
 
     Config settings        = {2,      // numOfLineFunc
                               4,      // tabSpaceSize
-                              False,  // useTabs
+                              false,  // useTabs
                               50,     // posOfCommentsWC
                               0,      // posOfCommentsNC
-                              False,  // keepCommentsWC
-                              False,  // leaveCommentsNC
-                              False,  // quoteChars
+                              false,  // keepCommentsWC
+                              false,  // leaveCommentsNC
+                              false,  // quoteChars
                               3,      // deleteHighChars
-                              True,   // topBraceLoc
-                              True,   // braceLoc
-                              True,   // output
+                              true,   // topBraceLoc
+                              true,   // braceLoc
+                              true,   // output
                               10,     // queueBuffer
-                              False,  // backUp
-                              False,  // indentPreP
-                              False,  // indent_sql
-                              False,  // braceIndent
-                              False}; // braceIndent2
+                              false,  // backUp
+                              false,  // indentPreP
+                              false,  // indent_sql
+                              false,  // braceIndent
+                              false}; // braceIndent2
 
 /* ************************************************************************************
     // set defaults
     settings.numOfLineFunc    = 2;    // number of lines between functions
     settings.tabSpaceSize     = 4;    // number of spaces a tab takes up
-    settings.useTabs          = False;// use tabs to indents rather than spaces
+    settings.useTabs          = false;// use tabs to indents rather than spaces
     settings.posOfCommentsWC  = 50;   // position of comments on line with code
     settings.posOfCommentsNC  = 0;    // position of comments on line
-    settings.leaveCommentsNC  = False;// True = don't change the indentation of comments with code.
-    settings.quoteChars       = False;// use tabs to indents rather than spaces
+    settings.leaveCommentsNC  = false;// true = don't change the indentation of comments with code.
+    settings.quoteChars       = false;// use tabs to indents rather than spaces
     settings.deleteHighChars  = 3;    // 0  = no check         , 1 = delete high chars,
                                       // 3  = delete high chars, but not graphics
-    settings.topBraceLoc      = True; // Start top-level open braces on new line
-    settings.braceLoc         = True; // Start open braces on new line
-    settings.output           = True; // Set this true for normal program output
+    settings.topBraceLoc      = true; // Start top-level open braces on new line
+    settings.braceLoc         = true; // Start open braces on new line
+    settings.output           = true; // Set this true for normal program output
     settings.queueBuffer      = 10;   // Set the number if lines to store in memory at a time !
-    settings.backUp           = False;// backup the original file, have output file become input file name !
+    settings.backUp           = false;// backup the original file, have output file become input file name !
 ************************************************************************************ */
 
     // Function processes command line parameters
@@ -3757,9 +3757,9 @@ static int LoadnRun (int argc, char* argv[])
         // If output is via stdout, then turn out program output if it's
         // set within config file !
         if (pOutputFile == stdout)
-           settings.output = False;
+           settings.output = false;
 
-        if (settings.output != False)
+        if (settings.output != false)
            warning ("\n%d Error(s) In Config File.\n\n", errorNum);
     }
 
@@ -3776,12 +3776,12 @@ static int LoadnRun (int argc, char* argv[])
     // *********************************************************************
 
     // backup original filename!
-    if ( ((settings.backUp != False) && (pInFile != NULL)) &&
+    if ( ((settings.backUp != false) && (pInFile != NULL)) &&
           (pOutFile == NULL)) // Test if user wants an output file !
     {
         if (BackupFile (pInFile, pOutFile) != 0)
            return -1;
-        renamed = True;
+        renamed = true;
     }
     // **************************************************************
 
@@ -3794,7 +3794,7 @@ static int LoadnRun (int argc, char* argv[])
     if (pOutFile == NULL)
     {
         pOutputFile     = stdout;
-        settings.output = False; // if using standard out, don't corrupt output
+        settings.output = false; // if using standard out, don't corrupt output
     }
     else
         pOutputFile = fopen(pOutFile, "wb");
@@ -3812,7 +3812,7 @@ static int LoadnRun (int argc, char* argv[])
         errorCode = -1;
     }
 
-    if ((settings.output != False) && (errorCode == 0))
+    if ((settings.output != false) && (errorCode == 0))
         errorNum = ShowConfig(settings);
 
     if (pConfigFile != NULL)
@@ -3822,7 +3822,7 @@ static int LoadnRun (int argc, char* argv[])
     if ((errorNum == 0) && (errorCode == 0))
         errorCode = ProcessFile (pInputFile, pOutputFile, settings);
 
-    if (settings.output != False)
+    if (settings.output != false)
         verbose ("\nCleaning Up Dinner ... ");
 
     if (pInputFile != NULL)
@@ -3837,7 +3837,7 @@ static int LoadnRun (int argc, char* argv[])
         delete[] pInFile;
     }
 
-    if (settings.output != False)
+    if (settings.output != false)
         verbose ("Done !\n");
 
     return errorCode;

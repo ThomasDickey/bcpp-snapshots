@@ -1,5 +1,5 @@
 //******************************************************************************
-// Copyright 1996-2005,2009 by Thomas E. Dickey                                *
+// Copyright 1996-2009,2021 by Thomas E. Dickey                                *
 // All Rights Reserved.                                                        *
 //                                                                             *
 // Permission to use, copy, modify, and distribute this software and its       *
@@ -17,7 +17,7 @@
 // OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR   *
 // PERFORMANCE OF THIS SOFTWARE.                                               *
 //******************************************************************************
-// $Id: execsql.cpp,v 1.20 2009/06/28 19:44:13 tom Exp $
+// $Id: execsql.cpp,v 1.22 2021/01/08 23:31:41 tom Exp $
 // EXEC SQL parsing & indention
 
 #include <ctype.h>
@@ -31,7 +31,7 @@ int
 SqlStruct::NextWord(int start, OutputStruct *pOut)
 {
     int n = start;
-    bool reset = False;
+    bool reset = false;
 
     TRACE(("esql next:%s\n", pOut -> pCode+start));
     while (pOut -> pCode[n] != NULLC
@@ -52,7 +52,7 @@ SqlStruct::NextWord(int start, OutputStruct *pOut)
         if ((pOut -> pCFlag[n] == Normal && !isName(pOut -> pCode[n]))
           || pOut -> pCFlag[n] == DQuoted
           || pOut -> pCFlag[n] == DQuoted)
-            reset = True;
+            reset = true;
         n++;
     }
 
@@ -210,11 +210,11 @@ SqlStruct::SqlVerb(const char *code)
         {
             if (CompareKeyword(code, table[n]))
             {
-                return True;
+                return true;
             }
         }
     }
-    return False;
+    return false;
 }
 
 void
@@ -265,13 +265,13 @@ SqlStruct::IndentSQL(OutputStruct *pOut)
             pOut -> pCode[n] != NULLC;
                 n = NextWord(n, pOut))
         {
-            bool found = False;
+            bool found = false;
 
             for (size_t m = 0; m < TABLESIZE(state_keys); m++)
             {
                 if (CompareKeyword(pUprString+n, state_keys[m].name))
                 {
-                    found = True;
+                    found = true;
                     matched[level++] = state_keys[m].code;
                     matched[level] = NULLC;
                     n += strlen(state_keys[m].name); // fix for END-EXEC

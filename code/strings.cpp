@@ -1,5 +1,5 @@
 //******************************************************************************
-// Copyright 1996-2005,2009 by Thomas E. Dickey                                *
+// Copyright 1996-2009,2021 by Thomas E. Dickey                                *
 // All Rights Reserved.                                                        *
 //                                                                             *
 // Permission to use, copy, modify, and distribute this software and its       *
@@ -17,7 +17,7 @@
 // OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR   *
 // PERFORMANCE OF THIS SOFTWARE.                                               *
 //******************************************************************************
-// $Id: strings.cpp,v 1.13 2009/06/28 19:42:36 tom Exp $
+// $Id: strings.cpp,v 1.15 2021/01/08 23:32:23 tom Exp $
 // strings.cpp
 
 #include <stdlib.h>
@@ -33,13 +33,13 @@ bool isName(char c)
 
 bool CompareKeyword(const char *tst, const char *ref)
 {
-   bool result = True;
+   bool result = true;
    int n;
    for (n = 0; ref[n] != NULLC; n++)
    {
       if (tst[n] != ref[n])
       {
-         result = False;
+         result = false;
          break;
       }
    }

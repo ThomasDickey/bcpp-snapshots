@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 1996-2005,2009 by Thomas E. Dickey                               *
+ * Copyright 1996-2009,2021 by Thomas E. Dickey                               *
  * All Rights Reserved.                                                       *
  *                                                                            *
  * Permission to use, copy, modify, and distribute this software and its      *
@@ -17,7 +17,7 @@
  * CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN        *
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.                   *
  ******************************************************************************/
-// $Id: bcpp.h,v 1.47 2009/06/28 19:21:16 tom Exp $
+// $Id: bcpp.h,v 1.49 2021/01/08 23:31:24 tom Exp $
 
 #ifndef _BCPP_HEADER
 #define _BCPP_HEADER
@@ -98,7 +98,7 @@ extern const IndentwordStruct pIndentWords[];
 
 #define MY_DEFAULT \
         dataType(NoType), \
-        comWcode(False), \
+        comWcode(false), \
         offset(0), \
         pData(), \
         pState()
@@ -115,9 +115,9 @@ class InputStruct : public ANYOBJECT
                               //     #define                       (PreP)
                               //     SPACES (nothing, blank line)  (ELine)
 
-        Boolean comWcode;
-                              //       -1 : True,  comment with code (for comment dataType)
-                              //        0 : False, comment with no Code
+        bool comWcode;
+                              //       -1 : true,  comment with code (for comment dataType)
+                              //        0 : false, comment with no Code
 
         int offset;           // offset within original line's text
         char* pData;          // pointer to queue data !
@@ -128,7 +128,7 @@ class InputStruct : public ANYOBJECT
         {
             dataType = theType;
             offset = theOffset;
-            comWcode = False;
+            comWcode = false;
             pState = 0;       // only non-null for code
         }
 
@@ -160,7 +160,7 @@ extern int   totalTokens;            // token count, for debugging
            preproLevel(0), \
            indentSpace(0), \
            indentHangs(0), \
-           splitElseIf(False), \
+           splitElseIf(false), \
            pCode(NULL), \
            pCFlag(NULL), \
            pBrace(NULL), \
@@ -239,7 +239,7 @@ class OutputStruct : public ANYOBJECT
         until_curl(0), \
         curl_level(0), \
         in_aggreg(0), \
-        do_aggreg(False), \
+        do_aggreg(false), \
         indent(0)
 
 class HangStruct : public ANYOBJECT
@@ -401,8 +401,8 @@ extern const char *SkipBlanks(const char *s);
 extern void ExpandTabs (char* &pString,
     int tabLen,
     int deleteChars,
-    Boolean quoteChars,
-    CharState &curState, char * &lineState, Boolean &codeOnLine);
+    bool quoteChars,
+    CharState &curState, char * &lineState, bool &codeOnLine);
 extern char* TabSpacing (int mode, int col, int len, int spaceIndent);
 
 // verbose.cpp

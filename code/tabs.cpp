@@ -1,5 +1,5 @@
 //******************************************************************************
-// Copyright 1996-2003,2005 by Thomas E. Dickey                                *
+// Copyright 1996-2005,2021 by Thomas E. Dickey                                *
 // All Rights Reserved.                                                        *
 //                                                                             *
 // Permission to use, copy, modify, and distribute this software and its       *
@@ -17,7 +17,7 @@
 // OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR   *
 // PERFORMANCE OF THIS SOFTWARE.                                               *
 //******************************************************************************
-// $Id: tabs.cpp,v 1.24 2005/04/11 00:20:18 tom Exp $
+// $Id: tabs.cpp,v 1.26 2021/01/08 23:32:37 tom Exp $
 // Tab conversion & first-pass scanning
 
 #include <ctype.h>
@@ -211,12 +211,12 @@ static void nextCharState(char * &String, CharState &theState, int &skip)
 // depending on whether they're in strings or not.
 static int NonPrintable(char c, int mode)
 {
-    int it = False;
+    int it = false;
     unsigned char check = static_cast<unsigned char>(c);
 
     // remove chars below a space, but not if char is a TAB.
     if (check < SPACE && check != TAB) {
-        it = True;
+        it = true;
     } else if (mode == 1) {
         it = (check >= 127);                    /* non 7-bit ASCII? */
     } else if (mode == 3) {
@@ -243,16 +243,16 @@ static int NonPrintable(char c, int mode)
 void ExpandTabs (char* &pString,
     int tabLen,
     int deleteChars,
-    Boolean quoteChars,
-    CharState &curState, char * &lineState, Boolean &codeOnLine)
+    bool quoteChars,
+    CharState &curState, char * &lineState, bool &codeOnLine)
 {
     int   col = 0;
     int   skip = 0;
     size_t last = 0;
     char* pSTab = pString;
-    bool  expand = True;
-    bool  my_pString = False;
-    bool  had_print = False;
+    bool  expand = true;
+    bool  my_pString = false;
+    bool  had_print = false;
     CharState oldState = curState;
 
     lineState = new char[strlen (pString) + 1];
@@ -267,7 +267,7 @@ void ExpandTabs (char* &pString,
         col++;
 
         if (isgraph(*pSTab))
-            had_print = True;
+            had_print = true;
 
         if (skip || !isspace(*pSTab))
             last = col + skip;
@@ -305,7 +305,7 @@ void ExpandTabs (char* &pString,
                     delete[] lineState;
                     return;
                 }
-                my_pString = True;
+                my_pString = true;
 
                 strcpy (pNewStates, lineState);
                 delete[] lineState;
@@ -333,7 +333,7 @@ void ExpandTabs (char* &pString,
         // SCCS ID contains a tab that we don't want to touch
         else if (*pSTab == '@' && !strncmp(pSTab+1, "(#)", 3))
         {
-            expand = False;
+            expand = false;
         }
         else if (NonPrintable(*pSTab, deleteChars))
         {
@@ -407,7 +407,7 @@ void ExpandTabs (char* &pString,
         }
         else if (ispunct(lineState[col-1]))
         {
-            codeOnLine = True;
+            codeOnLine = true;
         }
 
         lineState[col] = NullC;
@@ -421,7 +421,7 @@ void ExpandTabs (char* &pString,
     if (col == 0
      || pString[col-1] != ESCAPE)
     {
-        codeOnLine = False;
+        codeOnLine = false;
     }
 
     if (skip == 0

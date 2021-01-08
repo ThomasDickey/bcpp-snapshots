@@ -1,5 +1,5 @@
 //******************************************************************************
-// Copyright 1996-2003,2005 by Thomas E. Dickey                                *
+// Copyright 1996-2005,2021 by Thomas E. Dickey                                *
 // All Rights Reserved.                                                        *
 //                                                                             *
 // Permission to use, copy, modify, and distribute this software and its       *
@@ -17,7 +17,7 @@
 // OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR   *
 // PERFORMANCE OF THIS SOFTWARE.                                               *
 //******************************************************************************
-// $Id: hanging.cpp,v 1.19 2005/08/19 23:25:43 tom Exp $
+// $Id: hanging.cpp,v 1.21 2021/01/08 23:31:53 tom Exp $
 // Compute hanging-indent for most multiline statements.
 
 #include <stdlib.h>
@@ -72,7 +72,7 @@ HangStruct::ScanState(const char *code, const char *state)
                     int findWord = LookupKeyword(name);
 
                     TRACE(("lookup '%s' ->%d\n", name, findWord));
-                    do_aggreg = False;
+                    do_aggreg = false;
                     if (findWord >= 0)
                     {
                         indent = 0;
@@ -96,13 +96,13 @@ HangStruct::ScanState(const char *code, const char *state)
                 else if (!isspace(code[n]))
                 {
                     if (do_aggreg && code[n] != L_CURL)
-                        do_aggreg = False;
+                        do_aggreg = false;
 
                     switch (code[n])
                     {
                         case '=':
                             if (parn_level == 0)
-                                do_aggreg = True;
+                                do_aggreg = true;
                             break;
                         case L_CURL:
                             curl_level++;

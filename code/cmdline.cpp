@@ -1,7 +1,7 @@
 #ifndef _CMDLINE_CODE
 #define _CMDLINE_CODE
 
-// $Id: cmdline.cpp,v 1.25 2015/08/11 08:37:00 Miriam.Ruiz Exp $
+// $Id: cmdline.cpp,v 1.26 2021/01/08 23:22:26 tom Exp $
 // Program C(++) Beautifier Written By Steven De Toni ACBC 11 12/94
 // Revised 1999 - Thomas Dickey
 //
@@ -169,8 +169,8 @@ int ProcessCommandLine (int argc, char* argv[], Config& settings,
             cmdRead++;
 
             // miscellaneous flags, "sort +1"
-            DecodeFlg ("BCL",   settings.braceLoc,        False);
-            DecodeFlg ("BNL",   settings.braceLoc,        True);
+            DecodeFlg ("BCL",   settings.braceLoc,        false);
+            DecodeFlg ("BNL",   settings.braceLoc,        true);
             DecodeInt ("CC",    settings.posOfCommentsWC);
             DecodeInt ("F",     settings.numOfLineFunc);
             DecodeStr ("FI",    pInFile);
@@ -180,28 +180,28 @@ int ProcessCommandLine (int argc, char* argv[], Config& settings,
             DecodeFlg ("LG",    settings.deleteHighChars, 3);
             DecodeInt ("NC",    settings.posOfCommentsNC);
             DecodeInt ("QB",    settings.queueBuffer);
-            DecodeFlg ("S",     settings.useTabs,         False);
-            DecodeFlg ("T",     settings.useTabs,         True);
-            DecodeFlg ("TBCL",  settings.topBraceLoc,     False);
-            DecodeFlg ("TBNL",  settings.topBraceLoc,     True);
+            DecodeFlg ("S",     settings.useTabs,         false);
+            DecodeFlg ("T",     settings.useTabs,         true);
+            DecodeFlg ("TBCL",  settings.topBraceLoc,     false);
+            DecodeFlg ("TBNL",  settings.topBraceLoc,     true);
 
             // "No" flags
             DecodeFlg ("NA",    settings.deleteHighChars, 0);
-            DecodeFlg ("NB",    settings.backUp,          False);
-            DecodeFlg ("NBBI",  settings.braceIndent2,    False);
-            DecodeFlg ("NBI",   settings.braceIndent,     False);
-            DecodeFlg ("NLCNC", settings.leaveCommentsNC, False);
-            DecodeFlg ("NO",    settings.output,          False);
-            DecodeFlg ("NQ",    settings.quoteChars,      False);
+            DecodeFlg ("NB",    settings.backUp,          false);
+            DecodeFlg ("NBBI",  settings.braceIndent2,    false);
+            DecodeFlg ("NBI",   settings.braceIndent,     false);
+            DecodeFlg ("NLCNC", settings.leaveCommentsNC, false);
+            DecodeFlg ("NO",    settings.output,          false);
+            DecodeFlg ("NQ",    settings.quoteChars,      false);
 
             // "Yes" flags
             DecodeFlg ("YA",    settings.deleteHighChars, 1);
-            DecodeFlg ("YB",    settings.backUp,          True);
-            DecodeFlg ("YBBI",  settings.braceIndent2,    True);
-            DecodeFlg ("YBI",   settings.braceIndent,     True);
-            DecodeFlg ("YLCNC", settings.leaveCommentsNC, True);
-            DecodeFlg ("YO",    settings.output,          True);
-            DecodeFlg ("YQ",    settings.quoteChars,      True);
+            DecodeFlg ("YB",    settings.backUp,          true);
+            DecodeFlg ("YBBI",  settings.braceIndent2,    true);
+            DecodeFlg ("YBI",   settings.braceIndent,     true);
+            DecodeFlg ("YLCNC", settings.leaveCommentsNC, true);
+            DecodeFlg ("YO",    settings.output,          true);
+            DecodeFlg ("YQ",    settings.quoteChars,      true);
 
             // ### display help ###
             if( (strcmp ("?", cmdRead) == 0) ||
