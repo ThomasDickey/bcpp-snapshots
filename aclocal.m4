@@ -1,6 +1,6 @@
-dnl $Id: aclocal.m4,v 1.19 2021/01/08 21:52:24 tom Exp $
+dnl $Id: aclocal.m4,v 1.20 2022/10/02 13:45:17 tom Exp $
 dnl ---------------------------------------------------------------------------
-dnl Copyright 2002-2020,2021 -- Thomas E. Dickey
+dnl Copyright 2002-2021,2022 -- Thomas E. Dickey
 dnl
 dnl Permission is hereby granted, free of charge, to any person obtaining a
 dnl copy of this software and associated documentation files (the
@@ -172,9 +172,9 @@ if test "x$ifelse([$2],,CLANG_COMPILER,[$2])" = "xyes" ; then
 fi
 ])
 dnl ---------------------------------------------------------------------------
-dnl CF_DISABLE_ECHO version: 13 updated: 2015/04/18 08:56:57
+dnl CF_DISABLE_ECHO version: 14 updated: 2021/09/04 06:35:04
 dnl ---------------
-dnl You can always use "make -n" to see the actual options, but it's hard to
+dnl You can always use "make -n" to see the actual options, but it is hard to
 dnl pick out/analyze warning messages when the compile-line is long.
 dnl
 dnl Sets:
