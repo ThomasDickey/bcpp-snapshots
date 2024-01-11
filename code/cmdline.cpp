@@ -1,7 +1,7 @@
 #ifndef _CMDLINE_CODE
 #define _CMDLINE_CODE
 
-// $Id: cmdline.cpp,v 1.26 2021/01/08 23:22:26 tom Exp $
+// $Id: cmdline.cpp,v 1.27 2024/01/11 21:26:43 tom Exp $
 // Program C(++) Beautifier Written By Steven De Toni ACBC 11 12/94
 // Revised 1999 - Thomas Dickey
 //
@@ -33,7 +33,7 @@ void StrUpr (char* pUpCase)
 void PrintProgramHelp (void)
 {
     static const char *help[] = {
-        "C(++) Beautifier     " VERSION,
+        ("C(++) Beautifier     " VERSION),
         "",
         "Program Was Written By Steven De Toni, December 1995",
         "Modified/revised by Thomas E. Dickey 1996-2003,2004",

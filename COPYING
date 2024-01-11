@@ -1,10 +1,10 @@
-$Id: COPYING,v 1.9 2023/01/30 09:16:05 tom Exp $
+$Id: COPYING,v 1.10 2024/01/11 08:47:46 tom Exp $
 
 BCPP - Beautify C++ Source Files
 
 --------------------------------------------------------------------------------
 
-Copyright 2005-2022,2023 by Thomas E. Dickey
+Copyright 2005-2023,2024 by Thomas E. Dickey
 
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the

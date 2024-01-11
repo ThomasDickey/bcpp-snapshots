@@ -1,7 +1,7 @@
 Summary: bcpp - C(++) beautifier
 %define AppProgram bcpp
-%define AppVersion 20230130
-# $Id: bcpp.spec,v 1.9 2023/01/30 09:13:58 tom Exp $
+%define AppVersion 20240111
+# $Id: bcpp.spec,v 1.11 2024/01/11 09:06:44 tom Exp $
 Name: %{AppProgram}
 Version: %{AppVersion}
 Release: 1
@@ -31,7 +31,7 @@ a simple algorithm for indenting embedded SQL.
 
 CPPFLAGS="$CPPFLAGS -DBCPP_CONFIG_DIR=\"%{_sysconfdir}\"" \
 INSTALL_PROGRAM='${INSTALL}' \
-./configure \
+%configure \
  --program-prefix=b \
  --target %{_target_platform} \
  --prefix=%{_prefix} \
@@ -49,12 +49,9 @@ make
 make install DESTDIR=$RPM_BUILD_ROOT
 
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}
-install code/bcpp.cfg $RPM_BUILD_ROOT%{_sysconfdir}
+install -m 644 code/bcpp.cfg $RPM_BUILD_ROOT%{_sysconfdir}
 
 strip $RPM_BUILD_ROOT%{_bindir}/%{AppProgram}
-
-%clean
-[ "$RPM_BUILD_ROOT" != "/" ] && rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root)
@@ -65,6 +62,10 @@ strip $RPM_BUILD_ROOT%{_bindir}/%{AppProgram}
 
 %changelog
 # each patch should add its ChangeLog entries here
+
+* Thu Jan 11 2024 Thomas E. Dickey
+- remove obsolete clean-section
+- use hardening macros
 
 * Sun Apr 01 2018 Thomas Dickey
 - update ftp url, suppress debug package

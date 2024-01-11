@@ -1,6 +1,6 @@
-dnl $Id: aclocal.m4,v 1.20 2022/10/02 13:45:17 tom Exp $
+dnl $Id: aclocal.m4,v 1.21 2023/03/05 19:30:13 tom Exp $
 dnl ---------------------------------------------------------------------------
-dnl Copyright 2002-2021,2022 -- Thomas E. Dickey
+dnl Copyright 2002-2022,2023 -- Thomas E. Dickey
 dnl
 dnl Permission is hereby granted, free of charge, to any person obtaining a
 dnl copy of this software and associated documentation files (the
@@ -104,7 +104,7 @@ if test ".$system_name" != ".$cf_cv_system_name" ; then
 fi
 ])dnl
 dnl ---------------------------------------------------------------------------
-dnl CF_CLANG_COMPILER version: 8 updated: 2021/01/01 13:31:04
+dnl CF_CLANG_COMPILER version: 9 updated: 2023/02/18 17:41:25
 dnl -----------------
 dnl Check if the given compiler is really clang.  clang's C driver defines
 dnl __GNUC__ (fooling the configure script into setting $GCC to yes) but does
@@ -126,7 +126,7 @@ if test "$ifelse([$1],,[$1],GCC)" = yes ; then
 	AC_TRY_COMPILE([],[
 #ifdef __clang__
 #else
-make an error
+#error __clang__ is not defined
 #endif
 ],[ifelse([$2],,CLANG_COMPILER,[$2])=yes
 ],[])
@@ -209,7 +209,7 @@ AC_SUBST(SHOW_CC)
 AC_SUBST(ECHO_CC)
 ])dnl
 dnl ---------------------------------------------------------------------------
-dnl CF_GXX_VERSION version: 8 updated: 2017/02/11 14:48:57
+dnl CF_GXX_VERSION version: 9 updated: 2023/03/05 14:30:13
 dnl --------------
 dnl Check for version of g++
 AC_DEFUN([CF_GXX_VERSION],[
@@ -217,7 +217,7 @@ AC_REQUIRE([AC_PROG_CPP])
 GXX_VERSION=none
 if test "$GXX" = yes; then
 	AC_MSG_CHECKING(version of ${CXX:-g++})
-	GXX_VERSION="`${CXX:-g++} --version| sed -e '2,$d' -e 's/^.*(GCC) //' -e 's/^[[^0-9.]]*//' -e 's/[[^0-9.]].*//'`"
+	GXX_VERSION="`${CXX:-g++} --version 2>/dev/null | sed -e '2,$d' -e 's/^[[^(]]*([[^)]][[^)]]*) //' -e 's/^[[^0-9.]]*//' -e 's/[[^0-9.]].*//'`"
 	if test -z "$GXX_VERSION"
 	then
 		GXX_VERSION=unknown
@@ -345,7 +345,7 @@ AC_LANG_RESTORE
 AC_SUBST(EXTRA_CXXFLAGS)
 ])dnl
 dnl ---------------------------------------------------------------------------
-dnl CF_INTEL_COMPILER version: 8 updated: 2021/01/01 16:53:59
+dnl CF_INTEL_COMPILER version: 9 updated: 2023/02/18 17:41:25
 dnl -----------------
 dnl Check if the given compiler is really the Intel compiler for Linux.  It
 dnl tries to imitate gcc, but does not return an error when it finds a mismatch
@@ -371,7 +371,7 @@ if test "$ifelse([$1],,[$1],GCC)" = yes ; then
 		AC_TRY_COMPILE([],[
 #ifdef __INTEL_COMPILER
 #else
-make an error
+#error __INTEL_COMPILER is not defined
 #endif
 ],[ifelse([$2],,INTEL_COMPILER,[$2])=yes
 cf_save_CFLAGS="$cf_save_CFLAGS -we147"
