@@ -1,4 +1,4 @@
-# $Id: makefile.in,v 1.12 2012/03/18 15:38:59 tom Exp $
+# $Id: makefile.in,v 1.13 2024/09/17 22:46:19 tom Exp $
 # Makefile-template for 'bcpp'
 
 THIS		= bcpp
@@ -66,7 +66,7 @@ PROG	= $(THIS)$x
 all:	$(PROG)
 
 $(PROG): $(OBJS)
-	@ECHO_LD@$(LINK) $(LDFLAGS) -o $(PROG) $(OBJS) $(LIBS)
+	@ECHO_LD@$(LINK) $(LDFLAGS) $(CXXFLAGS) $(EXTRA_CXXFLAGS) -o $(PROG) $(OBJS) $(LIBS)
 
 install: all installdirs
 	$(INSTALL_PROGRAM) $(PROG) $(BINDIR)/$(PROG)

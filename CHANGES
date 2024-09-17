@@ -1,5 +1,12 @@
--- $Id: CHANGES,v 1.56 2024/01/11 09:24:12 tom Exp $
+-- $Id: CHANGES,v 1.60 2024/09/17 08:25:20 tom Exp $
 -- Thomas E. Dickey <dickey@invisible-island.net>
+
+2024/09/17
+----------
+	+ improve utility/test scripts, with shellcheck and other checks.
+	+ improve test-packages, e.g., for hardening options.
+	+ updated configure script macros, for ignored options
+	+ update config.guess, config.sub
 
 2024/01/11
 ----------

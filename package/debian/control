@@ -3,7 +3,7 @@ Section: devel
 Priority: optional
 Maintainer: Miriam Ruiz <little_miry@yahoo.es>
 Build-Depends: debhelper (>= 7), quilt, autotools-dev
-Standards-Version: 3.9.1
+Standards-Version: 4.7.0
 
 Package: bcpp
 Architecture: any

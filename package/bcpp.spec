@@ -1,15 +1,15 @@
 Summary: bcpp - C(++) beautifier
 %define AppProgram bcpp
-%define AppVersion 20240111
-# $Id: bcpp.spec,v 1.11 2024/01/11 09:06:44 tom Exp $
+%define AltProgram cb++
+%define AppVersion 20240917
+# $Id: bcpp.spec,v 1.14 2024/09/17 23:19:11 tom Exp $
 Name: %{AppProgram}
 Version: %{AppVersion}
 Release: 1
 License: MIT
 Group: Applications/Development
-URL: ftp://ftp.invisible-island.net/%{AppProgram}
-Source0: %{AppProgram}-%{AppVersion}.tgz
-Packager: Thomas Dickey <dickey@invisible-island.net>
+URL: https://invisible-island.net/%{AppProgram}
+Source0: https://invisible-island.net/archives/%{AppProgram}/%{AppProgram}-%{AppVersion}.tgz
 
 %description
 bcpp indents C/C++ source programs, replacing tabs with spaces or the
@@ -56,12 +56,16 @@ strip $RPM_BUILD_ROOT%{_bindir}/%{AppProgram}
 %files
 %defattr(-,root,root)
 %{_bindir}/%{AppProgram}
-%{_bindir}/cb++
+%{_bindir}/%{AltProgram}
 %{_sysconfdir}/bcpp.cfg
 %{_mandir}/man1/%{AppProgram}.*
+%{_mandir}/man1/%{AltProgram}.*
 
 %changelog
 # each patch should add its ChangeLog entries here
+
+* Tue Sep 17 2024 Thomas E. Dickey
+- rpmlint
 
 * Thu Jan 11 2024 Thomas E. Dickey
 - remove obsolete clean-section
