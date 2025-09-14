@@ -1,6 +1,6 @@
-dnl $Id: aclocal.m4,v 1.22 2024/09/17 22:12:33 tom Exp $
+dnl $Id: aclocal.m4,v 1.23 2025/08/05 08:09:09 tom Exp $
 dnl ---------------------------------------------------------------------------
-dnl Copyright 2002-2023,2024 -- Thomas E. Dickey
+dnl Copyright 2002-2024,2025 -- Thomas E. Dickey
 dnl
 dnl Permission is hereby granted, free of charge, to any person obtaining a
 dnl copy of this software and associated documentation files (the
@@ -46,7 +46,7 @@ dnl Allow user to disable a normally-on option.
 AC_DEFUN([CF_ARG_DISABLE],
 [CF_ARG_OPTION($1,[$2],[$3],[$4],yes)])dnl
 dnl ---------------------------------------------------------------------------
-dnl CF_ARG_OPTION version: 5 updated: 2015/05/10 19:52:14
+dnl CF_ARG_OPTION version: 6 updated: 2025/08/05 04:09:09
 dnl -------------
 dnl Restricted form of AC_ARG_ENABLE that ensures user doesn't give bogus
 dnl values.
@@ -55,7 +55,7 @@ dnl Parameters:
 dnl $1 = option name
 dnl $2 = help-string
 dnl $3 = action to perform if option is not default
-dnl $4 = action if perform if option is default
+dnl $4 = action to perform if option is default
 dnl $5 = default option value (either 'yes' or 'no')
 AC_DEFUN([CF_ARG_OPTION],
 [AC_ARG_ENABLE([$1],[$2],[test "$enableval" != ifelse([$5],no,yes,no) && enableval=ifelse([$5],no,no,yes)
@@ -227,7 +227,7 @@ if test "$GXX" = yes; then
 fi
 ])dnl
 dnl ---------------------------------------------------------------------------
-dnl CF_GXX_WARNINGS version: 11 updated: 2021/01/08 16:50:55
+dnl CF_GXX_WARNINGS version: 13 updated: 2024/12/21 08:44:12
 dnl ---------------
 dnl Check if the compiler supports useful warning options.
 dnl
